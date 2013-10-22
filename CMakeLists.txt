@@ -21,6 +21,8 @@ if ( COMMAND cmake_policy )
 
 endif()
 
+SET(CMAKE_CXX_FLAGS "-std=c++0x")
+
 # CGAL and its components
 find_package( CGAL QUIET COMPONENTS GMP )
 
