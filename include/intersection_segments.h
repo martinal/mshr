@@ -13,13 +13,17 @@
 #include <CGAL/intersections.h>
 
 #include <boost/variant/get.hpp>
+#include <boost/tuple/tuple.hpp>
 
 #include <vector>
+#include <list>
+#include <deque>
 #include <iterator>
 #include <type_traits>
 
-
-
+/// Compute all intersecting facets of two polyhedron. 
+/// For efficiency the biggest polyhedron (in terms of facets) should be given
+/// as first argument
 template<typename Polyhedron, typename OutputIterator>
 void compute_intersections(const Polyhedron &biggest, const Polyhedron &smallest, OutputIterator out)
 {
@@ -49,64 +53,81 @@ void compute_intersections(const Polyhedron &biggest, const Polyhedron &smallest
 
     std::cout << "Testing triangle: " << t << std::endl;
 
-    std::list<Primitive_id> l;
+    std::list<Object_and_primitive_id> intersections;
 
-    tree.all_intersected_primitives(t, std::back_inserter(l));
-    std::cout << "Number of intersections: " << l.size() << std::endl;
+    tree.all_intersections(t, std::back_inserter(intersections));
+    std::cout << "Number of intersections: " << intersections.size() << std::endl;
 
     Facet_const_handle f_biggest = it;
 
-    for (typename std::list<Primitive_id>::iterator it = l.begin();
-         it != l.end(); ++it)
+    for (typename std::list<Object_and_primitive_id>::iterator it = intersections.begin();
+         it != intersections.end(); ++it)
     {
-      std::cout << "Id: " << std::distance(*it, smallest.facets_begin()) << std::endl;
-      Facet_const_handle f_smallest = *it;
+      std::cout << "Id: " << std::distance(it->second, smallest.facets_begin()) << std::endl;
+      Facet_const_handle f_smallest = it->second;
       Triangle t(f_smallest->halfedge()->vertex()->point(),
                  f_smallest->halfedge()->next()->vertex()->point(),
                  f_smallest->halfedge()->next()->next()->vertex()->point());
 
-
-      std::cout << "Triangle: " << t << std::endl;
-
-      out = std::make_pair(f_biggest, f_smallest);
-
+      Segment s;
+      if (CGAL::assign(s, it->first))
+      {
+        std::cout << "Is segment" << std::endl;
+        out = boost::make_tuple(f_biggest, f_smallest, s);
+      } 
+      else
+      {
+        std::cout << "Not segment" << std::endl;
+      }
     }
     std::cout << std::endl;
   }
 }
+//-----------------------------------------------------------------------------
 
+/// Sort to a continuous list of segments
+template <typename Polyhedron, typename Container>
+void sort_segments(const Polyhedron &a, const Polyhedron &b, 
+                   const Container &segments)
+{
+  
+}
+//-----------------------------------------------------------------------------
+// Container is assumed to be a container of boost::tuple<facet_handle,
+// facet_handle, Segment>
 template<typename Polyhedron, typename Container>
 void split_facets(Polyhedron &a, Polyhedron &b,
-                 Container &intersections)
+                  Container &intersections)
 {
   typedef typename Polyhedron::Traits Kernel;
+  typedef typename Polyhedron::Facet_handle Facet_handle;
   typedef typename Kernel::Triangle_3 Triangle;
   typedef typename Kernel::Segment_3 Segment;
+  typedef typename Kernel::Point_3 Point_3;
 
-  // Assume intersections is a container of std::pair<facet_handle, facet_handle>
+  typedef boost::tuple<Facet_handle, Facet_handle, Segment> IntersectionType;
 
-  for (typename Container::iterator it = intersections.begin(); it != intersections.end(); ++it)
+  std::cout << "Sorting segments" << std::endl;
+  
+  std::map<Point_3, typename Container::iterator> map_head;
+  std::map<Point_3, typename Container::iterator> map_trail;
+
+  // Store all intersections in map for quick lookup based on their points
+  for (typename Container::iterator it = intersections.begin();
+       it != intersections.end(); ++it)
   {
-    Triangle t1(it->first->halfedge()->vertex()->point(),
-               it->first->halfedge()->next()->vertex()->point(),
-               it->first->halfedge()->next()->next()->vertex()->point());
+    const Segment &s = it->get<2>();
+    map_head[s.source()]  = it;
+    map_trail[s.target()] = it;
+  }
 
-    Triangle t2(it->second->halfedge()->vertex()->point(),
-               it->second->halfedge()->next()->vertex()->point(),
-               it->second->halfedge()->next()->next()->vertex()->point());
+  std::list<std::deque<IntersectionType> > intersection_polylines;
 
+  while(intersections.size() > 0)
+  {
+    intersection_polylines.push_back(std::deque<IntersectionType>);
+    
 
-    auto result = intersection(t1, t2);
-
-    if (Segment *s = boost::get<Segment>(&*result))
-    {
-      std::cout << "Segment: " << *s << std::endl;
-
-    }
-    else
-    {
-      std::cout << "Intersection is not a segment" << std::endl;
-    }
   }
 }
 
