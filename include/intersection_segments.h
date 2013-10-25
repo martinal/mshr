@@ -84,36 +84,29 @@ void compute_intersections(const Polyhedron &biggest, const Polyhedron &smallest
   }
 }
 //-----------------------------------------------------------------------------
-
-/// Sort to a continuous list of segments
-template <typename Polyhedron, typename Container>
-void sort_segments(const Polyhedron &a, const Polyhedron &b, 
-                   const Container &segments)
-{
-  
-}
-//-----------------------------------------------------------------------------
 // Container is assumed to be a container of boost::tuple<facet_handle,
 // facet_handle, Segment>
-template<typename Polyhedron, typename Container>
+// The container must not invalidate iterators when elements are removed
+template<typename Polyhedron> //, typename Container>
 void split_facets(Polyhedron &a, Polyhedron &b,
-                  Container &intersections)
+                  std::list<boost::tuple<typename Polyhedron::Facet_const_handle, typename Polyhedron::Facet_const_handle, typename Polyhedron::Traits::Segment_3> > &intersections)
 {
   typedef typename Polyhedron::Traits Kernel;
-  typedef typename Polyhedron::Facet_handle Facet_handle;
+  typedef typename Polyhedron::Facet_const_handle Facet_const_handle;
   typedef typename Kernel::Triangle_3 Triangle;
   typedef typename Kernel::Segment_3 Segment;
   typedef typename Kernel::Point_3 Point_3;
+  typedef std::list<boost::tuple<typename Polyhedron::Facet_const_handle, typename Polyhedron::Facet_const_handle, typename Polyhedron::Traits::Segment_3> > IntersectionList;
 
-  typedef boost::tuple<Facet_handle, Facet_handle, Segment> IntersectionType;
+  typedef boost::tuple<Facet_const_handle, Facet_const_handle, Segment> IntersectionType;
 
   std::cout << "Sorting segments" << std::endl;
   
-  std::map<Point_3, typename Container::iterator> map_head;
-  std::map<Point_3, typename Container::iterator> map_trail;
+  std::map<Point_3, typename IntersectionList::iterator> map_head;
+  std::map<Point_3, typename IntersectionList::iterator> map_trail;
 
   // Store all intersections in map for quick lookup based on their points
-  for (typename Container::iterator it = intersections.begin();
+  for (typename IntersectionList::iterator it = intersections.begin();
        it != intersections.end(); ++it)
   {
     const Segment &s = it->get<2>();
@@ -125,9 +118,33 @@ void split_facets(Polyhedron &a, Polyhedron &b,
 
   while(intersections.size() > 0)
   {
-    intersection_polylines.push_back(std::deque<IntersectionType>);
-    
+    // A new deque containing the polyline
+    intersection_polylines.push_back(std::deque<IntersectionType>());
+    std::deque<IntersectionType> &polyline = intersection_polylines.back();
 
+    // Insert one segment into polyline
+    IntersectionType e = intersections.front();
+    intersections.pop_front();
+    map_head.erase(e.get<2>().source());
+    map_trail.erase(e.get<2>().target());
+      
+    polyline.push_back(e);
+
+    while (map_head.count(polyline.back().get<2>().target()))
+    {
+      typename IntersectionList::iterator e = map_head[polyline.back().get<2>().target()];
+      polyline.push_front(*e);
+      map_head.erase(e->get<2>().target());
+      map_trail.erase(e->get<2>().source());        
+    }
+    
+    while(map_trail.count(polyline.front().get<2>().source()))
+    {
+      typename IntersectionList::iterator e = map_trail[polyline.front().get<2>().source()];
+      polyline.push_back(*e);
+      map_trail.erase(e->get<2>().source());
+      map_head.erase(e->get<2>().target());
+    }
   }
 }
 
