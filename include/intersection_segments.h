@@ -96,56 +96,135 @@ void split_facets(Polyhedron &a, Polyhedron &b,
   typedef typename Kernel::Triangle_3 Triangle;
   typedef typename Kernel::Segment_3 Segment;
   typedef typename Kernel::Point_3 Point_3;
-  typedef std::list<boost::tuple<typename Polyhedron::Facet_const_handle, typename Polyhedron::Facet_const_handle, typename Polyhedron::Traits::Segment_3> > IntersectionList;
 
   typedef boost::tuple<Facet_const_handle, Facet_const_handle, Segment> IntersectionType;
 
-  std::cout << "Sorting segments" << std::endl;
-  
-  std::map<Point_3, typename IntersectionList::iterator> map_head;
-  std::map<Point_3, typename IntersectionList::iterator> map_trail;
+  typedef std::list<IntersectionType> IntersectionList;
 
-  // Store all intersections in map for quick lookup based on their points
+
+  std::cout << "Sorting segments" << std::endl;
+
   for (typename IntersectionList::iterator it = intersections.begin();
        it != intersections.end(); ++it)
+    std::cout << it->get<2>() << std::endl;
+  
+  // std::map<Point_3, typename IntersectionList::iterator> source_point_map;
+  // std::map<Point_3, typename IntersectionList::iterator> target_point_map;
+
+  std::list<std::list<IntersectionType> > polylines;
+
+  // Store all intersections in map for quick lookup based on their points
+  /* for (typename IntersectionList::iterator it = intersections.begin(); */
+  /*      it != intersections.end(); ++it) */
+  /* { */
+  /*   const Segment &s = it->get<2>(); */
+  /*   source_point_map[s.source()]  = it; */
+  /*   target_point_map[s.source()]  = it; */
+  /* } */
+
+  /* std::list<std::deque<IntersectionType> > intersection_polylines; */
+
+  while(intersections.size())
   {
-    const Segment &s = it->get<2>();
-    map_head[s.source()]  = it;
-    map_trail[s.target()] = it;
-  }
+    /* // A new deque containing the polyline */
+    /* intersection_polylines.push_back(std::deque<IntersectionType>()); */
+    /* std::deque<IntersectionType> &polyline = intersection_polylines.back(); */
 
-  std::list<std::deque<IntersectionType> > intersection_polylines;
-
-  while(intersections.size() > 0)
-  {
-    // A new deque containing the polyline
-    intersection_polylines.push_back(std::deque<IntersectionType>());
-    std::deque<IntersectionType> &polyline = intersection_polylines.back();
-
-    // Insert one segment into polyline
-    IntersectionType e = intersections.front();
-    intersections.pop_front();
-    map_head.erase(e.get<2>().source());
-    map_trail.erase(e.get<2>().target());
+    /* // Insert one segment into polyline */
+    /* IntersectionType e = intersections.front(); */
+    /* intersections.pop_front(); */
+    /* point_map.erase(e.get<2>().source()); */
       
-    polyline.push_back(e);
+    /* polyline.push_back(e); */
 
-    while (map_head.count(polyline.back().get<2>().target()))
+    /* while (point_map.count(polyline.back().get<2>().target())) */
+    /* { */
+    /*   typename IntersectionList::iterator e = point_map[polyline.back().get<2>().target()]; */
+    /*   polyline.push_back(*e); */
+    /*   point_map.erase(e->get<2>().source()); */
+    /*   intersections.erase(e); */
+    /* } */
+
+    bool found = false;
+    IntersectionType &e = intersections.front();
+    intersections.pop_front();
+    for (typename std::list<IntersectionList>::iterator p = polylines.begin();
+         p != polylines.end(); ++p)
     {
-      typename IntersectionList::iterator e = map_head[polyline.back().get<2>().target()];
-      polyline.push_front(*e);
-      map_head.erase(e->get<2>().target());
-      map_trail.erase(e->get<2>().source());        
+      found = true;
+      if (e.get<2>().target() == p->front().get<2>().source() ||
+          e.get<2>().target() == p->front().get<2>().target() ||
+          e.get<2>().source() == p->front().get<2>().source() ||
+          e.get<2>().source() == p->front().get<2>().target())
+        p->push_front(e);
+      else if (e.get<2>().target() == p->back().get<2>().source() ||
+               e.get<2>().target() == p->back().get<2>().target() ||
+               e.get<2>().source() == p->back().get<2>().source() ||
+               e.get<2>().source() == p->back().get<2>().target())
+        p->push_back(e);
+      else
+        found = false;
+
+      if (found)
+      {
+        // Now check if we can connect some of the polylines
+        for (typename std::list<IntersectionList>::iterator p2 = polylines.begin();
+             p2 != polylines.end(); ++p2)
+        {
+          if (p2 == p)
+            continue;
+
+          if (p2->back().get<2>().source() == p->front().get<2>().source() ||
+              p2->back().get<2>().target() == p->front().get<2>().source() ||
+              p2->back().get<2>().source() == p->front().get<2>().target() ||
+              p2->back().get<2>().target() == p->front().get<2>().target())
+          {
+            p->splice(p->begin(), *p2);
+            polylines.erase(p2);
+            break;
+          } 
+          else if (p2->front().get<2>().source() == p->front().get<2>().source() ||
+                   p2->front().get<2>().target() == p->front().get<2>().source() ||
+                   p2->front().get<2>().source() == p->front().get<2>().target() ||
+                   p2->front().get<2>().target() == p->front().get<2>().target())
+          {
+            p2->reverse();
+            p->splice(p->begin(), *p2);
+            polylines.erase(p2);
+            break;
+          } 
+          else if (p2->back().get<2>().source() == p->back().get<2>().source() ||
+                   p2->back().get<2>().target() == p->back().get<2>().source() ||
+                   p2->back().get<2>().source() == p->back().get<2>().target() ||
+                   p2->back().get<2>().target() == p->back().get<2>().target())
+          {
+            p2->reverse();
+            p->splice(p->end(), *p2);
+            polylines.erase(p2);
+            break;
+          } 
+          else if (p2->front().get<2>().source() == p->back().get<2>().source() ||
+                   p2->front().get<2>().target() == p->back().get<2>().source() ||
+                   p2->front().get<2>().source() == p->back().get<2>().target() ||
+                   p2->front().get<2>().target() == p->back().get<2>().target())
+          {
+            p2->reverse();
+            p->splice(p->end(), *p2);
+            polylines.erase(p2);
+            break;
+          }
+        }
+        break;
+      }
     }
-    
-    while(map_trail.count(polyline.front().get<2>().source()))
+    if (!found)
     {
-      typename IntersectionList::iterator e = map_trail[polyline.front().get<2>().source()];
-      polyline.push_back(*e);
-      map_trail.erase(e->get<2>().source());
-      map_head.erase(e->get<2>().target());
+      polylines.push_back(IntersectionList());
+      polylines.back().push_back(e);
     }
   }
+  std::cout << "Done sorting" << std::endl;
+  std::cout << "Found " << polylines.size() << " polylines" << std::endl;
 }
 
 #endif 
