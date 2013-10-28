@@ -107,50 +107,23 @@ void split_facets(Polyhedron &a, Polyhedron &b,
   for (typename IntersectionList::iterator it = intersections.begin();
        it != intersections.end(); ++it)
     std::cout << it->get<2>() << std::endl;
+
+  std::cout << "Total: " << intersections.size() << " segments" << std::endl;
   
-  // std::map<Point_3, typename IntersectionList::iterator> source_point_map;
-  // std::map<Point_3, typename IntersectionList::iterator> target_point_map;
-
   std::list<std::list<IntersectionType> > polylines;
-
-  // Store all intersections in map for quick lookup based on their points
-  /* for (typename IntersectionList::iterator it = intersections.begin(); */
-  /*      it != intersections.end(); ++it) */
-  /* { */
-  /*   const Segment &s = it->get<2>(); */
-  /*   source_point_map[s.source()]  = it; */
-  /*   target_point_map[s.source()]  = it; */
-  /* } */
-
-  /* std::list<std::deque<IntersectionType> > intersection_polylines; */
 
   while(intersections.size())
   {
-    /* // A new deque containing the polyline */
-    /* intersection_polylines.push_back(std::deque<IntersectionType>()); */
-    /* std::deque<IntersectionType> &polyline = intersection_polylines.back(); */
-
-    /* // Insert one segment into polyline */
-    /* IntersectionType e = intersections.front(); */
-    /* intersections.pop_front(); */
-    /* point_map.erase(e.get<2>().source()); */
-      
-    /* polyline.push_back(e); */
-
-    /* while (point_map.count(polyline.back().get<2>().target())) */
-    /* { */
-    /*   typename IntersectionList::iterator e = point_map[polyline.back().get<2>().target()]; */
-    /*   polyline.push_back(*e); */
-    /*   point_map.erase(e->get<2>().source()); */
-    /*   intersections.erase(e); */
-    /* } */
-
     bool found = false;
-    IntersectionType &e = intersections.front();
+    IntersectionType e = intersections.front();
     intersections.pop_front();
+
+    std::cout << "Looking for : " << e.get<2>() << std::endl;
+
     for (typename std::list<IntersectionList>::iterator p = polylines.begin();
          p != polylines.end(); ++p)
     {
+
       found = true;
       if (e.get<2>().target() == p->front().get<2>().source() ||
           e.get<2>().target() == p->front().get<2>().target() ||
@@ -167,6 +140,8 @@ void split_facets(Polyhedron &a, Polyhedron &b,
 
       if (found)
       {
+        std::cout << "  Found: " << p->back().get<2>() << std::endl;
+
         // Now check if we can connect some of the polylines
         for (typename std::list<IntersectionList>::iterator p2 = polylines.begin();
              p2 != polylines.end(); ++p2)
@@ -223,8 +198,58 @@ void split_facets(Polyhedron &a, Polyhedron &b,
       polylines.back().push_back(e);
     }
   }
+
+  // Swap the segments if needed
+  for (typename std::list<std::list<IntersectionType> >::iterator it = polylines.begin();
+       it != polylines.end(); ++it)
+  {
+    std::cout << "---Flipping segments" << std::endl;
+
+    typename std::list<IntersectionType>::iterator it2 = it->begin();
+    Segment prev_segment = it2->get<2>();
+
+    {
+      // Check if we need to flip the first segment
+      typename std::list<IntersectionType>::iterator second = it2;
+      second++;
+      if (prev_segment.target() != second->get<2>().source() &&
+          prev_segment.target() != second->get<2>().target())
+      {
+        it2->get<2>() = prev_segment.opposite();
+      }
+    }
+
+    it2++;
+    for (; it2 != it->end(); it2++)
+    {
+      Segment &current_segment = it2->get<2>();
+
+      std::cout << "Prev: " << prev_segment << std::endl;
+      std::cout << "Current: " << current_segment << std::endl;
+
+      if (current_segment.source() != prev_segment.target())
+      {
+        current_segment = current_segment.opposite();
+        std::cout << "  Flipping" << std::endl;
+      }
+      std::cout <<  std::endl;
+
+      prev_segment = current_segment;
+    }
+  }  
+
   std::cout << "Done sorting" << std::endl;
   std::cout << "Found " << polylines.size() << " polylines" << std::endl;
+
+  for (typename std::list<std::list<IntersectionType> >::iterator it = polylines.begin();
+       it != polylines.end(); ++it)
+  {
+    for (typename std::list<IntersectionType>::iterator it2 = it->begin(); it2 != it->end(); it2++)
+    {
+      std::cout << "  " << it2->get<2>() << std::endl;
+    }
+    std::cout << std::endl;
+  }
 }
 
 #endif 
