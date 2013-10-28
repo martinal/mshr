@@ -34,17 +34,17 @@ int main(int argc, char** argv)
   Polyhedron a;
 
   make_tetrahedron(a, 
-                   Point(0.0, 0.0, 0.0),
                    Point(1.0, 0.0, 0.0),
-                   Point(0.0, 1.0, 0.0),
-                   Point(.25, .25, 1.0));
+                   Point(2.0, 0.0, 0.0),
+                   Point(1.5, 1.0, 0.0),
+                   Point(1.5, .5, 10.0));
 
   Polyhedron b;
   make_tetrahedron(b,
-                   Point(0.0, 0.0, -1.0),
-                   Point(1.0, 0.0, -1.0),
-                   Point(0.0, 1.0, -1.0),
-                   Point(.25, .25, 0.25));
+                   Point(0.0, 0., .5),
+                   Point(0.0, 0.0, 1.5),
+                   Point(0.0, 1.0, 1.0),
+                   Point(10.0, .5, 1.0));
 
   if (a.is_pure_triangle())
     std::cout << "a is pure triangle" << std::endl;
