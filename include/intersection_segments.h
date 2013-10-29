@@ -93,6 +93,7 @@ void split_facets(Polyhedron &a, Polyhedron &b,
 {
   typedef typename Polyhedron::Traits Kernel;
   typedef typename Polyhedron::Facet_const_handle Facet_const_handle;
+  typedef typename Polyhedron::Halfedge_const_handle Halfedge_const_handle;
   typedef typename Kernel::Triangle_3 Triangle;
   typedef typename Kernel::Segment_3 Segment;
   typedef typename Kernel::Point_3 Point_3;
@@ -250,6 +251,37 @@ void split_facets(Polyhedron &a, Polyhedron &b,
     }
     std::cout << std::endl;
   }
-}
 
+  // Split facets so all intersections are exists as edges
+  for (typename std::list<std::list<IntersectionType> >::iterator it = polylines.begin();
+       it != polylines.end(); ++it)
+  {
+
+    // Rotate list to ensure that the first element intersects an edge
+    // TODO: This is untested
+    typename std::list<IntersectionType>::iterator it2 = it->begin();
+    for (;it2 != it->end(); it2++)
+    {
+      Facet_const_handle f = it2->get<1>();
+      assert(f->is_triangle());
+      Halfedge_const_handle h = f->halfedge();
+      Segment &s = it2->get<2>();
+      if (CGAL::do_intersect(s, Segment(h->vertex()->point(), h->next()->vertex()->point())) ||
+          CGAL::do_intersect(s, Segment(h->next()->vertex()->point(), h->next()->next()->vertex()->point())) ||
+          CGAL::do_intersect(s, Segment(h->next()->next()->vertex()->point(), h->vertex()->point())))
+      {
+        std::cout << "Breaking" << std::endl;
+        break;
+      }
+    }
+    
+    if (it2 != it->begin())
+      it->splice(it->begin(), *it, it2, it->end());
+
+    
+  }
+
+  
+}
+//-----------------------------------------------------------------------------
 #endif 
