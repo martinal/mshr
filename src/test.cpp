@@ -26,7 +26,7 @@
 typedef CGAL::Exact_predicates_exact_constructions_kernel Kernel;
 typedef Kernel::Point_3 Point;
 typedef CGAL::Polyhedron_3<Kernel> Polyhedron;
-typedef typename Polyhedron::Facet_const_handle Facet_const_handle;
+typedef typename Polyhedron::Facet_handle Facet_handle;
 typedef typename Kernel::Segment_3 Segment;
 
 int main(int argc, char** argv)
@@ -52,7 +52,7 @@ int main(int argc, char** argv)
   if (b.is_pure_triangle())
     std::cout << "b is pure triangle" << std::endl;
 
-  std::list<boost::tuple<Facet_const_handle, Facet_const_handle, Segment> > intersections;
+  std::list<boost::tuple<Facet_handle, Facet_handle, Segment> > intersections;
 
   Polyhedron &biggest = a.size_of_facets() > b.size_of_facets() ? a : b;
   Polyhedron &smallest = a.size_of_facets() > b.size_of_facets() ? b : a;

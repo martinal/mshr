@@ -25,7 +25,7 @@
 /// For efficiency the biggest polyhedron (in terms of facets) should be given
 /// as first argument
 template<typename Polyhedron, typename OutputIterator>
-void compute_intersections(const Polyhedron &biggest, const Polyhedron &smallest, OutputIterator out)
+void compute_intersections(Polyhedron &biggest, Polyhedron &smallest, OutputIterator out)
 {
   typedef typename Polyhedron::Traits K;
   typedef typename K::Point_3 Point;
@@ -33,9 +33,9 @@ void compute_intersections(const Polyhedron &biggest, const Polyhedron &smallest
   typedef typename K::Vector_3 Vector;
   typedef typename K::Segment_3 Segment;
   typedef typename K::Triangle_3 Triangle;
-  typedef typename Polyhedron::Facet_const_iterator Facet_const_iterator;
-  typedef typename Polyhedron::Facet_const_handle Facet_const_handle;
-  typedef CGAL::AABB_face_graph_triangle_primitive<const Polyhedron> Primitive;
+  typedef typename Polyhedron::Facet_iterator Facet_iterator;
+  typedef typename Polyhedron::Facet_handle Facet_handle;
+  typedef CGAL::AABB_face_graph_triangle_primitive<Polyhedron> Primitive;
   typedef CGAL::AABB_traits<K, Primitive> Traits;
   typedef CGAL::AABB_tree<Traits> Tree;
   typedef typename Tree::Object_and_primitive_id Object_and_primitive_id;
@@ -44,7 +44,7 @@ void compute_intersections(const Polyhedron &biggest, const Polyhedron &smallest
   // constructs AABB tree of the smallest polyhedron
   Tree tree( smallest.facets_begin(), smallest.facets_end(), smallest);
 
-  for (Facet_const_iterator it = biggest.facets_begin();
+  for (Facet_iterator it = biggest.facets_begin();
        it != biggest.facets_end(); ++it)
   {
     Triangle t(it->halfedge()->vertex()->point(),
@@ -58,13 +58,13 @@ void compute_intersections(const Polyhedron &biggest, const Polyhedron &smallest
     tree.all_intersections(t, std::back_inserter(intersections));
     std::cout << "Number of intersections: " << intersections.size() << std::endl;
 
-    Facet_const_handle f_biggest = it;
+    Facet_handle f_biggest = it;
 
     for (typename std::list<Object_and_primitive_id>::iterator it = intersections.begin();
          it != intersections.end(); ++it)
     {
       std::cout << "Id: " << std::distance(it->second, smallest.facets_begin()) << std::endl;
-      Facet_const_handle f_smallest = it->second;
+      Facet_handle f_smallest = it->second;
       Triangle t(f_smallest->halfedge()->vertex()->point(),
                  f_smallest->halfedge()->next()->vertex()->point(),
                  f_smallest->halfedge()->next()->next()->vertex()->point());
@@ -89,16 +89,16 @@ void compute_intersections(const Polyhedron &biggest, const Polyhedron &smallest
 // The container must not invalidate iterators when elements are removed
 template<typename Polyhedron> //, typename Container>
 void split_facets(Polyhedron &a, Polyhedron &b,
-                  std::list<boost::tuple<typename Polyhedron::Facet_const_handle, typename Polyhedron::Facet_const_handle, typename Polyhedron::Traits::Segment_3> > &intersections)
+                  std::list<boost::tuple<typename Polyhedron::Facet_handle, typename Polyhedron::Facet_handle, typename Polyhedron::Traits::Segment_3> > &intersections)
 {
   typedef typename Polyhedron::Traits Kernel;
-  typedef typename Polyhedron::Facet_const_handle Facet_const_handle;
-  typedef typename Polyhedron::Halfedge_const_handle Halfedge_const_handle;
+  typedef typename Polyhedron::Facet_handle Facet_handle;
+  typedef typename Polyhedron::Halfedge_handle Halfedge_handle;
   typedef typename Kernel::Triangle_3 Triangle;
   typedef typename Kernel::Segment_3 Segment;
   typedef typename Kernel::Point_3 Point_3;
 
-  typedef boost::tuple<Facet_const_handle, Facet_const_handle, Segment> IntersectionType;
+  typedef boost::tuple<Facet_handle, Facet_handle, Segment> IntersectionType;
 
   typedef std::list<IntersectionType> IntersectionList;
 
@@ -256,32 +256,45 @@ void split_facets(Polyhedron &a, Polyhedron &b,
   for (typename std::list<std::list<IntersectionType> >::iterator it = polylines.begin();
        it != polylines.end(); ++it)
   {
+    std::cout << "polyline" << std::endl;
 
     // Rotate list to ensure that the first element intersects an edge
+    // if possible
     // TODO: This is untested
     typename std::list<IntersectionType>::iterator it2 = it->begin();
+    bool polyline_intersects_edges = false;
+    Halfedge_handle start_edge;
     for (;it2 != it->end(); it2++)
     {
-      Facet_const_handle f = it2->get<1>();
+      std::cout << "  Looking" << std::endl;
+      Facet_handle f = it2->get<1>();
       assert(f->is_triangle());
-      Halfedge_const_handle h = f->halfedge();
+      Halfedge_handle h = f->halfedge();
       Segment &s = it2->get<2>();
-      if (CGAL::do_intersect(s, Segment(h->vertex()->point(), h->next()->vertex()->point())) ||
-          CGAL::do_intersect(s, Segment(h->next()->vertex()->point(), h->next()->next()->vertex()->point())) ||
-          CGAL::do_intersect(s, Segment(h->next()->next()->vertex()->point(), h->vertex()->point())))
+      if (Segment(h->vertex()->point(), h->next()->vertex()->point()).has_on(s.source()) ||
+          Segment(h->next()->vertex()->point(), h->next()->next()->vertex()->point()).has_on(s.source()) ||
+          Segment(h->next()->next()->vertex()->point(), h->vertex()->point()).has_on(s.source()))
       {
-        std::cout << "Breaking" << std::endl;
+        std::cout << "    Breaking" << std::endl;
+        polyline_intersects_edges = true;
+        start_edge = h;
         break;
       }
     }
     
-    if (it2 != it->begin())
-      it->splice(it->begin(), *it, it2, it->end());
+    if (polyline_intersects_edges)
+    {
+      
+    } 
+    else
+    {
+      if (it2 != it->begin())
+        it->splice(it->begin(), *it, it2, it->end());
 
-    
-  }
-
+      Halfedge_handle new_edge = a.split_edge(start_edge);
   
+    }
+  }
 }
 //-----------------------------------------------------------------------------
 #endif 
