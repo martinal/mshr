@@ -22,7 +22,7 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/3rdparty/CGAL-4.3/cmake/modules")
 
 
 # Use C++11
-SET(CMAKE_CXX_FLAGS "-std=c++0x")
+SET(CMAKE_CXX_FLAGS "-std=c++0x -Wall")
 
 # Boost
 find_package( Boost REQUIRED system thread)
