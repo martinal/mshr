@@ -25,8 +25,10 @@
 
 typedef CGAL::Exact_predicates_exact_constructions_kernel Kernel;
 typedef Kernel::Point_3 Point;
+typedef Kernel::Triangle_3 Triangle;
 typedef CGAL::Polyhedron_3<Kernel> Polyhedron;
 typedef typename Polyhedron::Facet_handle Facet_handle;
+typedef typename Polyhedron::Halfedge_handle Halfedge_handle;
 typedef typename Kernel::Segment_3 Segment;
 
 int main(int argc, char** argv)
@@ -58,6 +60,24 @@ int main(int argc, char** argv)
   Polyhedron &smallest = a.size_of_facets() > b.size_of_facets() ? b : a;
 
   compute_intersections(biggest, smallest, std::back_inserter(intersections));
+
+  for (std::list<boost::tuple<Facet_handle, Facet_handle, Segment> >::iterator it = intersections.begin();
+       it != intersections.end(); it++)
+  {
+    {
+      Halfedge_handle h = it->get<0>()->halfedge();
+      Triangle t(h->vertex()->point(), h->next()->vertex()->point(), h->next()->next()->vertex()->point());
+      assert(t.has_on(it->get<2>().source()));
+      assert(t.has_on(it->get<2>().target()));
+    }
+    {
+      Halfedge_handle h = it->get<1>()->halfedge();
+      Triangle t(h->vertex()->point(), h->next()->vertex()->point(), h->next()->next()->vertex()->point());
+      assert(t.has_on(it->get<2>().source()));
+      assert(t.has_on(it->get<2>().target()));
+    }
+  }
+
   split_facets(biggest, smallest, intersections);
 
   return 0;
