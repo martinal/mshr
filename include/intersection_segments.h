@@ -30,12 +30,12 @@ inline typename Polyhedron::Halfedge_handle edge_with_point_on(typename Polyhedr
   typedef typename Polyhedron::Traits::Segment_3 Segment;
   typename Polyhedron::Halfedge_handle h = f->halfedge();
 
-  assert(Segment(h->vertex()->point(), h->next()->vertex()->point()).has_on(p) ||
-         Segment(h->next()->vertex()->point(), h->next()->next()->vertex()->point()).has_on(p) ||
-         Segment(h->next()->next()->vertex()->point(), h->next()->next()->next()->vertex()->point()).has_on(p));
+  assert(Segment(h->vertex()->point(), h->opposite()->vertex()->point()).has_on(p) ||
+         Segment(h->next()->vertex()->point(), h->next()->opposite()->vertex()->point()).has_on(p) ||
+         Segment(h->next()->next()->vertex()->point(), h->next()->next()->opposite()->vertex()->point()).has_on(p));
 
-  typename Polyhedron::Halfedge_handle res = Segment(h->vertex()->point(), h->next()->vertex()->point()).has_on(p) ? h :
-    (Segment(h->next()->vertex()->point(), h->next()->next()->vertex()->point()).has_on(p) ? h->next() :
+  typename Polyhedron::Halfedge_handle res = Segment(h->vertex()->point(), h->opposite()->vertex()->point()).has_on(p) ? h :
+    (Segment(h->next()->vertex()->point(), h->next()->opposite()->vertex()->point()).has_on(p) ? h->next() :
      h->next()->next());
 
   return res;
