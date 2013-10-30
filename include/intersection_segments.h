@@ -21,6 +21,30 @@
 #include <iterator>
 #include <type_traits>
 
+//-----------------------------------------------------------------------------
+/// Some helper functions
+template<typename Polyhedron>
+inline typename Polyhedron::Halfedge_handle edge_with_point_on(typename Polyhedron::Facet_handle f, typename Polyhedron::Traits::Point_3 p)
+{
+  // This assumes that the point is actually on an edge.
+  // Add an assert?
+  typedef typename Polyhedron::Traits::Segment_3 Segment;
+  typename Polyhedron::Halfedge_handle h = f->halfedge();
+  return  Segment(h->vertex()->point(), h->next()->vertex()->point()).has_on(p) ? h :
+    (Segment(h->next()->vertex()->point(), h->next()->next()->vertex()->point()).has_on(p) ? h->next() :
+     h->next()->next());
+}
+
+template<typename Polyhedron>
+inline bool point_on_edge(typename Polyhedron::Facet_handle f, typename Polyhedron::Traits::Point_3 p)
+{
+  typedef typename Polyhedron::Traits::Segment_3 Segment;
+  typename Polyhedron::Halfedge_handle h = f->halfedge();
+  return  Segment(h->vertex()->point(), h->next()->vertex()->point()).has_on(p) ||
+    Segment(h->next()->vertex()->point(), h->next()->next()->vertex()->point()).has_on(p) ||
+    Segment(h->next()->next()->vertex()->point(), h->next()->next()->next()->vertex()->point()).has_on(p);
+}
+//-----------------------------------------------------------------------------
 /// Compute all intersecting facets of two polyhedron. 
 /// For efficiency the biggest polyhedron (in terms of facets) should be given
 /// as first argument
@@ -87,7 +111,7 @@ void compute_intersections(Polyhedron &biggest, Polyhedron &smallest, OutputIter
 // Container is assumed to be a container of boost::tuple<facet_handle,
 // facet_handle, Segment>
 // The container must not invalidate iterators when elements are removed
-template<typename Polyhedron> //, typename Container>
+template<typename Polyhedron>
 void split_facets(Polyhedron &a, Polyhedron &b,
                   std::list<boost::tuple<typename Polyhedron::Facet_handle, typename Polyhedron::Facet_handle, typename Polyhedron::Traits::Segment_3> > &intersections)
 {
@@ -263,7 +287,6 @@ void split_facets(Polyhedron &a, Polyhedron &b,
     // TODO: This is untested
     typename std::list<IntersectionType>::iterator it2 = it->begin();
     bool polyline_intersects_edges = false;
-    Halfedge_handle start_edge;
     for (;it2 != it->end(); it2++)
     {
       std::cout << "  Looking" << std::endl;
@@ -271,28 +294,70 @@ void split_facets(Polyhedron &a, Polyhedron &b,
       assert(f->is_triangle());
       Halfedge_handle h = f->halfedge();
       Segment &s = it2->get<2>();
+
+      // TODO: Avoid expensive geometric test here by comparing facet_handles
       if (Segment(h->vertex()->point(), h->next()->vertex()->point()).has_on(s.source()) ||
           Segment(h->next()->vertex()->point(), h->next()->next()->vertex()->point()).has_on(s.source()) ||
           Segment(h->next()->next()->vertex()->point(), h->vertex()->point()).has_on(s.source()))
       {
         std::cout << "    Breaking" << std::endl;
         polyline_intersects_edges = true;
-        start_edge = h;
         break;
       }
     }
     
     if (polyline_intersects_edges)
     {
-      
-    } 
-    else
-    {
+      // Bring the segment intersecting an edge to the front of the list
       if (it2 != it->begin())
         it->splice(it->begin(), *it, it2, it->end());
 
-      Halfedge_handle new_edge = a.split_edge(start_edge);
-  
+
+
+      typename std::list<IntersectionType>::iterator it2 = it->begin();
+      while (it2 != it->end())
+      {
+        
+        typename std::list<IntersectionType>::iterator start = it2;
+        // Add the new vertex
+        Halfedge_handle start_edge = edge_with_point_on<Polyhedron>(start->get<0>(), start->get<2>().source());
+        Halfedge_handle new_start_edge = a.split_edge(start_edge);
+        new_start_edge->vertex()->point() = start->get<2>().source();
+        
+        // Advance in list to find last segment on this facet
+        // TODO: This is cumbersome. Put in a separate function?
+        typename std::list<IntersectionType>::iterator end = start;
+        {
+          typename std::list<IntersectionType>::iterator ahead = start;
+          ahead++;
+          while (ahead != it->end() || ahead->get<0>() == start->get<0>())
+          {
+            end++;
+            ahead++;
+          }
+        }
+
+        // Add the last vertex
+        // TODO: Handle the case where startpoint and endpoint coinside
+        Halfedge_handle end_edge = edge_with_point_on<Polyhedron>(end->get<0>(), end->get<2>().target());
+        Halfedge_handle new_end_edge = a.split_edge(end_edge);
+        new_end_edge->vertex()->point() = end->get<2>().target();
+
+        Halfedge_handle new_edge = a.split_facet(new_start_edge, new_end_edge);
+
+        // And finally: Insert the interior points from the polyline on the new edge
+        for (typename std::list<IntersectionType>::iterator current = start; current != end; current++)
+        {
+          Halfedge_handle inserted = a.split_edge(new_edge);
+          inserted->vertex()->point() = current->get<2>().target();
+        }
+      }      
+    } 
+    else
+    {
+      // The entire intersection polyline is within one facet
+      
+
     }
   }
 }
