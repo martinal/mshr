@@ -26,31 +26,42 @@
 template<typename Polyhedron>
 inline bool point_on_edge(typename Polyhedron::Facet_handle f, typename Polyhedron::Traits::Point_3 p)
 {
-  assert(f->is_triangle());
   typedef typename Polyhedron::Traits::Segment_3 Segment;
-  typename Polyhedron::Halfedge_handle h = f->halfedge();
-  return  Segment(h->vertex()->point(), h->opposite()->vertex()->point()).has_on(p) ||
-    Segment(h->next()->vertex()->point(), h->next()->opposite()->vertex()->point()).has_on(p) ||
-    Segment(h->next()->next()->vertex()->point(), h->next()->next()->opposite()->vertex()->point()).has_on(p);
+  typename Polyhedron::Halfedge_handle start = f->halfedge();
+  typename Polyhedron::Halfedge_handle h = start;
+
+  do
+  {
+    if (Segment(h->vertex()->point(), h->opposite()->vertex()->point()).has_on(p))
+      return true;
+    
+    h = h->next();
+  } while (h != start);
+  return false;
 }
 
 template<typename Polyhedron>
 inline typename Polyhedron::Halfedge_handle edge_with_point_on(typename Polyhedron::Facet_handle f, typename Polyhedron::Traits::Point_3 p)
 {
-  // This assumes that the point is actually on an edge.
+  // Assume that the point is actually on an edge.
   typedef typename Polyhedron::Traits::Segment_3 Segment;
-  typename Polyhedron::Halfedge_handle h = f->halfedge();
 
-  assert(f->is_triangle());
-  assert(point_on_edge<Polyhedron>(f, p));
+  typedef typename Polyhedron::Traits::Segment_3 Segment;
+  typename Polyhedron::Halfedge_handle start = f->halfedge();
+  typename Polyhedron::Halfedge_handle h = start;
 
-  typename Polyhedron::Halfedge_handle res = Segment(h->vertex()->point(), h->opposite()->vertex()->point()).has_on(p) ? h :
-    (Segment(h->next()->vertex()->point(), h->next()->opposite()->vertex()->point()).has_on(p) ? h->next() :
-     h->next()->next());
+  do
+  {
+    if (Segment(h->vertex()->point(), h->opposite()->vertex()->point()).has_on(p))
+      return h;
+    
+    h = h->next();
+  } while (h != start);
 
-  assert(Segment(res->vertex()->point(), res->opposite()->vertex()->point()).has_on(p));
+  assert(false);
 
-  return res;
+  // Should never happend
+  return h;
 }
 
 template <typename Polyhedron>
@@ -132,23 +143,16 @@ void compute_intersections(Polyhedron &biggest, Polyhedron &smallest, OutputIter
   }
 }
 //-----------------------------------------------------------------------------
-// Container is assumed to be a container of boost::tuple<facet_handle,
-// facet_handle, Segment>
-// The container must not invalidate iterators when elements are removed
 template<typename Polyhedron>
-void split_facets(Polyhedron &a, Polyhedron &b,
-                  std::list<boost::tuple<typename Polyhedron::Facet_handle, typename Polyhedron::Facet_handle, typename Polyhedron::Traits::Segment_3> > &intersections)
+void sort_polylines(Polyhedron &a, Polyhedron &b,
+                  std::list<boost::tuple<typename Polyhedron::Facet_handle, typename Polyhedron::Facet_handle, typename Polyhedron::Traits::Segment_3> > &intersections,
+                  std::list<std::list<boost::tuple<typename Polyhedron::Facet_handle, typename Polyhedron::Facet_handle, typename Polyhedron::Traits::Segment_3> > > &polylines)
 {
   typedef typename Polyhedron::Traits Kernel;
   typedef typename Polyhedron::Facet_handle Facet_handle;
-  typedef typename Polyhedron::Halfedge_handle Halfedge_handle;
-  // typedef typename Polyhedron::Vertex_handle Vertex_handle;
-  // typedef typename Kernel::Triangle_3 Triangle;
+  //typedef typename Polyhedron::Halfedge_handle Halfedge_handle;
   typedef typename Kernel::Segment_3 Segment;
-  // typedef typename Kernel::Point_3 Point_3;
-
   typedef boost::tuple<Facet_handle, Facet_handle, Segment> IntersectionType;
-
   typedef std::list<IntersectionType> IntersectionList;
 
 
@@ -160,8 +164,6 @@ void split_facets(Polyhedron &a, Polyhedron &b,
 
   std::cout << "Total: " << intersections.size() << " segments" << std::endl;
   
-  std::list<std::list<IntersectionType> > polylines;
-
   while(intersections.size())
   {
     bool found = false;
@@ -290,6 +292,18 @@ void split_facets(Polyhedron &a, Polyhedron &b,
 
   std::cout << "Done sorting" << std::endl;
   std::cout << "Found " << polylines.size() << " polylines" << std::endl;
+}
+//-----------------------------------------------------------------------------
+template<typename Polyhedron>
+void split_facets(Polyhedron &a, Polyhedron &b,
+                  std::list<std::list<boost::tuple<typename Polyhedron::Facet_handle, typename Polyhedron::Facet_handle, typename Polyhedron::Traits::Segment_3> > >  &polylines)
+{
+  typedef typename Polyhedron::Traits Kernel;
+  typedef typename Polyhedron::Facet_handle Facet_handle;
+  typedef typename Polyhedron::Halfedge_handle Halfedge_handle;
+  typedef typename Kernel::Segment_3 Segment;
+  typedef boost::tuple<Facet_handle, Facet_handle, Segment> IntersectionType;
+  //typedef std::list<IntersectionType> IntersectionList;
 
   // Split facets so all intersections exists as edges
   for (typename std::list<std::list<IntersectionType> >::iterator it = polylines.begin();
@@ -332,16 +346,9 @@ void split_facets(Polyhedron &a, Polyhedron &b,
       }
       std::cout << std::endl;
 
-
+      
       assert(point_on_edge<Polyhedron>(it->begin()->get<0>(), it->begin()->get<2>().source()));
       assert(point_on_edge<Polyhedron>(it->back().get<0>(), it->back().get<2>().target()));
-
-      std::cout << "Polyline: " << std::endl;
-      for (typename std::list<IntersectionType>::iterator it2 = it->begin(); it2 != it->end(); it2++)
-      {
-        std::cout << "(" << &(*it2->get<0>()) << ")  " << it2->get<2>() << std::endl;
-      }
-      std::cout << std::endl;
 
       // Add the new vertex
       std::cout << "Add new start vertex" << std::endl;
