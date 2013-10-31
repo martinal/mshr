@@ -24,32 +24,35 @@
 //-----------------------------------------------------------------------------
 /// Some helper functions
 template<typename Polyhedron>
+inline bool point_on_edge(typename Polyhedron::Facet_handle f, typename Polyhedron::Traits::Point_3 p)
+{
+  assert(f->is_triangle());
+  typedef typename Polyhedron::Traits::Segment_3 Segment;
+  typename Polyhedron::Halfedge_handle h = f->halfedge();
+  return  Segment(h->vertex()->point(), h->opposite()->vertex()->point()).has_on(p) ||
+    Segment(h->next()->vertex()->point(), h->next()->opposite()->vertex()->point()).has_on(p) ||
+    Segment(h->next()->next()->vertex()->point(), h->next()->next()->opposite()->vertex()->point()).has_on(p);
+}
+
+template<typename Polyhedron>
 inline typename Polyhedron::Halfedge_handle edge_with_point_on(typename Polyhedron::Facet_handle f, typename Polyhedron::Traits::Point_3 p)
 {
   // This assumes that the point is actually on an edge.
   typedef typename Polyhedron::Traits::Segment_3 Segment;
   typename Polyhedron::Halfedge_handle h = f->halfedge();
 
-  assert(Segment(h->vertex()->point(), h->opposite()->vertex()->point()).has_on(p) ||
-         Segment(h->next()->vertex()->point(), h->next()->opposite()->vertex()->point()).has_on(p) ||
-         Segment(h->next()->next()->vertex()->point(), h->next()->next()->opposite()->vertex()->point()).has_on(p));
+  assert(f->is_triangle());
+  assert(point_on_edge<Polyhedron>(f, p));
 
   typename Polyhedron::Halfedge_handle res = Segment(h->vertex()->point(), h->opposite()->vertex()->point()).has_on(p) ? h :
     (Segment(h->next()->vertex()->point(), h->next()->opposite()->vertex()->point()).has_on(p) ? h->next() :
      h->next()->next());
 
+  assert(Segment(res->vertex()->point(), res->opposite()->vertex()->point()).has_on(p));
+
   return res;
 }
 
-template<typename Polyhedron>
-inline bool point_on_edge(typename Polyhedron::Facet_handle f, typename Polyhedron::Traits::Point_3 p)
-{
-  typedef typename Polyhedron::Traits::Segment_3 Segment;
-  typename Polyhedron::Halfedge_handle h = f->halfedge();
-  return  Segment(h->vertex()->point(), h->next()->vertex()->point()).has_on(p) ||
-    Segment(h->next()->vertex()->point(), h->next()->next()->vertex()->point()).has_on(p) ||
-    Segment(h->next()->next()->vertex()->point(), h->next()->next()->next()->vertex()->point()).has_on(p);
-}
 template <typename Polyhedron>
 inline void print_facet(typename Polyhedron::Facet_handle f)
 {
@@ -292,8 +295,6 @@ void split_facets(Polyhedron &a, Polyhedron &b,
   for (typename std::list<std::list<IntersectionType> >::iterator it = polylines.begin();
        it != polylines.end(); ++it)
   {
-    std::cout << "polyline" << std::endl;
-
     // Find element that intersects an edge if possible
     bool polyline_intersects_edges = false;
     typename std::list<IntersectionType>::iterator start = it->begin();
@@ -315,9 +316,22 @@ void split_facets(Polyhedron &a, Polyhedron &b,
     
     if (polyline_intersects_edges)
     {
+      std::cout << "Intersects edges" << std::endl;
+
       // Bring the segment intersecting an edge to the front of the list
       if (start != it->begin())
+      {
+        std::cout << "Splicing" << std::endl;
         it->splice(it->begin(), *it, start, it->end());
+      }
+
+      std::cout << "polyline" << std::endl;
+      for (typename std::list<IntersectionType>::iterator it2 = it->begin(); it2 != it->end(); it2++)
+      {
+        std::cout << "(" << &(*it2->get<0>()) << ")  " << it2->get<2>() << std::endl;
+      }
+      std::cout << std::endl;
+
 
       assert(point_on_edge<Polyhedron>(it->begin()->get<0>(), it->begin()->get<2>().source()));
       assert(point_on_edge<Polyhedron>(it->back().get<0>(), it->back().get<2>().target()));
@@ -334,6 +348,7 @@ void split_facets(Polyhedron &a, Polyhedron &b,
       print_facet<Polyhedron>(it->begin()->get<0>());
       Halfedge_handle new_start_edge = a.split_edge(edge_with_point_on<Polyhedron>(it->begin()->get<0>(), it->begin()->get<2>().source()));
       new_start_edge->vertex()->point() = it->begin()->get<2>().source();
+      assert(new_start_edge->facet() == it->begin()->get<0>());
 
       // Save the edge where the polyline ends
       Halfedge_handle polyline_end_vertex = new_start_edge->opposite()->prev();
@@ -390,7 +405,7 @@ void split_facets(Polyhedron &a, Polyhedron &b,
         }
 
         // save the start edge for the next facet
-        new_start_edge = new_end_edge;
+        new_start_edge = new_end_edge->opposite();
 
       }
     } 
