@@ -19,53 +19,61 @@
 #ifndef PolyhedronFactoruy_h
 #define PolyhedronFactoruy_h
 
+#include <CGAL/Modifier_base.h>
+#include <CGAL/Polyhedron_incremental_builder_3.h>
+
+#include <iostream>
+
 //-----------------------------------------------------------------------------
-/* // Convenience routine to make debugging easier. Remove before releasing. */
-/* static void add_facet(CGAL::Polyhedron_incremental_builder_3<csg::Exact_HalfedgeDS>& builder, */
-/* 		      std::vector<int>& vertices, bool print=false) */
-/* { */
-/*   static int facet_no = 0; */
+// Convenience routine to make debugging easier. Remove before releasing.
+template<typename Polyhedron>
+static void add_facet(CGAL::Polyhedron_incremental_builder_3<typename Polyhedron::HalfedgeDS>& builder,
+		      std::vector<int>& vertices, bool print=false)
+{
+  static int facet_no = 0;
 
-/*   if (print) */
-/*   { */
-/*     cout << "Begin facet " << facet_no << endl; */
-/*     if (!vertices.size()) */
-/*     { */
-/*       cout << "No vertices in facet!" << endl; */
-/*       return; */
-/*     } */
+  if (print)
+  {
+    std::cout << "Begin facet " << facet_no << std::endl;
+    if (!vertices.size())
+    {
+      std::cout << "No vertices in facet!" << std::endl;
+      return;
+    }
 
-/*     // Print vertices */
-/*     for (std::vector<int>::iterator it=vertices.begin(); it != vertices.end(); it++) */
-/*       cout << "Vertex: " << (*it) << endl; */
+    // Print vertices
+    for (std::vector<int>::iterator it=vertices.begin(); it != vertices.end(); it++)
+      std::cout << "Vertex: " << (*it) << std::endl;
 
-/*     if (builder.test_facet(vertices.begin(), vertices.end())) */
-/*       cout << "Facet ok, size: " << vertices.size() << endl; */
-/*     else */
-/*       cout << "Facet not ok" << endl; */
-/*   } */
+    if (builder.test_facet(vertices.begin(), vertices.end()))
+      std::cout << "Facet ok, size: " << vertices.size() << std::endl;
+    else
+      std::cout << "Facet not ok" << std::endl;
+  }
 
-/*   builder.begin_facet(); */
-/*   for (std::vector<int>::iterator it=vertices.begin(); it != vertices.end(); it++) */
-/*     builder.add_vertex_to_facet(*it); */
-/*   builder.end_facet(); */
+  builder.begin_facet();
+  for (std::vector<int>::iterator it=vertices.begin(); it != vertices.end(); it++)
+    builder.add_vertex_to_facet(*it);
+  builder.end_facet();
 
-/*   if (print) */
-/*     cout << "End facet" << endl; */
-/*   facet_no++; */
-/* } */
-/* //----------------------------------------------------------------------------- */
-/* static void add_vertex(CGAL::Polyhedron_incremental_builder_3<csg::Exact_HalfedgeDS>& builder, */
-/* 		       const csg::Exact_Point_3& point, bool print=false) */
-/* { */
-/*   static int vertex_no = 0; */
-/*   if (print) */
-/*     std::cout << "Adding vertex " << vertex_no << " at " << point << std::endl; */
+  if (print)
+    std::cout << "End facet" << std::endl;
+  facet_no++;
+}
+//-----------------------------------------------------------------------------
+template <typename Polyhedron>
+static void add_verte(CGAL::Polyhedron_incremental_builder_3<typename Polyhedron::HalfedgeDS>& builder,
+                      const typename Polyhedron::Traits::Point_3& point, 
+                      bool print=false)
+{
+  static int vertex_no = 0;
+  if (print)
+    std::cout << "Adding vertex " << vertex_no << " at " << point << std::endl;
 
-/*   builder.add_vertex(point); */
-/*   vertex_no++; */
-/* } */
-/* //----------------------------------------------------------------------------- */
+  builder.add_vertex(point);
+  vertex_no++;
+}
+//-----------------------------------------------------------------------------
 /* // Sphere */
 /* //----------------------------------------------------------------------------- */
 /* class Build_sphere : public CGAL::Modifier_base<csg::Exact_HalfedgeDS> */
@@ -169,144 +177,227 @@
 /*   dolfin_assert(P.is_closed()); */
 /* } */
 /* //----------------------------------------------------------------------------- */
-/* class Build_box : public CGAL::Modifier_base<csg::Exact_HalfedgeDS> */
-/* { */
-/*  public: */
-/*   Build_box(const Box* box) : _box(box) {} */
+template <typename Polyhedron>
+class Build_box : public CGAL::Modifier_base<typename Polyhedron::HalfedgeDS>
+{
+ public:
+  typedef Polyhedron P;
+  typedef typename P::Traits::Point_3 Point_3;
 
-/*   void operator()( csg::Exact_HalfedgeDS& hds ) */
-/*   { */
-/*     CGAL::Polyhedron_incremental_builder_3<csg::Exact_HalfedgeDS> builder(hds, true); */
+  Build_box(double x0, double x1, double x2, double y0, double y1, double y2) 
+    : _x0(x0), _x1(x1), _x2(x2), _y0(y0), _y1(y1), _y2(y2) {}
 
-/*     builder.begin_surface(8, 12); */
+  void operator()( typename P::HalfedgeDS& hds )
+  {
+    CGAL::Polyhedron_incremental_builder_3<typename P::HalfedgeDS> builder(hds, true);
 
-/*     const double x0 = std::min(_box->_x0, _box->_y0); */
-/*     const double y0 = std::max(_box->_x0, _box->_y0); */
+    builder.begin_surface(8, 12);
 
-/*     const double x1 = std::min(_box->_x1, _box->_y1); */
-/*     const double y1 = std::max(_box->_x1, _box->_y1); */
+    const double x0 = std::min(_x0, _y0);
+    const double y0 = std::max(_x0, _y0);
 
-/*     const double x2 = std::min(_box->_x2, _box->_y2); */
-/*     const double y2 = std::max(_box->_x2, _box->_y2); */
+    const double x1 = std::min(_x1, _y1);
+    const double y1 = std::max(_x1, _y1);
 
-/*     add_vertex(builder, csg::Exact_Point_3(y0, x1, x2)); */
-/*     add_vertex(builder, csg::Exact_Point_3(x0, x1, y2)); */
-/*     add_vertex(builder, csg::Exact_Point_3(x0, x1, x2)); */
-/*     add_vertex(builder, csg::Exact_Point_3(x0, y1, x2)); */
-/*     add_vertex(builder, csg::Exact_Point_3(y0, x1, y2)); */
-/*     add_vertex(builder, csg::Exact_Point_3(x0, y1, y2)); */
-/*     add_vertex(builder, csg::Exact_Point_3(y0, y1, x2)); */
-/*     add_vertex(builder, csg::Exact_Point_3(y0, y1, y2)); */
+    const double x2 = std::min(_x2, _y2);
+    const double y2 = std::max(_x2, _y2);
 
-/*     { */
-/*       std::vector<int> f; */
-/*       f.push_back(1); */
-/*       f.push_back(2); */
-/*       f.push_back(3); */
-/*       add_facet(builder, f); */
-/*     } */
+    builder.add_vertex(Point_3(y0, x1, x2));
+    builder.add_vertex(Point_3(x0, x1, y2));
+    builder.add_vertex(Point_3(x0, x1, x2));
+    builder.add_vertex(Point_3(x0, y1, x2));
+    builder.add_vertex(Point_3(y0, x1, y2));
+    builder.add_vertex(Point_3(x0, y1, y2));
+    builder.add_vertex(Point_3(y0, y1, x2));
+    builder.add_vertex(Point_3(y0, y1, y2));
 
-/*     { */
-/*       std::vector<int> f; */
-/*       f.push_back(1); */
-/*       f.push_back(3); */
-/*       f.push_back(5); */
-/*       add_facet(builder, f); */
-/*     } */
+    /* { */
+    /*   std::vector<int> f; */
+    /*   f.push_back(1); */
+    /*   f.push_back(2); */
+    /*   f.push_back(3); */
+    /*   add_facet(builder, f); */
+    /* } */
 
-/*     { */
-/*       std::vector<int> f; */
-/*       f.push_back(1); */
-/*       f.push_back(5); */
-/*       f.push_back(4); */
-/*       add_facet(builder, f); */
-/*     } */
+    builder.begin_facet();
+    builder.add_vertex_to_facet(1);
+    builder.add_vertex_to_facet(2);
+    builder.add_vertex_to_facet(3);
+    builder.end_facet();
 
-/*     { */
-/*       std::vector<int> f; */
-/*       f.push_back(4); */
-/*       f.push_back(5); */
-/*       f.push_back(7); */
-/*       add_facet(builder, f); */
-/*     } */
+    /* { */
+    /*   std::vector<int> f; */
+    /*   f.push_back(1); */
+    /*   f.push_back(3); */
+    /*   f.push_back(5); */
+    /*   add_facet(builder, f); */
+    /* } */
 
-/*     { */
-/*       std::vector<int> f; */
-/*       f.push_back(4); */
-/*       f.push_back(7); */
-/*       f.push_back(0); */
-/*       add_facet(builder, f); */
-/*     } */
+    builder.begin_facet();
+    builder.add_vertex_to_facet(1);
+    builder.add_vertex_to_facet(3);
+    builder.add_vertex_to_facet(5);
+    builder.end_facet();
 
-/*     { */
-/*       std::vector<int> f; */
-/*       f.push_back(0); */
-/*       f.push_back(7); */
-/*       f.push_back(6); */
-/*       add_facet(builder, f); */
-/*     } */
 
-/*     { */
-/*       std::vector<int> f; */
-/*       f.push_back(0); */
-/*       f.push_back(6); */
-/*       f.push_back(2); */
-/*       add_facet(builder, f); */
-/*     } */
+    /* { */
+    /*   std::vector<int> f; */
+    /*   f.push_back(1); */
+    /*   f.push_back(5); */
+    /*   f.push_back(4); */
+    /*   add_facet(builder, f); */
+    /* } */
 
-/*     { */
-/*       std::vector<int> f; */
-/*       f.push_back(2); */
-/*       f.push_back(6); */
-/*       f.push_back(3); */
-/*       add_facet(builder, f); */
-/*     } */
+    builder.begin_facet();
+    builder.add_vertex_to_facet(1);
+    builder.add_vertex_to_facet(5);
+    builder.add_vertex_to_facet(4);
+    builder.end_facet();
 
-/*     { */
-/*       std::vector<int> f; */
-/*       f.push_back(7); */
-/*       f.push_back(5); */
-/*       f.push_back(6); */
-/*       add_facet(builder, f); */
-/*     } */
+    /* { */
+    /*   std::vector<int> f; */
+    /*   f.push_back(4); */
+    /*   f.push_back(5); */
+    /*   f.push_back(7); */
+    /*   add_facet(builder, f); */
+    /* } */
 
-/*     { */
-/*       std::vector<int> f; */
-/*       f.push_back(6); */
-/*       f.push_back(5); */
-/*       f.push_back(3); */
-/*       add_facet(builder, f); */
-/*     } */
+    builder.begin_facet();
+    builder.add_vertex_to_facet(4);
+    builder.add_vertex_to_facet(5);
+    builder.add_vertex_to_facet(7);
+    builder.end_facet();
 
-/*     { */
-/*       std::vector<int> f; */
-/*       f.push_back(1); */
-/*       f.push_back(4); */
-/*       f.push_back(2); */
-/*       add_facet(builder, f); */
-/*     } */
+    /* { */
+    /*   std::vector<int> f; */
+    /*   f.push_back(4); */
+    /*   f.push_back(7); */
+    /*   f.push_back(0); */
+    /*   add_facet(builder, f); */
+    /* } */
 
-/*     { */
-/*       std::vector<int> f; */
-/*       f.push_back(2); */
-/*       f.push_back(4); */
-/*       f.push_back(0); */
-/*       add_facet(builder, f); */
-/*     } */
+    builder.begin_facet();
+    builder.add_vertex_to_facet(4);
+    builder.add_vertex_to_facet(7);
+    builder.add_vertex_to_facet(0);
+    builder.end_facet();
 
-/*     builder.end_surface(); */
-/*   } */
+    /* { */
+    /*   std::vector<int> f; */
+    /*   f.push_back(0); */
+    /*   f.push_back(7); */
+    /*   f.push_back(6); */
+    /*   add_facet(builder, f); */
+    /* } */
 
-/*   const Box* _box; */
-/* }; */
-/* //----------------------------------------------------------------------------- */
-/* static void make_box(const Box* b, csg::Exact_Polyhedron_3& P) */
-/* { */
-/*   Build_box builder(b); */
-/*   P.delegate(builder); */
-/*   dolfin_assert(P.is_closed()); */
-/*   dolfin_assert(P.is_valid()); */
-/* } */
+    builder.begin_facet();
+    builder.add_vertex_to_facet(0);
+    builder.add_vertex_to_facet(7);
+    builder.add_vertex_to_facet(6);
+    builder.end_facet();
+
+    /* { */
+    /*   std::vector<int> f; */
+    /*   f.push_back(0); */
+    /*   f.push_back(6); */
+    /*   f.push_back(2); */
+    /*   add_facet(builder, f); */
+    /* } */
+
+    builder.begin_facet();
+    builder.add_vertex_to_facet(0);
+    builder.add_vertex_to_facet(6);
+    builder.add_vertex_to_facet(2);
+    builder.end_facet();
+
+    /* { */
+    /*   std::vector<int> f; */
+    /*   f.push_back(2); */
+    /*   f.push_back(6); */
+    /*   f.push_back(3); */
+    /*   add_facet(builder, f); */
+    /* } */
+
+    builder.begin_facet();
+    builder.add_vertex_to_facet(2);
+    builder.add_vertex_to_facet(6);
+    builder.add_vertex_to_facet(3);
+    builder.end_facet();
+
+    /* { */
+    /*   std::vector<int> f; */
+    /*   f.push_back(7); */
+    /*   f.push_back(5); */
+    /*   f.push_back(6); */
+    /*   add_facet(builder, f); */
+    /* } */
+
+    builder.begin_facet();
+    builder.add_vertex_to_facet(7);
+    builder.add_vertex_to_facet(5);
+    builder.add_vertex_to_facet(6);
+    builder.end_facet();
+
+    /* { */
+    /*   std::vector<int> f; */
+    /*   f.push_back(6); */
+    /*   f.push_back(5); */
+    /*   f.push_back(3); */
+    /*   add_facet(builder, f); */
+    /* } */
+
+    builder.begin_facet();
+    builder.add_vertex_to_facet(6);
+    builder.add_vertex_to_facet(5);
+    builder.add_vertex_to_facet(3);
+    builder.end_facet();
+
+
+    /* { */
+    /*   std::vector<int> f; */
+    /*   f.push_back(1); */
+    /*   f.push_back(4); */
+    /*   f.push_back(2); */
+    /*   add_facet(builder, f); */
+    /* } */
+
+    builder.begin_facet();
+    builder.add_vertex_to_facet(1);
+    builder.add_vertex_to_facet(4);
+    builder.add_vertex_to_facet(2);
+    builder.end_facet();
+
+    /* { */
+    /*   std::vector<int> f; */
+    /*   f.push_back(2); */
+    /*   f.push_back(4); */
+    /*   f.push_back(0); */
+    /*   add_facet(builder, f); */
+    /* } */
+
+    builder.begin_facet();
+    builder.add_vertex_to_facet(2);
+    builder.add_vertex_to_facet(4);
+    builder.add_vertex_to_facet(0);
+    builder.end_facet();
+
+
+    builder.end_surface();
+  }
+
+  const double _x0, _x1, _x2, _y0, _y1, _y2;
+};
+//-----------------------------------------------------------------------------
+template <typename Polyhedron>
+static void make_box(double x0, double x1, double x2, 
+                     double y0, double y1, double y2, 
+                     Polyhedron& P)
+{
+  Build_box<Polyhedron> builder(x0, x1, x2, y0, y1, y2);
+  P.delegate(builder);
+  assert(P.is_closed());
+  assert(P.is_valid());
+}
 //-----------------------------------------------------------------------------
 template <typename Polyhedron>
 void make_tetrahedron(Polyhedron &P,
