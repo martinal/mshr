@@ -229,13 +229,12 @@ void sort_polylines(Polyhedron &a, Polyhedron &b,
             p->splice(p->end(), *p2);
             polylines.erase(p2);
             break;
-          } 
+          }
           else if (p2->front().get<2>().source() == p->back().get<2>().source() ||
                    p2->front().get<2>().target() == p->back().get<2>().source() ||
                    p2->front().get<2>().source() == p->back().get<2>().target() ||
                    p2->front().get<2>().target() == p->back().get<2>().target())
           {
-            p2->reverse();
             p->splice(p->end(), *p2);
             polylines.erase(p2);
             break;
