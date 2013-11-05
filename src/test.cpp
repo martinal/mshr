@@ -31,7 +31,7 @@ typedef typename Polyhedron::Facet_handle Facet_handle;
 typedef typename Polyhedron::Halfedge_handle Halfedge_handle;
 typedef typename Kernel::Segment_3 Segment;
 
-int main(int argc, char** argv)
+void two_tetrahedrons()
 {
   Polyhedron a;
 
@@ -82,6 +82,55 @@ int main(int argc, char** argv)
   }
 
   split_facets<Polyhedron>(biggest, smallest, polylines);
+}
 
+void two_boxes()
+{
+  Polyhedron a;
+  make_box(0,0,0, 4, 5, 2, a);
+
+  Polyhedron b;
+  make_box(1, 1, -1, 2, 2, 1, b);
+
+  if (a.is_pure_triangle())
+    std::cout << "a is pure triangle" << std::endl;
+
+  if (b.is_pure_triangle())
+    std::cout << "b is pure triangle" << std::endl;
+
+  Polyhedron &biggest = a.size_of_facets() > b.size_of_facets() ? a : b;
+  Polyhedron &smallest = a.size_of_facets() > b.size_of_facets() ? b : a;
+
+  std::list<std::list<boost::tuple<Facet_handle, Facet_handle, Segment> > > polylines;
+  {
+    std::list<boost::tuple<Facet_handle, Facet_handle, Segment> > intersections;
+    compute_intersections(biggest, smallest, std::back_inserter(intersections));
+
+    for (std::list<boost::tuple<Facet_handle, Facet_handle, Segment> >::iterator it = intersections.begin();
+         it != intersections.end(); it++)
+    {
+      {
+        Halfedge_handle h = it->get<0>()->halfedge();
+        Triangle t(h->vertex()->point(), h->next()->vertex()->point(), h->next()->next()->vertex()->point());
+        assert(t.has_on(it->get<2>().source()));
+        assert(t.has_on(it->get<2>().target()));
+      }
+      {
+        Halfedge_handle h = it->get<1>()->halfedge();
+        Triangle t(h->vertex()->point(), h->next()->vertex()->point(), h->next()->next()->vertex()->point());
+        assert(t.has_on(it->get<2>().source()));
+        assert(t.has_on(it->get<2>().target()));
+      }
+    }
+    sort_polylines<Polyhedron>(biggest, smallest, intersections, polylines);
+  }
+
+  split_facets<Polyhedron>(biggest, smallest, polylines);
+
+}
+
+int main(int argc, char** argv)
+{
+  two_boxes();
   return 0;
 }
