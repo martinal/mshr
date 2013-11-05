@@ -17,9 +17,10 @@
 
 #include <vector>
 #include <list>
-#include <deque>
-#include <iterator>
-#include <type_traits>
+#include <set>
+#include <fstream>
+
+#define EXPENSIVE_CHECKS true
 
 //-----------------------------------------------------------------------------
 /// Some helper functions
@@ -85,13 +86,14 @@ template<typename Polyhedron, typename OutputIterator>
 void compute_intersections(Polyhedron &biggest, Polyhedron &smallest, OutputIterator out)
 {
   typedef typename Polyhedron::Traits K;
-  // typedef typename K::Point_3 Point;
+  typedef typename K::Point_3 Point;
   // typedef typename K::Plane_3 Plane;
   // typedef typename K::Vector_3 Vector;
   typedef typename K::Segment_3 Segment;
   typedef typename K::Triangle_3 Triangle;
   typedef typename Polyhedron::Facet_iterator Facet_iterator;
   typedef typename Polyhedron::Facet_handle Facet_handle;
+  typedef typename Polyhedron::Halfedge_handle Halfedge_handle;
   typedef CGAL::AABB_face_graph_triangle_primitive<Polyhedron> Primitive;
   typedef CGAL::AABB_traits<K, Primitive> Traits;
   typedef CGAL::AABB_tree<Traits> Tree;
@@ -106,9 +108,10 @@ void compute_intersections(Polyhedron &biggest, Polyhedron &smallest, OutputIter
 
   for (Facet_iterator it = biggest.facets_begin(); it != biggest.facets_end(); ++it)
   {
-    Triangle t(it->halfedge()->vertex()->point(),
-               it->halfedge()->next()->vertex()->point(),
-               it->halfedge()->next()->next()->vertex()->point());
+    Halfedge_handle f = it->halfedge();
+    Triangle t(f->vertex()->point(),
+               f->next()->vertex()->point(),
+               f->next()->next()->vertex()->point());
 
     std::cout << "Testing triangle: " << t << std::endl;
 
@@ -124,20 +127,27 @@ void compute_intersections(Polyhedron &biggest, Polyhedron &smallest, OutputIter
     {
       std::cout << "Id: " << std::distance(it->second, smallest.facets_begin()) << std::endl;
       Facet_handle facet_smallest = it->second;
-      Triangle t(facet_smallest->halfedge()->vertex()->point(),
-                 facet_smallest->halfedge()->next()->vertex()->point(),
-                 facet_smallest->halfedge()->next()->next()->vertex()->point());
-
+      print_facet<Polyhedron>(facet_smallest);
       Segment s;
+      Triangle t;
+      Point p;
       if (CGAL::assign(s, it->first))
       {
         std::cout << "Is segment" << std::endl;
         out = boost::make_tuple(facet_biggest, facet_smallest, s);
-      } 
-      else
-      {
-        std::cout << "Not segment" << std::endl;
       }
+      else if (CGAL::assign(t, it->first))
+      {
+        std::cout << "Is Triangle" << std::endl;
+        std::cout << t << std::endl;
+      } 
+      else if (CGAL::assign(p, it->first))
+      {
+        std::cout << "Is point" << std::endl;
+        std::cout << p << std::endl;
+      }
+      else
+        std::cout << "Not known primitive" << std::endl;
     }
     std::cout << std::endl;
   }
@@ -181,18 +191,25 @@ void sort_polylines(Polyhedron &a, Polyhedron &b,
           e.get<2>().target() == p->front().get<2>().target() ||
           e.get<2>().source() == p->front().get<2>().source() ||
           e.get<2>().source() == p->front().get<2>().target())
+      {
+        std::cout << "  Found (front): " << p->front().get<2>() << std::endl;
         p->push_front(e);
+      }
       else if (e.get<2>().target() == p->back().get<2>().source() ||
                e.get<2>().target() == p->back().get<2>().target() ||
                e.get<2>().source() == p->back().get<2>().source() ||
                e.get<2>().source() == p->back().get<2>().target())
+      {
+        std::cout << "  Found (back): " << p->back().get<2>() << std::endl;
         p->push_back(e);
+      }
       else
         found = false;
 
       if (found)
       {
-        std::cout << "  Found: " << p->back().get<2>() << std::endl;
+        std::cout << "Try to connect polylines" << std::endl;
+        //bool connected = false;
 
         // Now check if we can connect some of the polylines
         for (typename std::list<IntersectionList>::iterator p2 = polylines.begin();
@@ -219,7 +236,7 @@ void sort_polylines(Polyhedron &a, Polyhedron &b,
             p->splice(p->begin(), *p2);
             polylines.erase(p2);
             break;
-          } 
+          }
           else if (p2->back().get<2>().source() == p->back().get<2>().source() ||
                    p2->back().get<2>().target() == p->back().get<2>().source() ||
                    p2->back().get<2>().source() == p->back().get<2>().target() ||
@@ -293,8 +310,8 @@ void sort_polylines(Polyhedron &a, Polyhedron &b,
   std::cout << "Found " << polylines.size() << " polylines" << std::endl;
 }
 //-----------------------------------------------------------------------------
-template<typename Polyhedron>
-void split_facets(Polyhedron &a, Polyhedron &b,
+template<typename Polyhedron, int N>
+void split_facets(Polyhedron &a,
                   std::list<std::list<boost::tuple<typename Polyhedron::Facet_handle, typename Polyhedron::Facet_handle, typename Polyhedron::Traits::Segment_3> > >  &polylines)
 {
   typedef typename Polyhedron::Traits Kernel;
@@ -324,7 +341,7 @@ void split_facets(Polyhedron &a, Polyhedron &b,
 
       for (; start != it->end(); start++)
       {
-        if (start->get<0>() != prev->get<0>())
+        if (start->get<N>() != prev->get<N>())
         {
           polyline_intersects_edges = true;
           break;
@@ -352,22 +369,22 @@ void split_facets(Polyhedron &a, Polyhedron &b,
       std::cout << "polyline" << std::endl;
       for (typename std::list<IntersectionType>::iterator it2 = it->begin(); it2 != it->end(); it2++)
       {
-        std::cout << "(" << &(*it2->get<0>()) << ")  " << it2->get<2>() << std::endl;
+        std::cout << "(" << &(*it2->get<N>()) << ")  " << it2->get<2>() << std::endl;
       }
       std::cout << std::endl;
       
-      assert(point_on_edge<Polyhedron>(it->front().get<0>(), it->front().get<2>().source()));
-      assert(point_on_edge<Polyhedron>(it->back().get<0>(), it->back().get<2>().target()));
+      assert(point_on_edge<Polyhedron>(it->front().get<N>(), it->front().get<2>().source()));
+      assert(point_on_edge<Polyhedron>(it->back().get<N>(), it->back().get<2>().target()));
 
       // Add the new vertex
       // TODO: Check that this point isn't already a vertex
       std::cout << "Add new start vertex" << std::endl;
-      print_facet<Polyhedron>(it->begin()->get<0>());
+      print_facet<Polyhedron>(it->begin()->get<N>());
 
-      Halfedge_handle start_vertex = a.split_edge(edge_with_point_on<Polyhedron>(it->begin()->get<0>(), 
+      Halfedge_handle start_vertex = a.split_edge(edge_with_point_on<Polyhedron>(it->begin()->get<N>(), 
                                                                                  it->begin()->get<2>().source()));
       start_vertex->vertex()->point() = it->begin()->get<2>().source();
-      assert(start_vertex->facet() == it->begin()->get<0>());
+      assert(start_vertex->facet() == it->begin()->get<N>());
 
       polylines_with_startvertex.push_back(std::make_pair(start_vertex, it));
     }
@@ -376,6 +393,7 @@ void split_facets(Polyhedron &a, Polyhedron &b,
   // TODO: Handle the postponed polylines (those not intersecting facets
   assert(postponed.size() == 0);
 
+  std::set<Halfedge_handle> intersection_facets;
 
   // Now split the facets so the intersection polyline is represented as edges
   // in the polyhedron
@@ -410,10 +428,12 @@ void split_facets(Polyhedron &a, Polyhedron &b,
         }
 
         const Halfedge_handle inserted_edge = a.split_facet(current_facet_start, current_segment_end);
+        intersection_facets.insert(inserted_edge);
         for (typename std::vector<Point_3>::iterator int_point_it = interior_points.begin(); int_point_it != interior_points.end(); int_point_it++)
         {
           Halfedge_handle i = a.split_edge(inserted_edge);
           i->vertex()->point() = *int_point_it;
+          intersection_facets.insert(i);
         }
 
         // Prepare for next segment
@@ -426,6 +446,48 @@ void split_facets(Polyhedron &a, Polyhedron &b,
       }
     }
   }
+
+  // Check that all intersection segments are indeed edges
+  if (EXPENSIVE_CHECKS)
+  {
+    std::cout << "Checking polyhedron" << std::endl;
+    std::cout << "Number of intersection facets: " << intersection_facets.size() << std::endl;
+    // Now split the facets so the intersection polyline is represented as edges
+    // in the polyhedron
+    for (typename std::vector<std::pair<Halfedge_handle, typename std::list<IntersectionList>::iterator> >::iterator polyline_it = polylines_with_startvertex.begin();
+         polyline_it != polylines_with_startvertex.end(); ++polyline_it)
+    {
+      std::cout << "Checking polyline" << std::endl;
+      for (typename IntersectionList::iterator segment_it = polyline_it->second->begin(); 
+           segment_it != polyline_it->second->end(); segment_it++)
+      {
+        std::cout << "Looking for " << segment_it->get<2>() << std::endl;
+        bool found = false;
+        for (typename std::set<Halfedge_handle>::iterator h_it = intersection_facets.begin();
+             h_it != intersection_facets.end(); h_it++)
+        {
+          if ( ((*h_it)->vertex()->point() == segment_it->get<2>().source() && (*h_it)->opposite()->vertex()->point() == segment_it->get<2>().target()) ||
+               ((*h_it)->vertex()->point() == segment_it->get<2>().target() && (*h_it)->opposite()->vertex()->point() == segment_it->get<2>().source()))
+          {
+            found = true;
+            break;
+          }
+        }
+
+        if (!found)
+        {
+          std::cout << "Error: Didn't find: " << segment_it->get<2>() << " as edge" << std::endl;
+        }
+
+      }
+
+    }
+  }
+
+  // We now have a polyhedron with the entire intersection polyline represented
+  // as edges.
+  std::ofstream out("out.off");
+  out << a;
 }
 //-----------------------------------------------------------------------------
 #endif 
