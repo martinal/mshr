@@ -78,6 +78,15 @@ inline void print_facet(typename Polyhedron::Facet_handle f)
   } while (current != start);
   std::cout << std::endl;
 }
+
+template <typename Polyhedron>
+typename Polyhedron::Traits::Triangle_3 get_facet_triangle(typename Polyhedron::Facet_handle f)
+{
+  typename Polyhedron::Halfedge_handle h = f->halfedge();
+  return typename Polyhedron::Traits::Triangle_3(f->vertex()->point(),
+                                                 f->next()->vertex()->point(),
+                                                 f->next()->next()->vertex()->point());
+}
 //-----------------------------------------------------------------------------
 /// Compute all intersecting facets of two polyhedron. 
 /// For efficiency the biggest polyhedron (in terms of facets) should be given
@@ -381,8 +390,9 @@ void split_facets(Polyhedron &a,
       std::cout << "Add new start vertex" << std::endl;
       print_facet<Polyhedron>(it->begin()->get<N>());
 
-      Halfedge_handle start_vertex = a.split_edge(edge_with_point_on<Polyhedron>(it->begin()->get<N>(), 
-                                                                                 it->begin()->get<2>().source()));
+      const Halfedge_handle edge_to_be_splitted = edge_with_point_on<Polyhedron>(it->begin()->get<N>(), 
+                                                                           it->begin()->get<2>().source());
+      Halfedge_handle start_vertex = a.split_edge(edge_to_be_splitted);
       start_vertex->vertex()->point() = it->begin()->get<2>().source();
       assert(start_vertex->facet() == it->begin()->get<N>());
 
@@ -390,8 +400,11 @@ void split_facets(Polyhedron &a,
     }
   }
 
-  // TODO: Handle the postponed polylines (those not intersecting facets
+  // TODO: Handle the postponed polylines (those not intersecting edges)
   assert(postponed.size() == 0);
+
+
+  std::cout << " --- Splitting facets" << std::endl;
 
   std::set<Halfedge_handle> intersection_facets;
 
@@ -400,6 +413,8 @@ void split_facets(Polyhedron &a,
   for (typename std::vector<std::pair<Halfedge_handle, typename std::list<IntersectionList>::iterator> >::iterator polyline_it = polylines_with_startvertex.begin();
        polyline_it != polylines_with_startvertex.end(); ++polyline_it)
   {
+    std::cout << "Starting polyline" << std::endl;
+
     // Save the edge where the polyline ends
     const Halfedge_handle polyline_start_vertex = polyline_it->first;
 
@@ -413,6 +428,7 @@ void split_facets(Polyhedron &a,
     {
       if (point_on_edge<Polyhedron>(current_facet_start->facet(), segment_it->get<2>().target()))
       {
+        std::cout << "Edge point" << std::endl;
         Halfedge_handle current_segment_end;
 
         if (current_facet_start->opposite()->facet() == polyline_start_vertex->facet() &&
@@ -423,8 +439,10 @@ void split_facets(Polyhedron &a,
         else
         {
           std::cout << "Getting/creating last vertex on facet" << std::endl;
-          current_segment_end = a.split_edge(edge_with_point_on<Polyhedron>(current_facet_start->facet(), segment_it->get<2>().target()));
+          const Halfedge_handle end_edge = edge_with_point_on<Polyhedron>(current_facet_start->facet(), segment_it->get<2>().target());
+          current_segment_end = a.split_edge(end_edge);
           current_segment_end->vertex()->point() = segment_it->get<2>().target();
+          std::cout << "Done" << std::endl;
         }
 
         const Halfedge_handle inserted_edge = a.split_facet(current_facet_start, current_segment_end);
@@ -442,6 +460,7 @@ void split_facets(Polyhedron &a,
       }
       else
       {
+        std::cout << "Interior point: " << segment_it->get<2>().target() << std::endl;
         interior_points.push_back(segment_it->get<2>().target());
       }
     }
@@ -478,9 +497,7 @@ void split_facets(Polyhedron &a,
         {
           std::cout << "Error: Didn't find: " << segment_it->get<2>() << " as edge" << std::endl;
         }
-
       }
-
     }
   }
 

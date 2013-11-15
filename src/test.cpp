@@ -81,7 +81,7 @@ void two_tetrahedrons()
     sort_polylines<Polyhedron>(biggest, smallest, intersections, polylines);
   }
 
-  split_facets<Polyhedron>(biggest, smallest, polylines);
+  split_facets<Polyhedron, 0>(biggest, /* smallest, */ polylines);
 }
 
 void two_boxes()
@@ -125,7 +125,8 @@ void two_boxes()
     sort_polylines<Polyhedron>(biggest, smallest, intersections, polylines);
   }
 
-  split_facets<Polyhedron>(biggest, smallest, polylines);
+  split_facets<Polyhedron, 0>(biggest,  /* smallest, */ polylines);
+  split_facets<Polyhedron, 1>(smallest, /* smallest, */ polylines);
 
 }
 
