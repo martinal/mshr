@@ -19,6 +19,7 @@
 #include <list>
 #include <set>
 #include <fstream>
+#include <functional>
 
 #define EXPENSIVE_CHECKS true
 
@@ -319,11 +320,13 @@ void sort_polylines(Polyhedron &a, Polyhedron &b,
   std::cout << "Found " << polylines.size() << " polylines" << std::endl;
 }
 //-----------------------------------------------------------------------------
-// Split facets so all intersection segments are represented as edges. Return 
+// Split facets so all intersection segments are represented as edges. Return
+// TODO: Consider using std::vector instead. Might be easier to work with
+// indices that list iterators
 template<typename Polyhedron, int N>
 void split_facets(Polyhedron &a,
                   const std::list<std::list<boost::tuple<typename Polyhedron::Facet_handle, typename Polyhedron::Facet_handle, typename Polyhedron::Traits::Segment_3> > >  &polylines,
-                  std::list<std::list<typename Polyhedron::Facet_handle> > &intersection_list)
+                  std::list<std::vector<typename Polyhedron::Halfedge_handle> > &intersection_list)
 {
   typedef typename Polyhedron::Traits Kernel;
   typedef typename Polyhedron::Facet_handle Facet_handle;
@@ -335,7 +338,7 @@ void split_facets(Polyhedron &a,
 
 
   std::vector<typename std::list<IntersectionList>::const_iterator> postponed;
-  std::vector<std::pair<Halfedge_handle, typename std::list<IntersectionList>::const_iterator> > polylines_with_startvertex;
+  std::vector<boost::tuple<Halfedge_handle, std::reference_wrapper<IntersectionList>, typename IntersectionList::const_iterator> > polylines_with_startvertex;
 
 
   // Split facets so all intersections exists as edges
@@ -344,10 +347,10 @@ void split_facets(Polyhedron &a,
   {
     // Find element that intersects an edge if possible
     bool polyline_intersects_edges = false;
-    typename std::list<IntersectionType>::const_iterator start = it->begin();
+    typename IntersectionList::const_iterator start = it->begin();
 
     {
-      typename std::list<IntersectionType>::const_iterator prev = it->end();
+      typename IntersectionList::const_iterator prev = it->end();
       prev--;
 
       for (; start != it->end(); start++)
@@ -380,20 +383,19 @@ void split_facets(Polyhedron &a,
       std::cout << std::endl;
       
       assert(point_on_edge<Polyhedron>(start->get<N>(), start->get<2>().source()));
-      //assert(point_on_edge<Polyhedron>(it->back().get<N>(), it->back().get<2>().target()));
 
       // Add the new vertex
       // TODO: Check that this point isn't already a vertex
       std::cout << "Add new start vertex" << std::endl;
       print_facet<Polyhedron>(it->begin()->get<N>());
 
-      const Halfedge_handle edge_to_be_splitted = edge_with_point_on<Polyhedron>(it->begin()->get<N>(), 
-                                                                           it->begin()->get<2>().source());
+      const Halfedge_handle edge_to_be_splitted = edge_with_point_on<Polyhedron>(start->get<N>(), 
+                                                                                 start->get<2>().source());
       Halfedge_handle start_vertex = a.split_edge(edge_to_be_splitted);
-      start_vertex->vertex()->point() = it->begin()->get<2>().source();
-      assert(start_vertex->facet() == it->begin()->get<N>());
+      start_vertex->vertex()->point() = start->get<2>().source();
+      assert(start_vertex->facet() == start->get<N>());
 
-      polylines_with_startvertex.push_back(std::make_pair(start_vertex, it));
+      polylines_with_startvertex.push_back(boost::make_tuple(start_vertex, *it, start));
     }
   }
 
@@ -407,10 +409,14 @@ void split_facets(Polyhedron &a,
 
   // Now split the facets so the intersection polyline is represented as edges
   // in the polyhedron
-  for (typename std::vector<std::pair<Halfedge_handle, typename std::list<IntersectionList>::const_iterator> >::const_iterator polyline_it = polylines_with_startvertex.begin();
+  for (typename std::vector<std::tuple<Halfedge_handle, std::reference_wrapper<IntersectionList>, typename IntersectionList::const_iterator> >::iterator polyline_it = polylines_with_startvertex.begin();
        polyline_it != polylines_with_startvertex.end(); ++polyline_it)
   {
     std::cout << "Starting polyline" << std::endl;
+
+    // Add the new vector to return list
+    intersection_list.push_back(std::vector<Halfedge_handle>(polyline_it->get<1>().size()));
+    std::vector<Halfedge_handle> &current_intersection_list = intersection_list.back();
 
     // Save the edge where the polyline ends
     const Halfedge_handle polyline_start_vertex = polyline_it->first;
@@ -418,12 +424,16 @@ void split_facets(Polyhedron &a,
     Halfedge_handle current_facet_start = polyline_it->first;
     std::vector<Point_3> interior_points;
 
+    typename IntersectionList::const_iterator start = polyline_it->second->second;
+    typename IntersectionList::const_iterator current = polyline_it->second->second;
+    int current_index = std::distance(polyline_it->get<1>().begin(), polyline_it->get<2>());
     // TODO: Handle the case where a facet has been splitted, so segment
     // doesn't end on current facet
-    for (typename IntersectionList::const_iterator segment_it = polyline_it->second->begin(); 
-         segment_it != polyline_it->second->end(); segment_it++)
+
+    // Circulate around the polyline from the start point
+    do
     {
-      if (point_on_edge<Polyhedron>(current_facet_start->facet(), segment_it->get<2>().target()))
+      if (point_on_edge<Polyhedron>(current_facet_start->facet(), current->get<2>().target()))
       {
         std::cout << "Edge point" << std::endl;
         Halfedge_handle current_segment_end;
@@ -460,7 +470,15 @@ void split_facets(Polyhedron &a,
         std::cout << "Interior point: " << segment_it->get<2>().target() << std::endl;
         interior_points.push_back(segment_it->get<2>().target());
       }
-    }
+
+      current++;
+      current_index++;
+      if (current == polyline_it->second->first)
+      {
+        current = polyline_it->second->begin();
+        current_index = 0;
+      }
+    } while (current != start);
   }
 
   // Check that all intersection segments are indeed edges
