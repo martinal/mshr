@@ -81,8 +81,11 @@ void two_tetrahedrons()
     sort_polylines<Polyhedron>(biggest, smallest, intersections, polylines);
   }
 
-  split_facets<Polyhedron, 0>(biggest,  polylines);
-  split_facets<Polyhedron, 1>(smallest, polylines);
+  std::list<std::vector<typename Polyhedron::Halfedge_handle> > intersection_list;
+
+  split_facets<Polyhedron, 0>(biggest,  polylines, intersection_list);
+  //split_facets<Polyhedron, 1>(smallest, polylines);
+
 }
 
 void two_boxes()
@@ -126,8 +129,8 @@ void two_boxes()
     sort_polylines<Polyhedron>(biggest, smallest, intersections, polylines);
   }
 
-  std::list<std::list<Facet_handle> > a_facets;
-  split_facets<Polyhedron, 0>(biggest,  /* smallest, */ polylines, a_facets);
+  std::list<std::vector<Halfedge_handle> > a_edges;
+  split_facets<Polyhedron, 0>(biggest,  /* smallest, */ polylines, a_edges);
   //split_facets<Polyhedron, 1>(smallest, /* smallest, */ polylines);
 }
 
