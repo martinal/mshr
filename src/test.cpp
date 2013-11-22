@@ -130,7 +130,8 @@ void two_boxes()
   }
 
   std::list<std::vector<Halfedge_handle> > a_edges;
-  split_facets<Polyhedron, 0>(biggest,  /* smallest, */ polylines, a_edges);
+  split_facets<Polyhedron, 0>(biggest, polylines, a_edges);
+  check_splitting<Polyhedron, 0>(biggest, polylines, a_edges);
   //split_facets<Polyhedron, 1>(smallest, /* smallest, */ polylines);
 }
 

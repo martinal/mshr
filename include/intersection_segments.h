@@ -536,8 +536,54 @@ bool check_splitting(const Polyhedron& a,
                                                             typename Polyhedron::Traits::Segment_3> > >& polylines,
                      const std::list<std::vector<typename Polyhedron::Halfedge_handle> >& intersection_list)
 {
+  typedef typename Polyhedron::Traits Kernel;
+  typedef typename Polyhedron::Facet_handle Facet_handle;
+  typedef typename Polyhedron::Halfedge_handle Halfedge_handle;
+  typedef typename Kernel::Segment_3 Segment;
+  // typedef typename Kernel::Point_3 Point_3;
+  typedef boost::tuple<Facet_handle, Facet_handle, Segment> IntersectionType;
+  typedef std::list<IntersectionType> IntersectionList;
+
+
   std::cout << "Checking polyhedron" << std::endl;
-  std::cout << "Number of intersection facets: " << polylines.size() << std::endl;
+  std::cout << "Number of intersection polylines: " << polylines.size() << std::endl;
+  if (intersection_list.size() != polylines.size())
+    std::cout << "Number of polylines doesn't match, " << intersection_list.size() << " != " << polylines.size() << std::endl;
+
+  typename std::list<IntersectionList>::const_iterator polyline_it = polylines.begin();
+  typename std::list<std::vector<Halfedge_handle> >::const_iterator edges_it = intersection_list.begin();
+  while (polyline_it != polylines.end())
+  {
+    const IntersectionList &polyline = *polyline_it;
+    const std::vector<typename Polyhedron::Halfedge_handle>& edges = *edges_it;
+
+    std::cout << "Number of segments: " << polyline.size() << std::endl;
+    if (polyline.size() != edges.size())
+    {
+      std::cout << "Number of segments doesn't match, " << polyline.size() << " != " << edges.size() << std::endl;
+    }
+
+
+    typename IntersectionList::const_iterator p_it = polyline.begin();
+    typename std::vector<typename Polyhedron::Halfedge_handle>::const_iterator e_it = edges.begin();
+    while (p_it != polyline.end())
+    {
+      std::cout << p_it->get<2>().source() << ", " << p_it->get<2>().target() << std::endl;
+      std::cout << (*e_it)->vertex()->point() << ", " << (*e_it)->opposite()->vertex()->point() << std::endl << std::endl;
+      // if (p_it->get<2>()
+
+      p_it++;
+      e_it++;
+    }
+    assert(e_it == edges.end());
+
+
+
+    polyline_it++;
+    edges_it++;
+  }
+  assert(edges_it == intersection_list.end());
+  
 
   // Dummy return
   return true;
