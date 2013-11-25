@@ -441,15 +441,20 @@ void split_facets(Polyhedron &a,
     // doesn't end on current facet
 
     typename IntersectionList::const_iterator circulator_current = circulator_begin;
-    const int index_offset = std::distance(the_list.begin(), circulator_begin);
-    int facet_segment_counter = 0;
+    const int polyline_offset = std::distance(the_list.begin(), circulator_begin);
+    int facet_offset = 0;
+    //int facet_segment_counter = 0;
 
+    std::cout << "Circulating polyline" << std::endl;
+    std::cout << "offset: " << polyline_offset << std::endl;
     // Circulate around the polyline from the start point
     do
     {
       const Segment &current_segment = circulator_current->get<2>();
+      std::cout << "Current segment: " << current_segment << std::endl;
 
       // check if this is the last segment on this facet
+      // Avoid geometric test here
       if (point_on_edge<Polyhedron>(current_facet_start->facet(), current_segment.target()))
       {
         std::cout << "Edge point" << std::endl;
@@ -490,7 +495,9 @@ void split_facets(Polyhedron &a,
         // Insert the end vertex
         const Halfedge_handle inserted_edge = a.split_facet(current_facet_start, current_facet_end);
         intersection_facets.insert(inserted_edge);
-        current_intersection_list[index_offset + facet_segment_counter] = inserted_edge;
+        std::cout << "Inserting at position " << (polyline_offset + facet_offset + interior_points.size()) << std::endl;
+        current_intersection_list[polyline_offset + facet_offset + interior_points.size()] = inserted_edge;
+        
 
         // Insert all interior points
         for (uint c = 0; c < interior_points.size(); ++c)
@@ -498,7 +505,8 @@ void split_facets(Polyhedron &a,
           Halfedge_handle i = a.split_edge(inserted_edge);
           i->vertex()->point() = interior_points[c];
           intersection_facets.insert(i);
-          current_intersection_list[index_offset+c] = i;
+          current_intersection_list[polyline_offset+facet_offset+c] = i;
+          std::cout << "Inserting interior at position " << (polyline_offset+facet_offset+c) << std::endl;
         }
 
         // Clear intermediate edge (if it has been created)
@@ -508,6 +516,7 @@ void split_facets(Polyhedron &a,
         }
 
         // Prepare for next segment
+        facet_offset += interior_points.size()+1;
         interior_points.clear();
         current_facet_start = current_facet_end->opposite()->prev();
       }
@@ -518,11 +527,9 @@ void split_facets(Polyhedron &a,
       }
 
       circulator_current++;
-      facet_segment_counter++;
       if (circulator_current == the_list.end())
       {
         circulator_current = the_list.begin();
-        //index_offset = 0;
       }
     } while (circulator_current != circulator_begin);
   }
