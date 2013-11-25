@@ -493,7 +493,7 @@ void split_facets(Polyhedron &a,
         current_intersection_list[index_offset + facet_segment_counter] = inserted_edge;
 
         // Insert all interior points
-        for (int c = 0; c < interior_points.size(); ++c)
+        for (uint c = 0; c < interior_points.size(); ++c)
         {
           Halfedge_handle i = a.split_edge(inserted_edge);
           i->vertex()->point() = interior_points[c];
