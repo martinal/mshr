@@ -1,25 +1,22 @@
 // Copyright (C) 2012 Anders Logg
 //
-// This file is part of DOLFIN.
+// This file is part of DolfinCSG.
 //
-// DOLFIN is free software: you can redistribute it and/or modify
-// it under the terms of the GNU Lesser General Public License as published by
+// DolfinCSG is free software: you can redistribute it and/or modify
+// it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
-//
-// DOLFIN is distributed in the hope that it will be useful,
+// 
+// DolfinCSG is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
-// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
-// GNU Lesser General Public License for more details.
-//
-// You should have received a copy of the GNU Lesser General Public License
-// along with DOLFIN. If not, see <http://www.gnu.org/licenses/>.
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU General Public License for more details.
+// 
+// You should have received a copy of the GNU General Public License
+// along with DolfinCSG.  If not, see <http://www.gnu.org/licenses/>.
 //
 // Modified by Benjamin Kehlet, 2012
 // Modified by Johannes Ring, 2012
-//
-// First added:  2012-04-11
-// Last changed: 2012-11-12
 
 #ifndef __DOLFINCSG_PRIMITIVES_3D_H
 #define __DOLFINCSG_PRIMITIVES_3D_H
