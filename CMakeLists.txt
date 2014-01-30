@@ -49,17 +49,35 @@ include_directories(BEFORE ${CGAL_INCLUDE_DIR})
 
 message(STATUS "Done with 3rd party libs")
 
-# include for local directory
+
+find_package(DOLFIN REQUIRED)
+include(${DOLFIN_USE_FILE})
+
+# include for local header directory
 include_directories( BEFORE include )
 
-add_executable( test src/test.cpp )
-add_dependencies( test CGAL-4.3 )
+FILE( GLOB_RECURSE SOURCES src/*.cpp )
+
+add_library(dolfincsg SHARED ${SOURCES})
+add_dependencies( dolfincsg CGAL-4.3 )
 
 # Link the executable to (static) CGAL libraries
-target_link_libraries( test ${Boost_LIBRARIES}
-                            ${GMP_LIBRARIES}
-			    ${MPFR_LIBRARIES}
-                            ${CGAL_LIB_DIR}/libCGAL.a 
-                            ${CGAL_LIB_DIR}/libCGAL_Core.a 
-                            )
+target_link_libraries( dolfincsg ${Boost_LIBRARIES}
+                                 ${GMP_LIBRARIES}
+                                 ${MPFR_LIBRARIES}
+                                 ${CGAL_LIB_DIR}/libCGAL.a
+                                 ${CGAL_LIB_DIR}/libCGAL_Core.a
+				 ${DOLFIN_LIBRARIES}
+				 ${DOLFIN_3RD_PARTY_LIBRARIES}
+                     )
 
+
+# Compile a simple program for testing
+add_executable( testprogram test/test2.cpp )
+target_link_libraries( testprogram ${Boost_LIBRARIES}
+                                   ${GMP_LIBRARIES}
+                                   ${MPFR_LIBRARIES}
+				   ${DOLFIN_LIBRARIES}
+				   ${DOLFIN_3RD_PARTY_LIBRARIES}
+				   dolfincsg
+                     )
