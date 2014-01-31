@@ -39,11 +39,11 @@
 
 
 %include "dolfin/swig/common/pre.i"
-%import(module="common") "dolfin/common/Variable.h"
-%import(module="common") "dolfin/common/Hierarchical.h"
+%import(module="dolfin") "dolfin/common/Variable.h"
+%import(module="dolfin") "dolfin/common/Hierarchical.h"
 
 %include "dolfin/swig/mesh/pre.i"
-%import(module="mesh") "dolfin/mesh/Mesh.h"
+%import(module="dolfin") "dolfin/mesh/Mesh.h"
 
 %shared_ptr(mshr::CSGGeometry)
 %shared_ptr(mshr::CSGPrimitive)
