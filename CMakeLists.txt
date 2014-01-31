@@ -1,4 +1,4 @@
-project( CGALCSG )
+project( DOLFINCSG )
 
 ########################## Initialize cmake ############################
 cmake_minimum_required(VERSION 2.6.2)
@@ -71,6 +71,8 @@ target_link_libraries( dolfincsg ${Boost_LIBRARIES}
 				 ${DOLFIN_3RD_PARTY_LIBRARIES}
                      )
 
+
+add_subdirectory(swig)
 
 # Compile a simple program for testing
 add_executable( testprogram test/test2.cpp )
