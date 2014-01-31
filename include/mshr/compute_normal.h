@@ -1,5 +1,5 @@
-#ifndef __DOLFINCSG_COMPUTE_NORMAL_
-#define __DOLFINCSG_COMPUTE_NORMAL_
+#ifndef __MSHR_COMPUTE_NORMAL_
+#define __MSHR_COMPUTE_NORMAL_
 
 template <class Facet, class Kernel>
 typename Kernel::Vector_3 compute_facet_normal(const Facet& f)

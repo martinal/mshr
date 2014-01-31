@@ -1,27 +1,27 @@
 // Copyright (C) 2012 Benjamin Kehlet
 //
-// This file is part of DolfinCSG.
+// This file is part of mshr.
 //
-// DolfinCSG is free software: you can redistribute it and/or modify
+// mshr is free software: you can redistribute it and/or modify
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
 // 
-// DolfinCSG is distributed in the hope that it will be useful,
+// mshr is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
 // 
 // You should have received a copy of the GNU General Public License
-// along with DolfinCSG.  If not, see <http://www.gnu.org/licenses/>.
+// along with mshr.  If not, see <http://www.gnu.org/licenses/>.
 
-#include <dolfincsg/GeometryToCGALConverter.h>
-#include <dolfincsg/CSGGeometry.h>
-#include <dolfincsg/CSGOperators.h>
-#include <dolfincsg/PolyhedronUtils.h>
-#include <dolfincsg/CSGPrimitives3D.h>
+#include <mshr/GeometryToCGALConverter.h>
+#include <mshr/CSGGeometry.h>
+#include <mshr/CSGOperators.h>
+#include <mshr/PolyhedronUtils.h>
+#include <mshr/CSGPrimitives3D.h>
 
-#include <dolfincsg/cgal_csg3d.h>
+#include <mshr/cgal_csg3d.h>
 
 #include <dolfin/geometry/Point.h>
 #include <dolfin/math/basic.h>
@@ -29,7 +29,7 @@
 #include <CGAL/Polyhedron_incremental_builder_3.h>
 #include <limits>
 
-namespace dolfincsg
+namespace mshr
 {
 
 //-----------------------------------------------------------------------------

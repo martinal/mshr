@@ -1,4 +1,4 @@
-project( DOLFINCSG )
+project( MSHR )
 
 ########################## Initialize cmake ############################
 cmake_minimum_required(VERSION 2.6.2)
@@ -58,17 +58,17 @@ include_directories( BEFORE include )
 
 FILE( GLOB_RECURSE SOURCES src/*.cpp )
 
-add_library(dolfincsg SHARED ${SOURCES})
-add_dependencies( dolfincsg CGAL-4.3 )
+add_library(mshr SHARED ${SOURCES})
+add_dependencies( mshr CGAL-4.3 )
 
 # Link the executable to (static) CGAL libraries
-target_link_libraries( dolfincsg ${Boost_LIBRARIES}
-                                 ${GMP_LIBRARIES}
-                                 ${MPFR_LIBRARIES}
-                                 ${CGAL_LIB_DIR}/libCGAL.a
-                                 ${CGAL_LIB_DIR}/libCGAL_Core.a
-				 ${DOLFIN_LIBRARIES}
-				 ${DOLFIN_3RD_PARTY_LIBRARIES}
+target_link_libraries( mshr ${Boost_LIBRARIES}
+                            ${GMP_LIBRARIES}
+                            ${MPFR_LIBRARIES}
+                            ${CGAL_LIB_DIR}/libCGAL.a
+                            ${CGAL_LIB_DIR}/libCGAL_Core.a
+                            ${DOLFIN_LIBRARIES}
+                            ${DOLFIN_3RD_PARTY_LIBRARIES}
                      )
 
 
@@ -81,5 +81,5 @@ target_link_libraries( testprogram ${Boost_LIBRARIES}
                                    ${MPFR_LIBRARIES}
 				   ${DOLFIN_LIBRARIES}
 				   ${DOLFIN_3RD_PARTY_LIBRARIES}
-				   dolfincsg
+				   mshr
                      )

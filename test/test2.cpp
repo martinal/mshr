@@ -20,16 +20,16 @@
 // Modified by Joachim B Haga, 2012
 
 #include <dolfin.h>
-#include <dolfincsg.h>
+#include <mshr.h>
 
 int main(int argc, char** argv)
 {
   // Define 3D geometry
-  dolfincsg::Box box(0, 0, 0, 1, 1, 1);
-  dolfincsg::Sphere sphere(dolfin::Point(0, 0, 0), 0.3);
-  dolfincsg::Cone cone(dolfin::Point(0, 0, -1), dolfin::Point(0, 0, 1), .5, .5);
+  mshr::Box box(0, 0, 0, 1, 1, 1);
+  mshr::Sphere sphere(dolfin::Point(0, 0, 0), 0.3);
+  mshr::Cone cone(dolfin::Point(0, 0, -1), dolfin::Point(0, 0, 1), .5, .5);
 
-  const boost::shared_ptr<dolfincsg::CSGGeometry> g3d = box + cone - sphere;
+  const boost::shared_ptr<mshr::CSGGeometry> g3d = box + cone - sphere;
 
   // Test printing
   dolfin::info("\nCompact output of 3D geometry:");
@@ -43,7 +43,7 @@ int main(int argc, char** argv)
   // Generate and plot mesh
   dolfin::Mesh mesh3d;
 
-  dolfincsg::CSGMeshGenerator::generate(mesh3d, *g3d, 24);
+  mshr::CSGMeshGenerator::generate(mesh3d, *g3d, 24);
   dolfin::cout << "Done generating mesh" << dolfin::endl;
   dolfin::info(mesh3d);
   dolfin::plot(mesh3d, "3D mesh");

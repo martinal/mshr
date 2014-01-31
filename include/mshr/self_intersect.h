@@ -1,7 +1,7 @@
 // compute self-intersection of a CGAL triangle polyhedron mesh
 // original code from Lutz Kettner
-#ifndef __DOLFINCSG_SELF_INTERSECT_H_
-#define __DOLFINCSG_SELF_INTERSECT_H_
+#ifndef __MSHR_SELF_INTERSECT_H_
+#define __MSHR_SELF_INTERSECT_H_
 
 #include <CGAL/box_intersection_d.h>
 #include <CGAL/intersections.h>
