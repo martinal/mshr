@@ -20,6 +20,12 @@
 
  %}
 
+%init
+%{
+  import_array();
+%}
+
+
 // Global typemaps and forward declarations
 %include "dolfin/swig/typemaps/includes.i"
 %include "dolfin/swig/forwarddeclarations.i"
@@ -35,15 +41,33 @@
 %include <boost_shared_ptr.i>
 %shared_ptr(dolfin::Variable)
 %shared_ptr(dolfin::Hierarchical<dolfin::Mesh>)
-%shared_ptr(dolfin::Mesh)
 
+%ignore dolfin::Variable::id;
+%ignore dolfin::Variable::str;
 
 %include "dolfin/swig/common/pre.i"
 %import(module="dolfin") "dolfin/common/Variable.h"
 %import(module="dolfin") "dolfin/common/Hierarchical.h"
 
-%include "dolfin/swig/mesh/pre.i"
+
+%shared_ptr(dolfin::Mesh)
+
+%ignore dolfin::Mesh::type;
+%ignore dolfin::Mesh::hash;
+
+%import "dolfin/swig/mesh/pre.i"
 %import(module="dolfin") "dolfin/mesh/Mesh.h"
+
+%ignore mshr::CSGGeometry;
+%ignore mshr::CSGGeometry::getType;
+%ignore mshr::CSGOperator;
+%ignore mshr::CSGPrimitive;
+%ignore mshr::CSGPrimitive2D;
+%ignore mshr::CSGPrimitive3D;
+%ignore mshr::CSGUnion::_g0;
+%ignore mshr::CSGUnion::_g1;
+%ignore mshr::CSGUnion::getType;
+
 
 %shared_ptr(mshr::CSGGeometry)
 %shared_ptr(mshr::CSGPrimitive)
@@ -66,9 +90,6 @@
 %shared_ptr(mshr::CSGCGALMeshGenerator2D)
 %shared_ptr(mshr::CSGCGALMeshGenerator3D)
 
-%ignore CSGOperator;
-%ignore CSGGeometry;
-%ignore CSGPrimitive;
 
 %include <mshr/CSGGeometry.h>
 %include <mshr/CSGPrimitive.h>
