@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Benjamin Kehlet
+// Copyright (C) 2012-2014 Benjamin Kehlet
 //
 // This file is part of mshr.
 //
@@ -20,7 +20,8 @@
 
 #include <mshr/CSGCGALMeshGenerator3D.h>
 #include <mshr/CSGGeometry.h>
-#include <mshr/GeometryToCGALConverter.h>
+#include <mshr/CSGCGALDomain3D.h>
+//#include <mshr/GeometryToCGALConverter.h>
 #include <mshr/PolyhedronUtils.h>
 
 #include <dolfin/log/LogStream.h>
@@ -100,6 +101,12 @@ static void build_dolfin_mesh(const csg::C3t3& c3t3, dolfin::Mesh& mesh)
   mesh_editor.close();
 }
 //-----------------------------------------------------------------------------
+static void convert_to_inexact(const CSGCGALDomain3D &exact_domain, 
+                               csg::Polyhedron_3 &inexact_domain)
+{
+  // TODO: Implement
+}
+//-----------------------------------------------------------------------------
 CSGCGALMeshGenerator3D::CSGCGALMeshGenerator3D(const CSGGeometry& geometry)
 {
   boost::shared_ptr<const CSGGeometry> tmp = dolfin::reference_to_no_delete_pointer<const CSGGeometry>(geometry);
@@ -117,13 +124,15 @@ CSGCGALMeshGenerator3D::~CSGCGALMeshGenerator3D() {}
 //-----------------------------------------------------------------------------
 void CSGCGALMeshGenerator3D::generate(dolfin::Mesh& mesh) const
 {
+
+  CSGCGALDomain3D exact_domain(*_geometry);
+  if (parameters["remove_degenerated"])
+    exact_domain.remove_degenerated();
+
+  // Create CGAL mesh domain
   csg::Polyhedron_3 p;
-
-  dolfin::cout << "Converting geometry to cgal types." << dolfin::endl;
-  GeometryToCGALConverter::convert(*_geometry, p, parameters["remove_degenerated"]);
-  dolfin_assert(p.is_pure_triangle());
-
-  csg::Mesh_domain domain(p);
+  convert_to_inexact(exact_domain, p);
+  csg::PolyhedralMeshDomain domain(p);
 
   if (parameters["detect_sharp_features"])
   {
@@ -200,10 +209,13 @@ void CSGCGALMeshGenerator3D::generate(dolfin::Mesh& mesh) const
 //-----------------------------------------------------------------------------
 void CSGCGALMeshGenerator3D::save_off(std::string filename) const
 {
-  csg::Polyhedron_3 p;
+  CSGCGALDomain3D exact_domain(*_geometry);
+  if (parameters["remove_degenerated"])
+    exact_domain.remove_degenerated();
 
-  dolfin::cout << "Converting geometry to cgal types." << dolfin::endl;
-  GeometryToCGALConverter::convert(*_geometry, p);
+  // Create CGAL mesh domain
+  csg::Polyhedron_3 p;
+  convert_to_inexact(exact_domain, p);
 
   dolfin::cout << "Writing to file " << filename << dolfin::endl;
   std::ofstream outfile(filename.c_str());

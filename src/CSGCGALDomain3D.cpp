@@ -1,4 +1,4 @@
-// Copyright (C) 2012-2014 Benjamin Kehlet
+// Copyright (C) 2013 Benjamin Kehlet
 //
 // This file is part of mshr.
 //
@@ -15,9 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with mshr.  If not, see <http://www.gnu.org/licenses/>.
 
-
-#ifndef MSHR_CGAL_CSG3_HEADERS
-#define MSHR_CGAL_CSG3_HEADERS
+#include <mshr/CSGCGALDomain3D.h>
 
 #define CGAL_NO_DEPRECATED_CODE
 #define CGAL_MESH_3_VERBOSE
@@ -58,22 +56,31 @@ namespace mshr
     typedef Exact_Polyhedron_3::HalfedgeDS Exact_HalfedgeDS;
     typedef Nef_polyhedron_3::Point_3 Exact_Point_3;
 
-    // Domain
-    typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
-    typedef CGAL::Mesh_polyhedron_3<K>::type Polyhedron_3;
-    typedef K::Point_3 Point_3;
-    typedef K::Vector_3 Vector_3;
-    typedef K::Triangle_3 Triangle_3;
-    typedef CGAL::Polyhedral_mesh_domain_with_features_3<K> PolyhedralMeshDomain;
-
-    // Triangulation
-    typedef CGAL::Mesh_triangulation_3<PolyhedralMeshDomain>::type Tr;
-    typedef CGAL::Mesh_complex_3_in_triangulation_3<
-      Tr,PolyhedralMeshDomain::Corner_index,PolyhedralMeshDomain::Curve_segment_index> C3t3;
-
-    // Criteria
-    typedef CGAL::Mesh_criteria_3<Tr> Mesh_criteria;
   }
 }
 
-#endif
+
+
+namespace mshr
+{
+
+struct CSGCGALDomain3DImpl
+{
+  csg::Nef_polyhedron_3 polyhedron;
+};
+
+
+CSGCGALDomain3D::CSGCGALDomain3D()
+: impl(new CSGCGALDomain3DImpl)
+{}
+//-----------------------------------------------------------------------------
+CSGCGALDomain3D::CSGCGALDomain3D(const mshr::CSGGeometry &csg)
+: impl(new CSGCGALDomain3DImpl)
+{
+}
+//-----------------------------------------------------------------------------
+CSGCGALDomain3D::~CSGCGALDomain3D(){}
+//-----------------------------------------------------------------------------
+void CSGCGALDomain3D::remove_degenerated() {}
+
+} // end namespace mshr
