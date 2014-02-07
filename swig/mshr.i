@@ -25,7 +25,6 @@
   import_array();
 %}
 
-
 // Global typemaps and forward declarations
 %include "dolfin/swig/typemaps/includes.i"
 %include "dolfin/swig/forwarddeclarations.i"
@@ -58,15 +57,20 @@
 %import "dolfin/swig/mesh/pre.i"
 %import(module="dolfin") "dolfin/mesh/Mesh.h"
 
-%ignore mshr::CSGGeometry;
-%ignore mshr::CSGGeometry::getType;
-%ignore mshr::CSGOperator;
-%ignore mshr::CSGPrimitive;
-%ignore mshr::CSGPrimitive2D;
-%ignore mshr::CSGPrimitive3D;
+
+%ignore mshr::CSGGeometry::getType();
+ignore mshr::CSGOperator;
+ignore mshr::CSGPrimitive;
+ignore mshr::CSGPrimitive2D;
+ignore mshr::CSGPrimitive3D;
 %ignore mshr::CSGUnion::_g0;
 %ignore mshr::CSGUnion::_g1;
 %ignore mshr::CSGUnion::getType;
+
+%ignore mshr::operator+(mshr::CSGGeometry& g0, mshr::CSGGeometry& g1);
+%ignore mshr::operator+(boost::shared_ptr<mshr::CSGGeometry>, boost::shared_ptr<mshr::CSGGeometry>);
+%ignore mshr::operator+(mshr::CSGGeometry&, boost::shared_ptr<mshr::CSGGeometry>);
+%ignore mshr::operator+(boost::shared_ptr<mshr::CSGGeometry>, mshr::CSGGeometry&);
 
 
 %shared_ptr(mshr::CSGGeometry)
@@ -100,3 +104,17 @@
 %include <mshr/CSGCGALMeshGenerator2D.h>
 %include <mshr/CSGCGALMeshGenerator3D.h>
 %include <mshr/CSGGeometries3D.h>
+
+%extend mshr::CSGGeometry {
+  %pythoncode %{
+     def __add__(self, other) :
+         return CSGUnion(self, other)
+
+     def __mul__(self, other) :
+         return CSGIntersection(self, other)
+
+     def __sub__(self, other) :
+         return CSGDifference(self, other)
+
+  %}
+ }
