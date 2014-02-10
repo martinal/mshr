@@ -75,8 +75,17 @@ target_link_libraries( mshr ${Boost_LIBRARIES}
 add_subdirectory(swig)
 
 # Compile a simple program for testing
-add_executable( testprogram test/test2.cpp )
-target_link_libraries( testprogram ${Boost_LIBRARIES}
+add_executable( testprogram2D test/test2.cpp )
+target_link_libraries( testprogram2D ${Boost_LIBRARIES}
+                                   ${GMP_LIBRARIES}
+                                   ${MPFR_LIBRARIES}
+				   ${DOLFIN_LIBRARIES}
+				   ${DOLFIN_3RD_PARTY_LIBRARIES}
+				   mshr
+                     )
+
+add_executable( testprogram3D test/test3D.cpp )
+target_link_libraries( testprogram3D ${Boost_LIBRARIES}
                                    ${GMP_LIBRARIES}
                                    ${MPFR_LIBRARIES}
 				   ${DOLFIN_LIBRARIES}

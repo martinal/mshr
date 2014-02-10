@@ -21,8 +21,6 @@
 #include <mshr/CSGCGALMeshGenerator3D.h>
 #include <mshr/CSGGeometry.h>
 #include <mshr/CSGCGALDomain3D.h>
-//#include <mshr/GeometryToCGALConverter.h>
-#include <mshr/PolyhedronUtils.h>
 
 #include <dolfin/log/LogStream.h>
 #include <dolfin/mesh/BoundaryMesh.h>
@@ -30,12 +28,56 @@
 #include <boost/scoped_ptr.hpp>
 
 
-#include <mshr/cgal_csg3d.h>
+#define CGAL_NO_DEPRECATED_CODE
+#define CGAL_MESH_3_VERBOSE
+//#define PROTECTION_DEBUG
+
+#define CGAL_MESH_3_NO_DEPRECATED_SURFACE_INDEX
+#define CGAL_MESH_3_NO_DEPRECATED_C3T3_ITERATORS
+
+#include <CGAL/basic.h>
+#include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
+
 #include <CGAL/triangulate_polyhedron.h>
+
+#include <CGAL/Mesh_triangulation_3.h>
+#include <CGAL/Mesh_complex_3_in_triangulation_3.h>
+#include <CGAL/Triangulation_vertex_base_with_info_3.h>
+#include <CGAL/Triangulation_cell_base_with_info_3.h>
+
+#include <CGAL/IO/Polyhedron_iostream.h>
+#include <CGAL/Bbox_3.h>
+
+#include <CGAL/Mesh_criteria_3.h>
+#include <CGAL/Polyhedral_mesh_domain_with_features_3.h>
+#include <CGAL/make_mesh_3.h>
+
+// Bounding sphere computation
+#include <CGAL/Min_sphere_of_spheres_d.h>
+#include <CGAL/Min_sphere_of_spheres_d_traits_3.h>
+
 
 namespace mshr
 {
 
+namespace csg
+{
+    // Domain
+    typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
+    typedef CGAL::Mesh_polyhedron_3<K>::type Polyhedron_3;
+    typedef K::Point_3 Point_3;
+    typedef K::Vector_3 Vector_3;
+    typedef K::Triangle_3 Triangle_3;
+    typedef CGAL::Polyhedral_mesh_domain_with_features_3<K> PolyhedralMeshDomain;
+
+    // Triangulation
+    typedef CGAL::Mesh_triangulation_3<PolyhedralMeshDomain>::type Tr;
+    typedef CGAL::Mesh_complex_3_in_triangulation_3<
+      Tr,PolyhedralMeshDomain::Corner_index,PolyhedralMeshDomain::Curve_segment_index> C3t3;
+
+    // Criteria
+    typedef CGAL::Mesh_criteria_3<Tr> Mesh_criteria;
+  }
 //-----------------------------------------------------------------------------
 static void build_dolfin_mesh(const csg::C3t3& c3t3, dolfin::Mesh& mesh)
 {
@@ -101,10 +143,80 @@ static void build_dolfin_mesh(const csg::C3t3& c3t3, dolfin::Mesh& mesh)
   mesh_editor.close();
 }
 //-----------------------------------------------------------------------------
+struct Copy_polyhedron_to
+  : public CGAL::Modifier_base<typename csg::Polyhedron_3::HalfedgeDS>
+{
+  Copy_polyhedron_to(const CSGCGALDomain3D& in_poly)
+    : _in_poly(in_poly) {}
+
+  void operator()(typename csg::Polyhedron_3::HalfedgeDS& out_hds)
+  {
+    typedef typename csg::Polyhedron_3::HalfedgeDS Output_HDS;
+    CGAL::Polyhedron_incremental_builder_3<Output_HDS> builder(out_hds);
+
+    builder.begin_surface(_in_poly.num_vertices(),
+                          _in_poly.num_facets(),
+                          _in_poly.num_halfedges());
+
+    {
+      std::vector<dolfin::Point> v;
+      _in_poly.get_vertices(v);
+
+      for(std::vector<dolfin::Point>::iterator it = v.begin();
+          it != v.end(); it++)
+      {
+        typename csg::Polyhedron_3::Point_3 p( (*it)[0], (*it)[1], (*it)[2] );
+        builder.add_vertex(p);
+      }
+    }
+
+    {
+      std::vector<std::array<std::size_t, 3> > f;
+      _in_poly.get_facets(f);
+
+      for (std::vector<std::array<std::size_t, 3> >::iterator it = f.begin();
+           it != f.end(); it++)
+      {
+        builder.begin_facet ();
+        builder.add_vertex_to_facet( (*it)[0] );
+        builder.add_vertex_to_facet( (*it)[1] );
+        builder.add_vertex_to_facet( (*it)[2] );
+        builder.end_facet();
+      }
+
+    }
+    builder.end_surface();
+  }
+private:
+  const CSGCGALDomain3D& _in_poly;
+}; 
+
 static void convert_to_inexact(const CSGCGALDomain3D &exact_domain, 
                                csg::Polyhedron_3 &inexact_domain)
 {
-  // TODO: Implement
+  Copy_polyhedron_to modifier(exact_domain);
+  inexact_domain.delegate(modifier);
+  CGAL_assertion(inexact_domain.is_valid());
+}
+//-----------------------------------------------------------------------------
+static double get_bounding_sphere_radius(const csg::Polyhedron_3& polyhedron)
+{
+  typedef CGAL::Min_sphere_of_spheres_d_traits_3<csg::K, csg::K::FT> MinSphereTraits;
+  typedef CGAL::Min_sphere_of_spheres_d<MinSphereTraits> Min_sphere;
+  typedef MinSphereTraits::Sphere Sphere;
+
+  std::vector<Sphere> S;
+
+  for (csg::Polyhedron_3::Vertex_const_iterator it=polyhedron.vertices_begin();
+       it != polyhedron.vertices_end(); ++it)
+  {
+    S.push_back(Sphere(it->point(), 0.0));
+  }
+
+  Min_sphere ms(S.begin(), S.end());
+  CGAL_assertion(ms.is_valid());
+
+  return CGAL::to_double(ms.radius());
 }
 //-----------------------------------------------------------------------------
 CSGCGALMeshGenerator3D::CSGCGALMeshGenerator3D(const CSGGeometry& geometry)
@@ -149,7 +261,7 @@ void CSGCGALMeshGenerator3D::generate(dolfin::Mesh& mesh) const
   if (mesh_resolution > 0)
   {
     // Try to compute reasonable parameters
-    const double r = PolyhedronUtils::getBoundingSphereRadius(p);
+    const double r = get_bounding_sphere_radius(p);
     //dolfin::cout << "Radius of bounding sphere: " << r << dolfin::endl;
     //dolfin::cout << "Mesh resolution" << mesh_resolution << dolfin::endl;
     const double cell_size = r/static_cast<double>(mesh_resolution)*2.0;

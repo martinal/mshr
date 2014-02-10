@@ -19,6 +19,7 @@
 #define __MSHR_CSGCGAL_DOMAIN3D_H
 
 #include <mshr/CSGGeometry.h>
+#include <dolfin/geometry/Point.h>
 #include <boost/scoped_ptr.hpp>
 
 namespace mshr
@@ -41,6 +42,15 @@ class CSGCGALDomain3D
 
   // Destructor
   ~CSGCGALDomain3D();
+
+  std::size_t num_vertices() const;
+  std::size_t num_facets() const;
+  std::size_t num_halfedges() const;
+
+  // Ouput in double precision
+  // TODO: Define iterators to be more memory friendly
+  void get_vertices(std::vector<dolfin::Point> &v) const;
+  void get_facets(std::vector<std::array<std::size_t, 3> > &f) const;
 
   void remove_degenerated();
 
