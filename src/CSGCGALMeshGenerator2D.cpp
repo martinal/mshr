@@ -402,8 +402,8 @@ void CSGCGALMeshGenerator2D::generate(dolfin::Mesh& mesh)
   // Create a MeshEditor and open
   dolfin::MeshEditor mesh_editor;
   mesh_editor.open(mesh, tdim, gdim);
-  mesh_editor.init_vertices(num_vertices, num_vertices);
-  mesh_editor.init_cells(num_cells, num_cells);
+  mesh_editor.init_vertices(num_vertices);
+  mesh_editor.init_cells(num_cells);
 
   // Add vertices to mesh
   std::size_t vertex_index = 0;

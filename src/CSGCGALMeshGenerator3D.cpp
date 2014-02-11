@@ -103,9 +103,8 @@ static void build_dolfin_mesh(const csg::C3t3& c3t3, dolfin::Mesh& mesh)
   // Create and initialize mesh editor
   dolfin::MeshEditor mesh_editor;
   mesh_editor.open(mesh, 3, 3);
-  mesh_editor.init_vertices(triangulation.number_of_vertices(),
-                            triangulation.number_of_vertices());
-  mesh_editor.init_cells(num_cells, num_cells);
+  mesh_editor.init_vertices(triangulation.number_of_vertices());
+  mesh_editor.init_cells(num_cells);
 
   // Add vertices to mesh
   std::size_t vertex_index = 0;
