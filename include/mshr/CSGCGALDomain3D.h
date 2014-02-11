@@ -19,7 +19,9 @@
 #define __MSHR_CSGCGAL_DOMAIN3D_H
 
 #include <mshr/CSGGeometry.h>
+
 #include <dolfin/geometry/Point.h>
+
 #include <boost/scoped_ptr.hpp>
 
 namespace mshr
@@ -52,7 +54,7 @@ class CSGCGALDomain3D
   void get_vertices(std::vector<dolfin::Point> &v) const;
   void get_facets(std::vector<std::array<std::size_t, 3> > &f) const;
 
-  void remove_degenerated();
+  void remove_degenerated_facets(double threshold);
 
  private :
   boost::scoped_ptr<CSGCGALDomain3DImpl> impl;

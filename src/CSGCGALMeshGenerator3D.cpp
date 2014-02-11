@@ -239,7 +239,8 @@ void CSGCGALMeshGenerator3D::generate(dolfin::Mesh& mesh) const
 
   CSGCGALDomain3D exact_domain(*_geometry);
   if (parameters["remove_degenerated"])
-    exact_domain.remove_degenerated();
+    // TODO: Make the threshold a parameter
+    exact_domain.remove_degenerated_facets(1e-6);
 
   // Create CGAL mesh domain
   csg::Polyhedron_3 p;
@@ -323,7 +324,8 @@ void CSGCGALMeshGenerator3D::save_off(std::string filename) const
 {
   CSGCGALDomain3D exact_domain(*_geometry);
   if (parameters["remove_degenerated"])
-    exact_domain.remove_degenerated();
+    // TODO: Make the threshold a parameter
+    exact_domain.remove_degenerated_facets(1e-6);
 
   // Create CGAL mesh domain
   csg::Polyhedron_3 p;

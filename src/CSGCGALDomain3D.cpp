@@ -18,19 +18,22 @@
 #include <mshr/CSGCGALDomain3D.h>
 #include <mshr/CSGGeometry.h>
 #include <mshr/CSGOperators.h>
-//#include <mshr/PolyhedronUtils.h>
 #include <mshr/CSGPrimitives3D.h>
+#include <mshr/STLFileReader.h>
+
+#include "meshclean.h"
 
 #include <dolfin/geometry/Point.h>
 #include <dolfin/math/basic.h>
 #include <dolfin/log/LogStream.h>
-#include <limits>
-
 
 #include <CGAL/basic.h>
 #include <CGAL/Exact_predicates_exact_constructions_kernel.h>
 #include <CGAL/Polyhedron_incremental_builder_3.h>
 #include <CGAL/Nef_polyhedron_3.h>
+
+#define BOOST_FILESYSTEM_NO_DEPRECATED
+#include <boost/filesystem.hpp>
 
 using namespace mshr;
 
@@ -47,7 +50,7 @@ typedef Nef_polyhedron_3::Point_3 Exact_Point_3;
 
 
 // Convenience routine to make debugging easier. Remove before releasing.
-static void add_facet(CGAL::Polyhedron_incremental_builder_3<Exact_HalfedgeDS>& builder,
+void add_facet(CGAL::Polyhedron_incremental_builder_3<Exact_HalfedgeDS>& builder,
 		      std::vector<int>& vertices, bool print=false)
 {
   static int facet_no = 0;
@@ -81,8 +84,8 @@ static void add_facet(CGAL::Polyhedron_incremental_builder_3<Exact_HalfedgeDS>& 
   facet_no++;
 }
 //-----------------------------------------------------------------------------
-static void add_vertex(CGAL::Polyhedron_incremental_builder_3<Exact_HalfedgeDS>& builder,
-		       const Exact_Point_3& point, bool print=false)
+void add_vertex(CGAL::Polyhedron_incremental_builder_3<Exact_HalfedgeDS>& builder,
+                const Exact_Point_3& point, bool print=false)
 {
   static int vertex_no = 0;
   if (print)
@@ -188,7 +191,7 @@ class Build_sphere : public CGAL::Modifier_base<Exact_HalfedgeDS>
   const Sphere& _sphere;
 };
 //-----------------------------------------------------------------------------
-static void make_sphere(const Sphere* s, Exact_Polyhedron_3& P)
+void make_sphere(const Sphere* s, Exact_Polyhedron_3& P)
 {
   Build_sphere builder(*s);
   P.delegate(builder);
@@ -327,7 +330,7 @@ class Build_box : public CGAL::Modifier_base<Exact_HalfedgeDS>
   const Box* _box;
 };
 //-----------------------------------------------------------------------------
-static void make_box(const Box* b, Exact_Polyhedron_3& P)
+void make_box(const Box* b, Exact_Polyhedron_3& P)
 {
   Build_box builder(b);
   P.delegate(builder);
@@ -335,7 +338,7 @@ static void make_box(const Box* b, Exact_Polyhedron_3& P)
   dolfin_assert(P.is_valid());
 }
 //-----------------------------------------------------------------------------
-static void make_tetrahedron(const Tetrahedron* b, Exact_Polyhedron_3& P)
+void make_tetrahedron(const Tetrahedron* b, Exact_Polyhedron_3& P)
 {
   P.make_tetrahedron(Exact_Point_3(b->_x0.x(), b->_x0.y(), b->_x0.z()),
                      Exact_Point_3(b->_x1.x(), b->_x1.y(), b->_x1.z()),
@@ -344,7 +347,7 @@ static void make_tetrahedron(const Tetrahedron* b, Exact_Polyhedron_3& P)
 }
 //-----------------------------------------------------------------------------
 // Return some vector orthogonal to a
-static dolfin::Point generate_orthogonal(const dolfin::Point& a)
+dolfin::Point generate_orthogonal(const dolfin::Point& a)
 {
   const dolfin::Point b(0, 1, 0);
   const dolfin::Point c(0, 0, 1);
@@ -494,7 +497,7 @@ private:
   const Cone* _cone;
 };
 //-----------------------------------------------------------------------------
-static void make_cone(const Cone* c, Exact_Polyhedron_3& P)
+ void make_cone(const Cone* c, Exact_Polyhedron_3& P)
 {
   Build_cone builder(c);
   P.delegate(builder);
@@ -502,14 +505,64 @@ static void make_cone(const Cone* c, Exact_Polyhedron_3& P)
   dolfin_assert(P.is_valid());
 }
 //-----------------------------------------------------------------------------
-static void make_surface3D(const Surface3D* s, Exact_Polyhedron_3& P)
+template <class HDS>
+class BuildFromFacetList : public CGAL::Modifier_base<HDS>
+{
+public:
+  BuildFromFacetList(const std::vector<std::array<double, 3> >& vertices,
+                     const std::vector<std::array<std::size_t, 3> >& facets)
+    : vertices(vertices), facets(facets){}
+  void operator()(HDS& hds)
+  {
+    CGAL::Polyhedron_incremental_builder_3<HDS> builder(hds, true);
+
+    builder.begin_surface(vertices.size(), facets.size());
+    
+    for (std::vector<std::array<double, 3> >::const_iterator it = vertices.begin();
+         it != vertices.end(); ++it)
+      builder.add_vertex(Exact_Point_3( (*it)[0], (*it)[1], (*it)[2]));
+
+    for (std::vector<std::array<std::size_t, 3> >::const_iterator it = facets.begin();
+         it != facets.end(); ++it)
+      builder.add_facet(it->begin(), it->end());
+
+    builder.end_surface();
+
+  }
+  const std::vector<std::array<double, 3> > vertices;
+  const std::vector<std::array<std::size_t, 3> > facets;
+};
+
+
+ void make_surface3D(const Surface3D* s, Exact_Polyhedron_3& P)
 {
   dolfin_assert(s);
-  // FIXME
-  //PolyhedronUtils::readSurfaceFile(s->_filename, P);
+
+  std::vector<std::array<double, 3> > vertices;
+  std::vector<std::array<std::size_t, 3> > facets;
+
+  boost::filesystem::path fpath(s->_filename);
+  if (fpath.extension() == ".stl")
+  {
+    STLFileReader::read(s->_filename, vertices, facets);
+  }
+  else if(fpath.extension() == ".off")
+  {
+    // TODO: Let cgal parse the file
+  }
+  else
+  {
+    dolfin::dolfin_error("PolyhedronUtils.cpp",
+                         "open file to read 3D surface",
+                         "Unknown file type");
+  }
+
+  // Create the polyhedron
+  BuildFromFacetList<Exact_HalfedgeDS> builder(vertices, facets);
+  P.delegate(builder);
 }
 //-----------------------------------------------------------------------------
-static boost::shared_ptr<Nef_polyhedron_3>
+boost::shared_ptr<Nef_polyhedron_3>
 convertSubTree(const CSGGeometry *geometry)
 {
   switch (geometry->getType())
@@ -620,10 +673,10 @@ void convert(const CSGGeometry& geometry,
     }
     case CSGGeometry::Sphere :
     {
-    const Sphere* s = dynamic_cast<const Sphere*>(&geometry);
-    dolfin_assert(s);
-    make_sphere(s, P);
-    break;
+      const Sphere* s = dynamic_cast<const Sphere*>(&geometry);
+      dolfin_assert(s);
+      make_sphere(s, P);
+      break;
     }
     case CSGGeometry::Box :
     {
@@ -743,10 +796,38 @@ void CSGCGALDomain3D::get_facets(std::vector< std::array<std::size_t, 3> > &f) c
   }
 }
 //-----------------------------------------------------------------------------
-void CSGCGALDomain3D::remove_degenerated() 
+void CSGCGALDomain3D::remove_degenerated_facets(double threshold) 
 {
+  // int degenerate_facets = number_of_degenerate_facets(impl->p, threshold);
+
+  // dolfin::cout << "Number of degenerate facets: " << degenerate_facets << dolfin::endl;
+
+  // // FIXME: Use has_degenerate_facets() when in production code
+  // if (degenerate_facets > 0)
+  // {
+  //   dolfin_assert(p.is_pure_triangle());
+
+  //   shortest_edge(p);
+
+  //   dolfin::cout << "Removing triangles with short edges" << dolfin::endl;
+  //   remove_short_edges(p, threshold);
+
+  //   dolfin::cout << "Number of degenerate facets: "
+  //        << number_of_degenerate_facets(p, threshold) << dolfin::endl;
+
+  //   dolfin::cout << "Removing small triangles" << dolfin::endl;
+  //   remove_small_triangles(p, threshold);
+
+  //   dolfin::cout << "Number of degenerate facets: "
+  //        << number_of_degenerate_facets(p, threshold) << dolfin::endl;
+
+  //   // Removal of triangles should preserve the triangular structure
+  //   // of the polyhedron
+  //   dolfin_assert(p.is_pure_triangle());
+  // }
 
 }
+//-----------------------------------------------------------------------------
 
 } // end namespace mshr
 
