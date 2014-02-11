@@ -20,6 +20,7 @@
 #include <mshr/CSGOperators.h>
 #include <mshr/CSGPrimitives3D.h>
 #include <mshr/STLFileReader.h>
+#include <mshr/VTPFileReader.h>
 
 #include "meshclean.h"
 
@@ -545,6 +546,11 @@ public:
   if (fpath.extension() == ".stl")
   {
     STLFileReader::read(s->_filename, vertices, facets);
+  }
+  else if (fpath.extension() == ".vtp")
+  {
+    // TODO: Only if vtk is installed
+    VTPFileReader::read(s->_filename, vertices, facets);
   }
   else if(fpath.extension() == ".off")
   {
