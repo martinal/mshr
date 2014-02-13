@@ -18,6 +18,8 @@
 
 #include <mshr/STLFileReader.h>
 
+#include <dolfin/geometry/Point.h>
+#include <dolfin/common/constants.h>
 #include <dolfin/log/LogStream.h>
 #include <dolfin/log/log.h>
 
@@ -44,6 +46,30 @@ namespace
 
     return val;
   }
+
+// A custom compare function class to be used in std::map
+// to avoid duplicated vertices.
+class FuzzyPointLess
+{
+public:
+  FuzzyPointLess(double arg_ = 1e-7) : epsilon(arg_) {}
+  bool operator()(const std::array<double, 3>& left,
+                  const std::array<double, 3>& right) const
+  {
+    if (std::abs(left[0]-right[0]) > epsilon)
+      return left[0] < right[0];
+
+    if (std::abs(left[1] - right[1]) > epsilon)
+      return left[1] < right[1];
+
+    if (std::abs(left[2] - right[2]) > epsilon)
+      return left[2] < right[2];
+
+    return false;
+  }
+  double epsilon;
+};
+
 }
 //-----------------------------------------------------------------------------
 namespace mshr
@@ -67,7 +93,7 @@ void STLFileReader::read(const std::string filename,
   }
 
   std::size_t num_vertices = 0;
-  std::map<std::array<double, 3>, std::size_t> vertex_map;
+  std::map<std::array<double, 3>, std::size_t, FuzzyPointLess> vertex_map;
   std::string line;
   const boost::char_separator<char> sep(" ");
 
