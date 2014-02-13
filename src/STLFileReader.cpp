@@ -50,8 +50,8 @@ namespace mshr
 {
 
 void STLFileReader::read(const std::string filename,
-                         std::vector<std::array<double, 3> > vertices,
-                         std::vector<std::array<std::size_t, 3> > facets)
+                         std::vector<std::array<double, 3> >& vertices,
+                         std::vector<std::array<std::size_t, 3> >& facets)
 {
 
   dolfin::log(dolfin:: TRACE, "Reading surface from %s ", filename.c_str());
