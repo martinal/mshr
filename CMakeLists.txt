@@ -71,24 +71,16 @@ target_link_libraries( mshr ${Boost_LIBRARIES}
                             ${DOLFIN_3RD_PARTY_LIBRARIES}
                      )
 
+message(STATUS "Dolfin libs: ${DOLFIN_3RD_PARTY_LIBRARIES}")
 
 add_subdirectory(swig)
 
 # Compile a simple program for testing
 add_executable( testprogram2D test/test2.cpp )
-target_link_libraries( testprogram2D ${Boost_LIBRARIES}
-                                   ${GMP_LIBRARIES}
-                                   ${MPFR_LIBRARIES}
-				   ${DOLFIN_LIBRARIES}
-				   ${DOLFIN_3RD_PARTY_LIBRARIES}
-				   mshr
-                     )
+target_link_libraries( testprogram2D mshr )
 
 add_executable( testprogram3D test/test3D.cpp )
-target_link_libraries( testprogram3D ${Boost_LIBRARIES}
-                                   ${GMP_LIBRARIES}
-                                   ${MPFR_LIBRARIES}
-				   ${DOLFIN_LIBRARIES}
-				   ${DOLFIN_3RD_PARTY_LIBRARIES}
-				   mshr
-                     )
+target_link_libraries( testprogram3D mshr )
+
+add_executable( test-meshfile test/test-meshfile.cpp )
+target_link_libraries( test-meshfile mshr)
