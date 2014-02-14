@@ -59,10 +59,10 @@
 
 
 %ignore mshr::CSGGeometry::getType();
-ignore mshr::CSGOperator;
-ignore mshr::CSGPrimitive;
-ignore mshr::CSGPrimitive2D;
-ignore mshr::CSGPrimitive3D;
+%ignore mshr::CSGOperator;
+%ignore mshr::CSGPrimitive;
+%ignore mshr::CSGPrimitive2D;
+%ignore mshr::CSGPrimitive3D;
 %ignore mshr::CSGUnion::_g0;
 %ignore mshr::CSGUnion::_g1;
 %ignore mshr::CSGUnion::getType;
