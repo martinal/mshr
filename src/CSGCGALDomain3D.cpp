@@ -21,6 +21,7 @@
 #include <mshr/CSGPrimitives3D.h>
 #include <mshr/STLFileReader.h>
 #include <mshr/VTPFileReader.h>
+#include <mshr/SurfaceConsistency.h>
 
 #include "meshclean.h"
 
@@ -32,9 +33,12 @@
 #include <CGAL/Exact_predicates_exact_constructions_kernel.h>
 #include <CGAL/Polyhedron_incremental_builder_3.h>
 #include <CGAL/Nef_polyhedron_3.h>
+#include <CGAL/IO/Polyhedron_iostream.h>
 
 #define BOOST_FILESYSTEM_NO_DEPRECATED
 #include <boost/filesystem.hpp>
+
+#include <fstream>
 
 using namespace mshr;
 
@@ -543,29 +547,39 @@ public:
   std::vector<std::array<std::size_t, 3> > facets;
 
   boost::filesystem::path fpath(s->_filename);
-  if (fpath.extension() == ".stl")
+  if (fpath.extension() == ".off")
   {
-    STLFileReader::read(s->_filename, vertices, facets);
-  }
-  else if (fpath.extension() == ".vtp")
-  {
-    // TODO: Only if vtk is installed
-    VTPFileReader::read(s->_filename, vertices, facets);
-  }
-  else if(fpath.extension() == ".off")
-  {
-    // TODO: Let cgal parse the file
+    std::ifstream infile(s->_filename);
+    infile >> P;
+    infile.close();
   }
   else
   {
-    dolfin::dolfin_error("PolyhedronUtils.cpp",
-                         "open file to read 3D surface",
-                         "Unknown file type");
-  }
 
-  // Create the polyhedron
-  BuildFromFacetList<Exact_HalfedgeDS> builder(vertices, facets);
-  P.delegate(builder);
+    if (fpath.extension() == ".stl")
+    {
+      STLFileReader::read(s->_filename, vertices, facets);
+    }
+    else if (fpath.extension() == ".vtp")
+    {
+      // TODO: Only if vtk is installed
+      VTPFileReader::read(s->_filename, vertices, facets);
+    }
+    else
+    {
+      dolfin::dolfin_error("PolyhedronUtils.cpp",
+                           "open file to read 3D surface",
+                           "Unknown file type");
+    }
+
+    std::cout << "Vertices: " << vertices.size() << ", facets: " << facets.size() << std::endl;
+
+    SurfaceConsistency::checkConnectivity(facets);
+
+    // Create the polyhedron
+    BuildFromFacetList<Exact_HalfedgeDS> builder(vertices, facets);
+    P.delegate(builder);
+  }
 }
 //-----------------------------------------------------------------------------
 boost::shared_ptr<Nef_polyhedron_3>

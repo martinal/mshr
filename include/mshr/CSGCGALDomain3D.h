@@ -49,7 +49,7 @@ class CSGCGALDomain3D
   std::size_t num_facets() const;
   std::size_t num_halfedges() const;
 
-  // Ouput in double precision
+  // Output in double precision
   // TODO: Define iterators to be more memory friendly
   void get_vertices(std::vector<dolfin::Point> &v) const;
   void get_facets(std::vector<std::array<std::size_t, 3> > &f) const;
