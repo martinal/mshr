@@ -52,7 +52,7 @@ namespace
 class FuzzyPointLess
 {
 public:
-  FuzzyPointLess(double arg_ = 1e-7) : epsilon(arg_) {}
+  FuzzyPointLess(double arg_ = 1e-10) : epsilon(arg_) {}
   bool operator()(const std::array<double, 3>& left,
                   const std::array<double, 3>& right) const
   {
@@ -69,6 +69,12 @@ public:
   }
   double epsilon;
 };
+
+inline void get_next_line(std::ifstream& file, std::string& line, std::size_t &lineno)
+{
+  std::getline(file, line);
+  lineno++;
+}
 
 }
 //-----------------------------------------------------------------------------
@@ -95,27 +101,28 @@ void STLFileReader::read(const std::string filename,
   std::size_t num_vertices = 0;
   std::map<std::array<double, 3>, std::size_t, FuzzyPointLess> vertex_map;
   std::string line;
+  std::size_t lineno = 0;
   const boost::char_separator<char> sep(" ");
 
   // Read the first line and trim away whitespaces
-  std::getline(file, line);
+  get_next_line(file, line, lineno);
   boost::algorithm::trim(line);
 
   if (line.substr(0, 5) != "solid")
   {
     dolfin::dolfin_error("STLFileReader.cpp",
                          "open .stl file to read 3D surface",
-                         "File does not start with \"solid\"");
+                         "File does not start with \"solid\" (line %u", lineno);
   }
 
   // TODO: Read name of solid  
-  std::getline(file, line);
+  get_next_line(file, line, lineno);
   boost::algorithm::trim(line);
 
   while (file.good())
   {
-    //bool has_normal = false;
-    //Point normal;
+    bool has_normal = false;
+    dolfin::Point normal;
 
     // Read the line "facet normal n1 n2 n3"
     {
@@ -125,58 +132,58 @@ void STLFileReader::read(const std::string filename,
       if (*tok_iter != "facet")
         dolfin::dolfin_error("STLFileReader.cpp",
                              "open .stl file to read 3D surface",
-                             "Expected keyword \"facet\"");
+                             "Expected keyword \"facet\" (line %u)", lineno);
       ++tok_iter;
 
       // Check if a normal different from zero is given
       if (tok_iter != tokens.end())
       {
-        //dolfin::cout << "Expecting normal" << dolfin::endl;
-
         if  (*tok_iter != "normal")
           dolfin::dolfin_error("STLFileReader.cpp",
                                "open .stl file to read 3D surface",
-                               "Expected keyword \"normal\"");
+                               "Expected keyword \"normal\"(line %u)", lineno);
         ++tok_iter;
 
         //dolfin::cout << "Read line: " << line << dolfin::endl;
         
-        // for (std::size_t i = 0; i < 3; ++i)
-        // {
-        //   normal[i] = strToDouble(*tok_iter);
-        //   ++tok_iter;
-        // }
+        for (std::size_t i = 0; i < 3; ++i)
+        {
+          normal[i] = strToDouble(*tok_iter);
+          ++tok_iter;
+        }
 
-
-        //dolfin::cout << "Normal: " << normal << dolfin::endl;
-        // if (normal.norm() > DOLFIN_EPS)
-        //   has_normal = true;
+        if (normal.norm() > DOLFIN_EPS)
+          has_normal = true;
         
-        // if (tok_iter != tokens.end())
-        //   dolfin::dolfin_error("PolyhedronUtils.cpp",
-        //                "open .stl file to read 3D surface",
-        //                "Expected end of line");
+        if (tok_iter != tokens.end())
+          dolfin::dolfin_error("PolyhedronUtils.cpp",
+                               "open .stl file to read 3D surface",
+                               "Expected end of line (line %u)", lineno);
       }
     }
 
+    // if (has_normal)
+    // {
+    //   dolfin::cout << "Has normal" << dolfin::endl;
+    //   dolfin::cout << normal << dolfin::endl;
+    // }
+
     // Read "outer loop" line
-    std::getline(file, line);
+    get_next_line(file, line, lineno);
     boost::algorithm::trim(line);
 
     if (line != "outer loop")
       dolfin::dolfin_error("PolyhedronUtils.cpp",
                            "open .stl file to read 3D surface",
-                           "Expected key word 'outer loop'");
+                           "Expected keyword 'outer loop' (line %u)", lineno);
 
     std::array<std::size_t, 3> v_indices;
 
     // Read lines with vertices
     for (std::size_t i = 0; i < 3; ++i)
     {
-      std::getline(file, line);
+      get_next_line(file, line, lineno);
       boost::algorithm::trim(line);
-
-      //dolfin::cout << "read line: " << line << dolfin::endl;
 
       tokenizer tokens(line, sep);
       tokenizer::iterator tok_iter = tokens.begin();
@@ -185,7 +192,7 @@ void STLFileReader::read(const std::string filename,
       {
         dolfin::dolfin_error("PolyhedronUtils.cpp",
                              "open .stl file to read 3D surface",
-                             "Expected key word vertex");
+                             "Expected keyword vertex (line %u)", lineno);
       }
       ++tok_iter;
 
@@ -209,30 +216,49 @@ void STLFileReader::read(const std::string filename,
     }
 
     // Read 'endloop' line
-    std::getline(file, line);
+    get_next_line(file, line, lineno);
     boost::algorithm::trim(line);
     if (line != "endloop")
     {
       dolfin::dolfin_error("STLFileReader.cpp",
                            "open .stl file to read 3D surface",
-                           "Expected key word endloop");
+                           "Expected keyword endloop (line %u)", lineno);
     }
 
-    std::getline(file, line);
+    get_next_line(file, line, lineno);
     boost::algorithm::trim(line);
     if (line != "endfacet")
     {
       dolfin::dolfin_error("STLFileReader.cpp",
                            "open .stl file to read 3D surface",
-                           "Expected key word endfacet");
+                           "Expected keyword endfacet (line %u)", lineno);
     }
 
     // Add facet to output
     facets.push_back(v_indices);
 
+    // Get orientation right if normal is given
+    if (has_normal) 
+    {
+      // Compute normal
+      const dolfin::Point v1(3, vertices[v_indices[0]].data());
+      const dolfin::Point v2(3, vertices[v_indices[1]].data());
+      const dolfin::Point v3(3, vertices[v_indices[2]].data());
+
+      const dolfin::Point a = v2-v1;
+      const dolfin::Point b = v3-v1;
+
+      dolfin::Point n = a.cross(b);
+      n /= n.norm();
+
+      // dolfin::cout << "Normal: " << n << dolfin::endl;
+      // if ( (n - normal).norm() > 1e-5 )
+      //   dolfin::cout << "Diff: " << (n - normal).norm() << dolfin::endl;
+    }
+
     // Get next line 
     // either start of next facet or endsolid
-    std::getline(file, line);
+    get_next_line(file, line, lineno);
     boost::algorithm::trim(line);
 
     if (line.substr(0, 5) != "facet")
@@ -247,7 +273,7 @@ void STLFileReader::read(const std::string filename,
   {
     dolfin::dolfin_error("PolyhedronUtils.cpp",
                          "open .stl file to read 3D surface",
-                         "Expected key word endsolid");
+                         "Expected keyword endsolid at line %u", lineno);
   }
   ++tok_iter;
 
