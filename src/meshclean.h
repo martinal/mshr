@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Benjamin Kehlet
+// Copyright (C) 2014 Benjamin Kehlet
 //
 // This file is part of mshr.
 //
