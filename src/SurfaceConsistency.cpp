@@ -27,7 +27,7 @@
 namespace mshr
 {
 
-void SurfaceConsistency::checkConnectivity(const std::vector<std::array<std::size_t, 3> >& facets)
+void SurfaceConsistency::checkConnectivity(const std::vector<std::vector<std::size_t> >& facets)
 {
   std::map<std::pair<std::size_t, std::size_t>, std::size_t> halfedges;
 

@@ -83,7 +83,7 @@ namespace mshr
 
 void STLFileReader::read(const std::string filename,
                          std::vector<std::array<double, 3> >& vertices,
-                         std::vector<std::array<std::size_t, 3> >& facets)
+                         std::vector<std::vector<std::size_t> >& facets)
 {
 
   dolfin::log(dolfin:: TRACE, "Reading surface from %s ", filename.c_str());
@@ -177,23 +177,27 @@ void STLFileReader::read(const std::string filename,
                            "open .stl file to read 3D surface",
                            "Expected keyword 'outer loop' (line %u)", lineno);
 
-    std::array<std::size_t, 3> v_indices;
+    std::vector<std::size_t> v_indices;
+
+    get_next_line(file, line, lineno);
+    boost::algorithm::trim(line);
+
+    tokenizer tokens(line, sep);
+    tokenizer::iterator tok_iter = tokens.begin();
+
+    if (*tok_iter != "vertex")
+    {
+      dolfin::dolfin_error("PolyhedronUtils.cpp",
+                           "open .stl file to read 3D surface",
+                           "Expected keyword vertex (line %u)", lineno);
+    }
+
+    int counter = 0;
 
     // Read lines with vertices
-    for (std::size_t i = 0; i < 3; ++i)
+    do
     {
-      get_next_line(file, line, lineno);
-      boost::algorithm::trim(line);
-
-      tokenizer tokens(line, sep);
-      tokenizer::iterator tok_iter = tokens.begin();
-
-      if (*tok_iter != "vertex")
-      {
-        dolfin::dolfin_error("PolyhedronUtils.cpp",
-                             "open .stl file to read 3D surface",
-                             "Expected keyword vertex (line %u)", lineno);
-      }
+      // Advance to next
       ++tok_iter;
 
       const double x = strToDouble(*tok_iter); ++tok_iter;
@@ -205,18 +209,28 @@ void STLFileReader::read(const std::string filename,
       // TODO: Use std::map::find()
       // (to avoid two queries)
       if (vertex_map.count(vertex) > 0)
-        v_indices[i] = vertex_map[vertex];
+        v_indices.push_back(vertex_map[vertex]);
       else
       {
         vertex_map[vertex] = num_vertices;
-        v_indices[i] = num_vertices;
+        v_indices.push_back(num_vertices);
         vertices.push_back(vertex);
         num_vertices++;
       }
-    }
+
+      // Get next line
+      get_next_line(file, line, lineno);
+      boost::algorithm::trim(line);
+
+      tokens = tokenizer(line, sep);
+      tok_iter = tokens.begin();
+
+      counter++;
+    } while (*tok_iter == "vertex");
+
+    std::cout << "Number of vertices: " << counter << std::endl;
 
     // Read 'endloop' line
-    get_next_line(file, line, lineno);
     boost::algorithm::trim(line);
     if (line != "endloop")
     {

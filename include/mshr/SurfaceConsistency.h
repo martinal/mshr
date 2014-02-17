@@ -29,7 +29,7 @@ namespace mshr
 class SurfaceConsistency
 {
  public:
-  static void checkConnectivity(const std::vector<std::array<std::size_t, 3> >& facets);
+  static void checkConnectivity(const std::vector<std::vector<std::size_t> >& facets);
 };
 
 }

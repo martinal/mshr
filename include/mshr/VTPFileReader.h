@@ -31,7 +31,7 @@ class VTPFileReader
 public:
   static void read(const std::string filename, 
                    std::vector<std::array<double, 3> > vertices,
-                   std::vector<std::array<std::size_t, 3> > facets);
+                   std::vector<std::vector<std::size_t> > facets);
 };
 
 }

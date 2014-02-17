@@ -24,6 +24,7 @@
 #include <mshr/SurfaceConsistency.h>
 
 #include "meshclean.h"
+#include "triangulate_polyhedron.h"
 
 #include <dolfin/geometry/Point.h>
 #include <dolfin/math/basic.h>
@@ -34,6 +35,7 @@
 #include <CGAL/Polyhedron_incremental_builder_3.h>
 #include <CGAL/Nef_polyhedron_3.h>
 #include <CGAL/IO/Polyhedron_iostream.h>
+
 
 #define BOOST_FILESYSTEM_NO_DEPRECATED
 #include <boost/filesystem.hpp>
@@ -515,7 +517,7 @@ class BuildFromFacetList : public CGAL::Modifier_base<HDS>
 {
 public:
   BuildFromFacetList(const std::vector<std::array<double, 3> >& vertices,
-                     const std::vector<std::array<std::size_t, 3> >& facets)
+                     const std::vector<std::vector<std::size_t> >& facets)
     : vertices(vertices), facets(facets){}
   void operator()(HDS& hds)
   {
@@ -527,7 +529,7 @@ public:
          it != vertices.end(); ++it)
       builder.add_vertex(Exact_Point_3( (*it)[0], (*it)[1], (*it)[2]));
 
-    for (std::vector<std::array<std::size_t, 3> >::const_iterator it = facets.begin();
+    for (std::vector<std::vector<std::size_t> >::const_iterator it = facets.begin();
          it != facets.end(); ++it)
       builder.add_facet(it->begin(), it->end());
 
@@ -535,7 +537,7 @@ public:
 
   }
   const std::vector<std::array<double, 3> > vertices;
-  const std::vector<std::array<std::size_t, 3> > facets;
+  const std::vector<std::vector<std::size_t> > facets;
 };
 
 
@@ -544,7 +546,7 @@ public:
   dolfin_assert(s);
 
   std::vector<std::array<double, 3> > vertices;
-  std::vector<std::array<std::size_t, 3> > facets;
+  std::vector<std::vector<std::size_t> > facets;
 
   boost::filesystem::path fpath(s->_filename);
   if (fpath.extension() == ".off")
@@ -572,14 +574,18 @@ public:
                            "Unknown file type");
     }
 
-    std::cout << "Vertices: " << vertices.size() << ", facets: " << facets.size() << std::endl;
-
     SurfaceConsistency::checkConnectivity(facets);
 
     // Create the polyhedron
     BuildFromFacetList<Exact_HalfedgeDS> builder(vertices, facets);
     P.delegate(builder);
   }
+
+  // Triangulate polyhedron
+  triangulate_polyhedron(P);
+  dolfin_assert (P.is_pure_triangle());
+
+  std::cout << "Vertices: " << P.size_of_vertices() << ", facets: " << P.size_of_facets() << std::endl;
 }
 //-----------------------------------------------------------------------------
 boost::shared_ptr<Nef_polyhedron_3>
