@@ -20,7 +20,6 @@ endif()
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/3rdparty/CGAL-4.3/cmake/modules")
 
 
-
 # Use C++11
 SET(CMAKE_CXX_FLAGS "-std=c++0x -Wall")
 
@@ -47,8 +46,6 @@ find_package(MPFR REQUIRED)
 add_subdirectory(3rdparty)
 include_directories(BEFORE ${CGAL_INCLUDE_DIR})
 
-message(STATUS "Done with 3rd party libs")
-
 
 find_package(DOLFIN REQUIRED)
 include(${DOLFIN_USE_FILE})
@@ -71,9 +68,14 @@ target_link_libraries( mshr ${Boost_LIBRARIES}
                             ${DOLFIN_3RD_PARTY_LIBRARIES}
                      )
 
-message(STATUS "Dolfin libs: ${DOLFIN_3RD_PARTY_LIBRARIES}")
 
+# Build the python bindings
 add_subdirectory(swig)
+
+# Build and run the tests
+SET(TEST_DATA_DIR "" CACHE PATH "Path to test data.")
+
+add_subdirectory(test)
 
 # Compile a simple program for testing
 add_executable( testprogram2D test/test2.cpp )
