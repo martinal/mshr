@@ -20,27 +20,21 @@
 
 
 # test with a number of input files
-MESSAGE(STATUS "Preparing tests")
-    
-STRING(COMPARE NOTEQUAL "${TEST_DATA_DIR}" "" RUN_TESTDATA_TESTS)
+message(STATUS "Preparing tests")
 
-IF (RUN_TESTDATA_TESTS)
-  MESSAGE(STATUS "Enabling test with data in ${TEST_DATA_DIR}")
+string(COMPARE NOTEQUAL "${TEST_DATA_DIR}" "" RUN_TESTDATA_TESTS)
 
-  FILE(GLOB TEST_DATA_FILES "${TEST_DATA_DIR}/*")
-  MESSAGE(STATUS "Data files: ${TEST_DATA_FILES}")
+if (RUN_TESTDATA_TESTS)
+  message(STATUS "Enabling test with data in ${TEST_DATA_DIR}")
 
-  FOREACH(CURRENT_DATA_FILE IN LISTS TEST_DATA_FILES)
-    # FIXME
-    #ADD_TEST("TestFileInput_"${CURRENT_DATA_FILE} 
-  ENDFOREACH(CURRENT_DATA_FILE)
+  file(GLOB TEST_DATA_FILES "${TEST_DATA_DIR}/*")
+  message(STATUS "Data files: ${TEST_DATA_FILES}")
 
+  foreach(CURRENT_DATA_FILE IN LISTS TEST_DATA_FILES)
+    message(STATUS "Adding test: ${CURRENT_DATA_FILE}")
+    add_test("TestFileInput_${CURRENT_DATA_FILE}" "mshr-surfacefile" ${CURRENT_DATA_FILE})
+  endforeach(CURRENT_DATA_FILE)
 
-ELSE()
-  MESSAGE(STATUS "No path to test given. Skipping tests.")
-ENDIF()
-
-
-
-
-#add_test ( Tutorial 25)
+else()
+  message(STATUS "No path to test given. Skipping tests.")
+endif()

@@ -53,7 +53,7 @@ include(${DOLFIN_USE_FILE})
 # include for local header directory
 include_directories( BEFORE include )
 
-FILE( GLOB_RECURSE SOURCES src/*.cpp )
+file( GLOB_RECURSE SOURCES src/*.cpp )
 
 add_library(mshr SHARED ${SOURCES})
 add_dependencies( mshr CGAL-4.3 )
@@ -73,16 +73,32 @@ target_link_libraries( mshr ${Boost_LIBRARIES}
 add_subdirectory(swig)
 
 # Build and run the tests
-SET(TEST_DATA_DIR "" CACHE PATH "Path to test data.")
+set(TEST_DATA_DIR "" CACHE PATH "Path to test data.")
 
-add_subdirectory(test)
+add_executable( mshr-surfacefile app/mshr-surfacefile.cpp )
+target_link_libraries( mshr-surfacefile mshr)
 
-# Compile a simple program for testing
-add_executable( testprogram2D test/test2.cpp )
-target_link_libraries( testprogram2D mshr )
+enable_testing()
 
-add_executable( testprogram3D test/test3D.cpp )
-target_link_libraries( testprogram3D mshr )
+# test with a number of input files
+message(STATUS "Preparing tests")
 
-add_executable( test-meshfile test/test-meshfile.cpp )
-target_link_libraries( test-meshfile mshr)
+string(COMPARE NOTEQUAL "${TEST_DATA_DIR}" "" RUN_TESTDATA_TESTS)
+
+if (RUN_TESTDATA_TESTS)
+  message(STATUS "Enabling test with data in ${TEST_DATA_DIR}")
+
+  file(GLOB TEST_DATA_FILES "${TEST_DATA_DIR}/*")
+  message(STATUS "Data files: ${TEST_DATA_FILES}")
+
+  foreach(CURRENT_DATA_FILE IN LISTS TEST_DATA_FILES)
+    message(STATUS "Adding test: ${CURRENT_DATA_FILE}")
+    add_test("TestFileInput_${CURRENT_DATA_FILE}" "mshr-surfacefile" ${CURRENT_DATA_FILE})
+  endforeach(CURRENT_DATA_FILE)
+
+else()
+  message(STATUS "No path to test given. Skipping tests.")
+endif()
+
+
+#add_subdirectory(test)
