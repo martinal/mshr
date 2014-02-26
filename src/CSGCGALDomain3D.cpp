@@ -28,6 +28,7 @@
 
 #include <dolfin/geometry/Point.h>
 #include <dolfin/math/basic.h>
+#include <dolfin/log/log.h>
 #include <dolfin/log/LogStream.h>
 
 #include <CGAL/basic.h>
@@ -584,8 +585,18 @@ public:
   // Triangulate polyhedron
   triangulate_polyhedron(P);
   dolfin_assert (P.is_pure_triangle());
+  dolfin_assert (P.is_valid());
 
-  std::cout << "Vertices: " << P.size_of_vertices() << ", facets: " << P.size_of_facets() << std::endl;
+  if (!P.is_closed())
+  {
+    dolfin::dolfin_error("CSGCGALDomain3D.cpp",
+                         "Read surface from file",
+                         "Surface is not closed");
+  }
+
+  std::cout << "Vertices: " << P.size_of_vertices()
+            << ", facets: " << P.size_of_facets()
+            << ", halfedges: " << P.size_of_halfedges() << std::endl;
 }
 //-----------------------------------------------------------------------------
 boost::shared_ptr<Nef_polyhedron_3>
