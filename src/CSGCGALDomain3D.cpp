@@ -25,6 +25,7 @@
 
 #include "meshclean.h"
 #include "triangulate_polyhedron.h"
+#include "self_intersect.h"
 
 #include <dolfin/geometry/Point.h>
 #include <dolfin/math/basic.h>
@@ -41,6 +42,8 @@
 #define BOOST_FILESYSTEM_NO_DEPRECATED
 #include <boost/filesystem.hpp>
 
+#include <vector>
+#include <iterator>
 #include <fstream>
 
 using namespace mshr;
@@ -584,6 +587,7 @@ public:
 
   // Triangulate polyhedron
   triangulate_polyhedron(P);
+
   dolfin_assert (P.is_pure_triangle());
   dolfin_assert (P.is_valid());
 
@@ -592,6 +596,22 @@ public:
     dolfin::dolfin_error("CSGCGALDomain3D.cpp",
                          "Read surface from file",
                          "Surface is not closed");
+  }
+
+  // Check for self intersections
+  // TODO: Disable with a parameter?
+  {
+    std::vector<Exact_Triangle_3> intersecting;
+    std::back_insert_iterator<std::vector<Exact_Triangle_3> > insert_iterator(intersecting);
+    self_intersect<Exact_Polyhedron_3, Exact_Kernel, std::back_insert_iterator<std::vector<Exact_Triangle_3> > >
+      (P, insert_iterator);
+
+    if (intersecting.size() > 0)
+    {
+      dolfin::dolfin_error("CSGCGALDomain3D.cpp",
+                           "Read surface from file",
+                           "Surface is self intersecting");
+    }
   }
 
   std::cout << "Vertices: " << P.size_of_vertices()
@@ -753,6 +773,11 @@ void convert(const CSGGeometry& geometry,
     cgal_geometry->convert_to_polyhedron(P);
   }
 
+  if (P.size_of_facets() == 0)
+    dolfin::dolfin_error("CSGCGALDomain3D.cpp",
+                         "Convert geometry to polyhedron",
+                         "Geometry contains no facet.");
+
   dolfin::cout << "Number of vertices: " << P.size_of_vertices() << dolfin::endl;
   dolfin::cout << "Number of facets:   " << P.size_of_facets() << dolfin::endl;
 }
@@ -865,6 +890,5 @@ void CSGCGALDomain3D::remove_degenerated_facets(double threshold)
 
 }
 //-----------------------------------------------------------------------------
-
 } // end namespace mshr
 
