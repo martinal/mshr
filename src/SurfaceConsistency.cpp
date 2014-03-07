@@ -29,30 +29,35 @@ namespace mshr
 
 void SurfaceConsistency::checkConnectivity(const std::vector<std::vector<std::size_t> >& facets)
 {
+  // Store all halfedges
   std::map<std::pair<std::size_t, std::size_t>, std::size_t> halfedges;
 
   std::size_t facet_no = 0;
   for (auto it = facets.begin(); it != facets.end(); ++it)
   {
+    // Check for (topologically) degenerate facets
+    if ( (*it)[0] == (*it)[1] || (*it)[0] == (*it)[2] || (*it)[1] == (*it)[2] )
+      dolfin::dolfin_error("SurfaceConsistency.cpp",
+                           "Check surface connectivity",
+                           "Facet %d is degenerate", facet_no);
+
+
     for (int i = 0; i < 3; i++)
     {
       std::pair<std::size_t, std::size_t> e( (*it)[i], (*it)[(i+1)%3] );
       if (halfedges.count( e ) > 0 )
       {
-    //     std::cout << "Facet " 
-    //               << i << " and facet " 
-    //               << halfegdes[std::make_pair( (*it)[i], (*it)[(i+1)%3] )]
-    //               << " share halfedge" << std:::endl;
-
         dolfin::dolfin_error("SurfaceConsistency.cpp",
                              "Check surface connectivity",
-                             "Facet %d and %d share halfedge", (*it)[i], (*it)[(i+1)%3]);
+                             "Facet %d and %d share halfedge", halfedges[e], facet_no);
       }
 
       halfedges[e] = facet_no;
     }
     facet_no++;
   }
+
+  // TODO: Check for border edges
 }
 }
 
