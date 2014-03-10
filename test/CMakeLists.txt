@@ -28,7 +28,6 @@ if (RUN_TESTDATA_TESTS)
   message(STATUS "Enabling test with data in ${TEST_DATA_DIR}")
 
   file(GLOB TEST_DATA_FILES "${TEST_DATA_DIR}/*")
-  message(STATUS "Data files: ${TEST_DATA_FILES}")
 
   foreach(CURRENT_DATA_FILE IN LISTS TEST_DATA_FILES)
     message(STATUS "Adding test: ${CURRENT_DATA_FILE}")
