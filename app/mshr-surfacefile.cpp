@@ -26,7 +26,6 @@
 #include <string>
 #include <iostream>
 
-
 namespace po = boost::program_options;
 
 // This program reads in a surface from file and generates mesh
@@ -61,7 +60,7 @@ int main(int argc, char** argv)
 
   dolfin::Mesh m;
 
-  mshr::CSGMeshGenerator::generate(m, surf, 30);
+  mshr::CSGMeshGenerator::generate(m, surf, vm["resolution"].as<double>());
   
   dolfin::File f(vm["outfile"].as<std::string>());
   f << m;
