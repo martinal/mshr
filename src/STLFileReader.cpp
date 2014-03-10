@@ -51,7 +51,7 @@ namespace
 // to avoid duplicated vertices.
 class FuzzyPointLess
 {
-public:
+ public:
   FuzzyPointLess(double arg_ = 1e-10) : epsilon(arg_) {}
   bool operator()(const std::array<double, 3>& left,
                   const std::array<double, 3>& right) const
@@ -67,6 +67,7 @@ public:
 
     return false;
   }
+ private:
   double epsilon;
 };
 
@@ -76,7 +77,7 @@ inline void get_next_line(std::ifstream& file, std::string& line, std::size_t &l
   lineno++;
 }
 
-}
+} // end anonymous namespace
 //-----------------------------------------------------------------------------
 namespace mshr
 {
@@ -227,8 +228,6 @@ void STLFileReader::read(const std::string filename,
 
       counter++;
     } while (*tok_iter == "vertex");
-
-    std::cout << "Number of vertices: " << counter << std::endl;
 
     // Read 'endloop' line
     boost::algorithm::trim(line);
