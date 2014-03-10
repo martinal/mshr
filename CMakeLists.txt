@@ -80,33 +80,13 @@ endif()
 
 
 
-# Build and run the tests
-set(TEST_DATA_DIR "" CACHE PATH "Path to test data.")
-
 add_executable( mshr-surfacefile app/mshr-surfacefile.cpp )
 target_link_libraries( mshr-surfacefile mshr)
 
-enable_testing()
 
-# test with a number of input files
-message(STATUS "Preparing tests")
+option("ENABLE_TESTS" OFF, "Enable testing")
 
-string(COMPARE NOTEQUAL "${TEST_DATA_DIR}" "" RUN_TESTDATA_TESTS)
-
-if (RUN_TESTDATA_TESTS)
-  message(STATUS "Enabling test with data in ${TEST_DATA_DIR}")
-
-  file(GLOB TEST_DATA_FILES "${TEST_DATA_DIR}/*")
-  message(STATUS "Data files: ${TEST_DATA_FILES}")
-
-  foreach(CURRENT_DATA_FILE IN LISTS TEST_DATA_FILES)
-    message(STATUS "Adding test: ${CURRENT_DATA_FILE}")
-    add_test("TestFileInput_${CURRENT_DATA_FILE}" "mshr-surfacefile" ${CURRENT_DATA_FILE})
-  endforeach(CURRENT_DATA_FILE)
-
-else()
-  message(STATUS "No path to test given. Skipping tests.")
+if("ENABLE_TESTS")
+  enable_testing()
+  add_subdirectory(test)
 endif()
-
-
-#add_subdirectory(test)
