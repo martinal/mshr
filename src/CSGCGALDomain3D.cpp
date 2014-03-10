@@ -776,7 +776,7 @@ void convert(const CSGGeometry& geometry,
   if (P.size_of_facets() == 0)
     dolfin::dolfin_error("CSGCGALDomain3D.cpp",
                          "Convert geometry to polyhedron",
-                         "Geometry contains no facet.");
+                         "Geometry contains no facet");
 
   dolfin::cout << "Number of vertices: " << P.size_of_vertices() << dolfin::endl;
   dolfin::cout << "Number of facets:   " << P.size_of_facets() << dolfin::endl;
