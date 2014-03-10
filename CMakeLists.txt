@@ -72,6 +72,14 @@ target_link_libraries( mshr ${Boost_LIBRARIES}
 # Build the python bindings
 add_subdirectory(swig)
 
+# Fix CGAL's random generator (usefull to reproduce bugs)
+option(INIT_CGAL_RANDOM "Seed for CGAL's random generator" OFF)
+if (INIT_CGAL_RANDOM)
+  add_definitions( -DINIT_RANDOM_GENERATOR=0 )
+endif()
+
+
+
 # Build and run the tests
 set(TEST_DATA_DIR "" CACHE PATH "Path to test data.")
 
