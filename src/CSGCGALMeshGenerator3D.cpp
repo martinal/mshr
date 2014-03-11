@@ -255,7 +255,7 @@ void CSGCGALMeshGenerator3D::generate(dolfin::Mesh& mesh) const
     const double cell_size = r/static_cast<double>(mesh_resolution)*2.0;
     // dolfin::cout << "Cell size: " << cell_size << dolfin::endl;
 
-    criteria.reset(new Mesh_criteria(CGAL::parameters::edge_size = cell_size, // ???
+    criteria.reset(new Mesh_criteria(CGAL::parameters::edge_size = cell_size/5, // ???
                                           CGAL::parameters::facet_angle = 30.0,
                                           CGAL::parameters::facet_size = cell_size,
                                           CGAL::parameters::facet_distance = cell_size/10.0, // ???
