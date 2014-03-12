@@ -23,12 +23,10 @@
 
 GlobalInitializer::GlobalInitializer()
 {
-  std::cout << "Initializing globals" << std::endl;
+  //std::cout << "Initializing globals" << std::endl;
   #ifdef INIT_RANDOM_GENERATOR
-    std::cout << "Using fixed random generator generator (seed=" << INIT_RANDOM_GENERATOR << ")" << std::endl;
+    //std::cout << "Using fixed random generator generator (seed=" << INIT_RANDOM_GENERATOR << ")" << std::endl;
     CGAL::default_random = CGAL::Random( INIT_RANDOM_GENERATOR );
-  #else
-    std::cout << "Not fixing seed" << std::endl;
   #endif
 
 }
