@@ -208,12 +208,12 @@ static void convert_to_inexact(const CSGCGALDomain3D &exact_domain,
 //-----------------------------------------------------------------------------
 CSGCGALMeshGenerator3D::CSGCGALMeshGenerator3D(const CSGGeometry& geometry)
 {
-  boost::shared_ptr<const CSGGeometry> tmp = dolfin::reference_to_no_delete_pointer<const CSGGeometry>(geometry);
+  std::shared_ptr<const CSGGeometry> tmp = dolfin::reference_to_no_delete_pointer<const CSGGeometry>(geometry);
   _geometry = tmp;
   parameters = default_parameters();
 }
 //-----------------------------------------------------------------------------
-CSGCGALMeshGenerator3D::CSGCGALMeshGenerator3D(boost::shared_ptr<const CSGGeometry> geometry)
+CSGCGALMeshGenerator3D::CSGCGALMeshGenerator3D(std::shared_ptr<const CSGGeometry> geometry)
   : _geometry(geometry)
 {
   parameters = default_parameters();

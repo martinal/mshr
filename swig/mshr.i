@@ -37,7 +37,7 @@
 %include <std_string.i>
 
 // Local shared_ptr declarations
-%include <boost_shared_ptr.i>
+%include <std_shared_ptr.i>
 %shared_ptr(dolfin::Variable)
 %shared_ptr(dolfin::Hierarchical<dolfin::Mesh>)
 

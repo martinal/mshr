@@ -21,7 +21,7 @@
 #define __MSHR_CGAL_MESH_GENERATOR3D_H
 
 #include <dolfin/common/Variable.h>
-#include <boost/shared_ptr.hpp>
+#include <memory>
 
 namespace dolfin{ class Mesh; }
 
@@ -39,7 +39,7 @@ namespace mshr
   public :
     CSGCGALMeshGenerator3D(const CSGGeometry& geometry);
 
-    CSGCGALMeshGenerator3D(boost::shared_ptr<const CSGGeometry> geometry);
+    CSGCGALMeshGenerator3D(std::shared_ptr<const CSGGeometry> geometry);
 
     ~CSGCGALMeshGenerator3D();
 
@@ -69,7 +69,7 @@ namespace mshr
     }
 
   private:
-    boost::shared_ptr<const CSGGeometry> _geometry;
+    std::shared_ptr<const CSGGeometry> _geometry;
   };
 
 }
