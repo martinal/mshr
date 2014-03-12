@@ -35,9 +35,6 @@ namespace
 {
 void print_mesh_statistics(const dolfin::Mesh& m)
 {
-  {
-    dolfinSquareMesh x(2,2);
-  }
   std::cout << "Dolfin mesh of topological dimension " << m.topology().dim() << std::endl;
   std::cout << "  " << m.num_vertices() << " vertices" << std::endl;
   std::cout << "  " << m.num_cells() << " cells" << std::endl;
@@ -91,6 +88,12 @@ void handle_commandline(int argc, char** argv, po::variables_map &vm)
 //-----------------------------------------------------------------------------
 int main(int argc, char** argv)
 {
+  // This is a workaround since Dolfin does not always ensure MPI has been initialized
+  // Remove when Dolfin has been fixed.
+  #ifdef HAS_MPI
+  dolfin::SubSystemsManager::init_mpi();
+  #endif
+
   po::variables_map vm;
   handle_commandline(argc, argv, vm);
 
@@ -99,7 +102,7 @@ int main(int argc, char** argv)
 
   // Generate the mesh
   dolfin::Mesh m;
-  //mshr::CSGMeshGenerator::generate(m, surf, vm["resolution"].as<double>());
+  mshr::CSGMeshGenerator::generate(m, surf, vm["resolution"].as<double>());
 
   // Output mesh if requested
   if (vm.count("outfile"))
