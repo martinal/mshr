@@ -5,7 +5,7 @@ message(STATUS "Building CGAL")
 message(STATUS "Current source dir: ${CMAKE_CURRENT_SOURCE_DIR}")
 message(STATUS "Binary dir: ${CMAKE_BINARY_DIR}")
 
-SET(CGAL_INSTALL_DIR ${CMAKE_BINARY_DIR}/CGAL-4.3-installdir)
+set(CGAL_INSTALL_DIR ${CMAKE_BINARY_DIR}/CGAL-4.3-installdir)
 
 # Note: Need to add fPIC in order to be able to link staticly with CGAL
 ExternalProject_Add(CGAL-4.3
@@ -32,8 +32,8 @@ ExternalProject_Add(CGAL-4.3
   UPDATE_COMMAND ""
 ) 
 
-SET(CGAL_INCLUDE_DIR ${CGAL_INSTALL_DIR}/include PARENT_SCOPE)
-SET(CGAL_LIB_DIR ${CGAL_INSTALL_DIR}/lib PARENT_SCOPE)
+set(CGAL_INCLUDE_DIR ${CGAL_INSTALL_DIR}/include PARENT_SCOPE)
+set(CGAL_LIB_DIR ${CGAL_INSTALL_DIR}/lib PARENT_SCOPE)
 
 # LINK_DIRECTORIES( ${CGAL_INSTALL_DIR}/lib )
 
