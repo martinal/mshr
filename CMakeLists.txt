@@ -85,9 +85,11 @@ add_executable( mshr-surfacefile app/mshr-surfacefile.cpp )
 target_link_libraries( mshr-surfacefile mshr)
 
 
-option("ENABLE_TESTS" OFF, "Enable testing")
+option(ENABLE_TESTS "Enable testing" OFF)
 
-if("ENABLE_TESTS")
+if(ENABLE_TESTS)
   enable_testing()
   add_subdirectory(test)
+else()
+  message(STATUS "Testing disabled")
 endif()
