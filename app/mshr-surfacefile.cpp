@@ -53,6 +53,7 @@ void handle_commandline(int argc, char** argv, po::variables_map &vm)
     ("outfile,o",    po::value<std::string>(), "Filename of generated Dolfin mesh")
     ("resolution,r", po::value<double>()->default_value(15.0), "Resolution of result mesh")
     ("stats,s", "Write some statistics of the mesh to stdout")
+    ("polyout", po::value<std::string>(), "Write the polyhedron to .poly which Tetgen can read (and do not create a mesh)")
     ("help,h",   "write help message");
 
   // Options not shown to the user
@@ -99,6 +100,16 @@ int main(int argc, char** argv)
 
   // Read the infile
   mshr::Surface3D surf(vm["input-file"].as<std::string>());
+
+  if (vm.count("polyout"))
+  {
+    // Write the polyhedron to tetgen's file format and exit
+    mshr::CSGCGALDomain3D domain(surf);
+    mshr::TetgenFileWriter::write(domain,
+                            vm["polyout"].as<std::string>());
+    exit(EXIT_SUCCESS);
+  }
+
 
   // Generate the mesh
   dolfin::Mesh m;
