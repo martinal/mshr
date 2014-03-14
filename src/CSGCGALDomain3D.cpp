@@ -58,6 +58,7 @@ typedef CGAL::Nef_polyhedron_3<Exact_Kernel> Nef_polyhedron_3;
 typedef CGAL::Polyhedron_3<Exact_Kernel> Exact_Polyhedron_3;
 typedef Exact_Polyhedron_3::HalfedgeDS Exact_HalfedgeDS;
 typedef Nef_polyhedron_3::Point_3 Exact_Point_3;
+typedef Exact_Kernel::Vector_3 Vector_3;
 
 
 // Convenience routine to make debugging easier. Remove before releasing.
@@ -816,6 +817,23 @@ std::size_t CSGCGALDomain3D::num_facets() const
 //-----------------------------------------------------------------------------
 std::size_t CSGCGALDomain3D::num_halfedges() const 
 { return impl->p.size_of_halfedges(); }
+//-----------------------------------------------------------------------------
+double CSGCGALDomain3D::volume() const
+{
+  double volume = .0;
+  for (Exact_Polyhedron_3::Facet_iterator it = impl->p.facets_begin();
+       it != impl->p.facets_end(); it++)
+  {
+    const Exact_Polyhedron_3::Halfedge_handle h = it->halfedge();
+    const Vector_3 V0 = h->vertex()->point()-CGAL::ORIGIN;
+    const Vector_3 V1 = h->next()->vertex()->point()-CGAL::ORIGIN;
+    const Vector_3 V2 = h->next()->next()->vertex()->point()-CGAL::ORIGIN;
+
+    volume += CGAL::to_double(V0*CGAL::cross_product(V1, V2));
+  }
+
+  return volume/6.0;
+}
 //-----------------------------------------------------------------------------
 void CSGCGALDomain3D::get_vertices(std::vector<dolfin::Point> &v) const
 {

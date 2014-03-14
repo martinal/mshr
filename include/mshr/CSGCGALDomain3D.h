@@ -36,7 +36,7 @@ namespace mshr
 class CSGCGALDomain3D
 {
  public:
-  // Create empty polygon
+  // Create empty polyhedron
   CSGCGALDomain3D();
 
   // Construct polyhedron from CSG geometry
@@ -48,6 +48,8 @@ class CSGCGALDomain3D
   std::size_t num_vertices() const;
   std::size_t num_facets() const;
   std::size_t num_halfedges() const;
+
+  double volume() const;
 
   // Output in double precision
   // TODO: Define iterators to be more memory friendly

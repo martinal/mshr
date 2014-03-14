@@ -44,6 +44,16 @@ void print_mesh_statistics(const dolfin::Mesh& m)
   std::cout << "Maximum cell radii ratio: " << radii_ratio.second << std::endl;
 }
 //-----------------------------------------------------------------------------
+void print_polyhedron_statistics(const mshr::CSGCGALDomain3D& domain)
+{
+  std::cout << "Triangular polyhedron with" << std::endl;
+  std::cout << "  " << domain.num_vertices() << " vertices," << std::endl;
+  std::cout << "  " << domain.num_facets() << " facets," << std::endl;
+  std::cout << "  " << domain.num_halfedges() << " halfedges." << std::endl;
+
+  std::cout << "Volume: " << domain.volume() << std::endl;
+}
+//-----------------------------------------------------------------------------
 // Define options and parse command line
 void handle_commandline(int argc, char** argv, po::variables_map &vm)
 {
@@ -54,6 +64,7 @@ void handle_commandline(int argc, char** argv, po::variables_map &vm)
     ("resolution,r", po::value<double>()->default_value(15.0), "Resolution of result mesh")
     ("stats,s", "Write some statistics of the mesh to stdout")
     ("polyout", po::value<std::string>(), "Write the polyhedron to .poly which Tetgen can read (and do not create a mesh)")
+    ("polystats", "Write statistics of polyhedron (and do not create a mesh")
     ("help,h",   "write help message");
 
   // Options not shown to the user
@@ -100,15 +111,23 @@ int main(int argc, char** argv)
   // Read the infile
   mshr::Surface3D surf(vm["input-file"].as<std::string>());
 
-  if (vm.count("polyout"))
+  // Operations that disable mesh generation
+  if (vm.count("polyout") || vm.count("polystats"))
   {
-    // Write the polyhedron to tetgen's file format and exit
     mshr::CSGCGALDomain3D domain(surf);
-    mshr::TetgenFileWriter::write(domain,
-                            vm["polyout"].as<std::string>());
+    if (vm.count("polyout"))
+    {
+      // Write the polyhedron to tetgen's file format
+      mshr::TetgenFileWriter::write(domain,
+                                    vm["polyout"].as<std::string>());
+    }
+
+    if (vm.count("polystats"))
+    {
+      print_polyhedron_statistics(domain);
+    }
     exit(EXIT_SUCCESS);
   }
-
 
   // Generate the mesh
   dolfin::Mesh m;
