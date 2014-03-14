@@ -89,8 +89,7 @@ void handle_commandline(int argc, char** argv, po::variables_map &vm)
 //-----------------------------------------------------------------------------
 int main(int argc, char** argv)
 {
-  // This is a workaround since Dolfin does not always ensure MPI has been initialized
-  // Remove when Dolfin has been fixed.
+  // Ensure Dolfin initializes MPI correctly.
   #ifdef HAS_MPI
   dolfin::SubSystemsManager::init_mpi();
   #endif
