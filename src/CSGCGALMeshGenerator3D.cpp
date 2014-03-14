@@ -79,20 +79,11 @@ typedef CGAL::Mesh_criteria_3<Tr> Mesh_criteria;
   // Clear mesh
   mesh.clear();
 
-  // Count cells in complex
-  std::size_t num_cells = 0;
-  for(C3t3::Cells_in_complex_iterator cit = c3t3.cells_in_complex_begin();
-      cit != c3t3.cells_in_complex_end();
-      ++cit)
-  {
-    num_cells++;
-  }
-
   // Create and initialize mesh editor
   dolfin::MeshEditor mesh_editor;
   mesh_editor.open(mesh, 3, 3);
   mesh_editor.init_vertices(triangulation.number_of_vertices());
-  mesh_editor.init_cells(num_cells);
+  mesh_editor.init_cells(c3t3.number_of_cells_in_complex());
 
   // Add vertices to mesh
   std::size_t vertex_index = 0;
