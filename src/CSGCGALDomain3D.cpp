@@ -905,7 +905,21 @@ void CSGCGALDomain3D::remove_degenerated_facets(double threshold)
   //   // of the polyhedron
   //   dolfin_assert(p.is_pure_triangle());
   // }
+}
+//-----------------------------------------------------------------------------
+void CSGCGALDomain3D::keep_largest_component()
+{
+  // TODO: Implement splitting i several domains that can be meshed individually
+  impl->p.keep_largest_connected_components(1);
+}
+//-----------------------------------------------------------------------------
+void CSGCGALDomain3D::ensure_meshing_preconditions()
+{
+  if (parameters["only_keep_largest_component"])
+    keep_largest_component();
 
+  if (parameters["remove_degenerated"])
+    remove_degenerated_facets(1e-7);
 }
 //-----------------------------------------------------------------------------
 } // end namespace mshr

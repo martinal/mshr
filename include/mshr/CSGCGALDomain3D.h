@@ -33,7 +33,7 @@ namespace mshr
 
 // This class represents the polyhedral domain which implements boolean
 // operations. It uses CGAL as backend
-class CSGCGALDomain3D
+class CSGCGALDomain3D : public dolfin::Variable
 {
  public:
   // Create empty polyhedron
@@ -57,6 +57,24 @@ class CSGCGALDomain3D
   void get_facets(std::vector<std::array<std::size_t, 3> > &f) const;
 
   void remove_degenerated_facets(double threshold);
+  void keep_largest_component();
+
+  // This functions attempts to ensure that the preconditions
+  // for successfull meshing are fullfilled.
+  // Checks can be skipped with the parameter system
+  void ensure_meshing_preconditions();
+
+  /// Default parameter values
+  static dolfin::Parameters default_parameters()
+  {
+    dolfin::Parameters p("csg_cgal_domain_3d");
+    p.add("remove_degenerated", true);
+    p.add("only_keep_largest_component", true);
+
+    return p;
+  }
+
+
 
  private :
   boost::scoped_ptr<CSGCGALDomain3DImpl> impl;
