@@ -51,6 +51,7 @@ void print_polyhedron_statistics(const mshr::CSGCGALDomain3D& domain)
   std::cout << "  " << domain.num_facets() << " facets," << std::endl;
   std::cout << "  " << domain.num_halfedges() << " halfedges." << std::endl;
 
+  std::cout << "Is bounded: " << (domain.is_bounded() ? "Yes" : "No") << std::endl;
   std::cout << "Volume: " << domain.volume() << std::endl;
 }
 //-----------------------------------------------------------------------------
