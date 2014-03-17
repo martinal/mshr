@@ -124,8 +124,8 @@ typedef CGAL::Mesh_criteria_3<Tr> Mesh_criteria;
 struct Copy_polyhedron_to
   : public CGAL::Modifier_base<typename MeshPolyhedron_3::HalfedgeDS>
 {
-  Copy_polyhedron_to(const CSGCGALDomain3D& in_poly)
-    : _in_poly(in_poly) {}
+  Copy_polyhedron_to(const CSGCGALDomain3D& in_poly, bool flip)
+    : _in_poly(in_poly), flip(flip) {}
 
   void operator()(typename MeshPolyhedron_3::HalfedgeDS& out_hds)
   {
@@ -157,22 +157,32 @@ struct Copy_polyhedron_to
       {
         builder.begin_facet ();
         builder.add_vertex_to_facet( (*it)[0] );
-        builder.add_vertex_to_facet( (*it)[1] );
-        builder.add_vertex_to_facet( (*it)[2] );
+        if (flip)
+        {
+          builder.add_vertex_to_facet( (*it)[2] );
+          builder.add_vertex_to_facet( (*it)[1] );
+        }
+        else
+        {
+          builder.add_vertex_to_facet( (*it)[1] );
+          builder.add_vertex_to_facet( (*it)[2] );
+        }
+
         builder.end_facet();
       }
-
     }
     builder.end_surface();
   }
 private:
   const CSGCGALDomain3D& _in_poly;
+  const bool flip;
 }; 
 
 static void convert_to_inexact(const CSGCGALDomain3D &exact_domain, 
-                               MeshPolyhedron_3 &inexact_domain)
+                               MeshPolyhedron_3 &inexact_domain,
+                               bool flip)
 {
-  Copy_polyhedron_to modifier(exact_domain);
+  Copy_polyhedron_to modifier(exact_domain, flip);
   inexact_domain.delegate(modifier);
   CGAL_assertion(inexact_domain.is_valid());
 }
@@ -214,12 +224,18 @@ CSGCGALMeshGenerator3D::~CSGCGALMeshGenerator3D() {}
 //-----------------------------------------------------------------------------
 void CSGCGALMeshGenerator3D::generate(dolfin::Mesh& mesh) const
 {
-  CSGCGALDomain3D exact_domain(*_geometry);
-  exact_domain.ensure_meshing_preconditions();
-
   // Create CGAL mesh domain
   MeshPolyhedron_3 p;
-  convert_to_inexact(exact_domain, p);
+
+  {
+    // Put inside brackets to delete the exact polyhedron
+    // before the meshing starts.
+    CSGCGALDomain3D exact_domain(*_geometry);
+    exact_domain.ensure_meshing_preconditions();
+
+    convert_to_inexact(exact_domain, p, !exact_domain.is_bounded());
+
+  }
 
   PolyhedralMeshDomain domain(p);
 
@@ -305,7 +321,7 @@ void CSGCGALMeshGenerator3D::save_off(std::string filename) const
 
   // Create CGAL mesh domain
   MeshPolyhedron_3 p;
-  convert_to_inexact(exact_domain, p);
+  convert_to_inexact(exact_domain, p, false);
 
   dolfin::cout << "Writing to file " << filename << dolfin::endl;
   std::ofstream outfile(filename.c_str());

@@ -50,6 +50,7 @@ class CSGCGALDomain3D : public dolfin::Variable
   std::size_t num_halfedges() const;
 
   double volume() const;
+  bool is_bounded() const;
 
   // Output in double precision
   // TODO: Define iterators to be more memory friendly
@@ -57,7 +58,7 @@ class CSGCGALDomain3D : public dolfin::Variable
   void get_facets(std::vector<std::array<std::size_t, 3> > &f) const;
 
   void remove_degenerated_facets(double threshold);
-  void keep_largest_component();
+  unsigned int keep_largest_component();
 
   // This functions attempts to ensure that the preconditions
   // for successfull meshing are fullfilled.

@@ -37,6 +37,7 @@
 #include <CGAL/Polyhedron_incremental_builder_3.h>
 #include <CGAL/Nef_polyhedron_3.h>
 #include <CGAL/IO/Polyhedron_iostream.h>
+#include <CGAL/Origin.h>
 
 
 #define BOOST_FILESYSTEM_NO_DEPRECATED
@@ -45,6 +46,7 @@
 #include <vector>
 #include <iterator>
 #include <fstream>
+#include <set>
 
 using namespace mshr;
 
@@ -54,6 +56,7 @@ namespace
 // Exact polyhedron
 typedef CGAL::Exact_predicates_exact_constructions_kernel Exact_Kernel;
 typedef Exact_Kernel::Triangle_3 Exact_Triangle_3;
+typedef Exact_Kernel::Vector_3 Exact_Vector_3;
 typedef CGAL::Nef_polyhedron_3<Exact_Kernel> Nef_polyhedron_3;
 typedef CGAL::Polyhedron_3<Exact_Kernel> Exact_Polyhedron_3;
 typedef Exact_Polyhedron_3::HalfedgeDS Exact_HalfedgeDS;
@@ -797,11 +800,15 @@ struct CSGCGALDomain3DImpl
 
 CSGCGALDomain3D::CSGCGALDomain3D()
 : impl(new CSGCGALDomain3DImpl)
-{}
+{
+  parameters = default_parameters();
+}
 //-----------------------------------------------------------------------------
 CSGCGALDomain3D::CSGCGALDomain3D(const mshr::CSGGeometry &csg)
 : impl(new CSGCGALDomain3DImpl)
 {
+  parameters = default_parameters();
+
   convert(csg,
           impl->p);
 
@@ -878,6 +885,9 @@ void CSGCGALDomain3D::get_facets(std::vector< std::array<std::size_t, 3> > &f) c
 //-----------------------------------------------------------------------------
 void CSGCGALDomain3D::remove_degenerated_facets(double threshold) 
 {
+  //dolfin_not_implemented();
+  dolfin::warning("CSGCGALDomain3D::remove_degenerated_facets() not implemented");
+
   // int degenerate_facets = number_of_degenerate_facets(impl->p, threshold);
 
   // dolfin::cout << "Number of degenerate facets: " << degenerate_facets << dolfin::endl;
@@ -907,19 +917,79 @@ void CSGCGALDomain3D::remove_degenerated_facets(double threshold)
   // }
 }
 //-----------------------------------------------------------------------------
-void CSGCGALDomain3D::keep_largest_component()
+unsigned int CSGCGALDomain3D::keep_largest_component()
 {
   // TODO: Implement splitting i several domains that can be meshed individually
-  impl->p.keep_largest_connected_components(1);
+  return impl->p.keep_largest_connected_components(1);
 }
 //-----------------------------------------------------------------------------
 void CSGCGALDomain3D::ensure_meshing_preconditions()
 {
+  if (!impl->p.is_valid())
+    dolfin::dolfin_error("CSGCGDomain3D.cpp",
+                         "Checking meshing preconditions",
+                         "Polyhedron is not valid");
+
   if (parameters["only_keep_largest_component"])
-    keep_largest_component();
+  {
+    const unsigned int i = keep_largest_component();
+    if (i > 0)
+      dolfin::warning("Discarded %d components from the polyhedron", i);
+  }
 
   if (parameters["remove_degenerated"])
     remove_degenerated_facets(1e-7);
+}
+//-----------------------------------------------------------------------------
+bool CSGCGALDomain3D::is_bounded() const
+{
+  typedef Exact_Kernel::Ray_3 Exact_Ray_3;
+
+  // Pick a point on a facet a. Shoot in the direction of the normal and count
+  // the number of distinct hits (if the ray hit an edge, the same intersection
+  // point will hit sevel facets). Excluding the hit on facet a the number
+  // should be even for the polyhedron to be bounded.
+  // NOTE: Not constructing AABB tree since we are doing only one query.
+  Exact_Polyhedron_3::Facet_iterator f = impl->p.facets_begin();
+
+  Exact_Ray_3 ray;
+
+  {
+    Exact_Polyhedron_3::Halfedge_handle h = f->halfedge();
+    Exact_Triangle_3 t(h->vertex()->point(),
+                       h->next()->vertex()->point(),
+                       h->next()->next()->vertex()->point());
+    f++;
+
+    //Compute the ray
+    Exact_Vector_3 normal = CGAL::normal(t.vertex(0), t.vertex(1), t.vertex(2));
+    Exact_Point_3  mid    = CGAL::centroid(t);
+
+    ray = Exact_Ray_3(mid, normal);
+  }
+
+  // Collect the points to avoid double hits on facets.
+  std::set<Exact_Point_3> points;
+  for (; f != impl->p.facets_end(); ++f)
+  {
+    Exact_Polyhedron_3::Halfedge_handle h = f->halfedge();
+    Exact_Triangle_3 t(h->vertex()->point(),
+                       h->next()->vertex()->point(),
+                       h->next()->next()->vertex()->point());
+
+
+    auto result = intersection(t, ray);
+    if(result)
+    {
+      if (const Exact_Point_3* p = boost::get<Exact_Point_3>(&*result))
+      {
+        points.insert(*p);
+      }
+    }
+  }
+
+  // std::cout << "Number of intersections: " << points.size() << std::endl;
+  return points.size() % 2 == 0;
 }
 //-----------------------------------------------------------------------------
 } // end namespace mshr
