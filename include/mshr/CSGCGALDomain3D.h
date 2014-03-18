@@ -51,6 +51,7 @@ class CSGCGALDomain3D : public dolfin::Variable
 
   double volume() const;
   bool is_bounded() const;
+  std::size_t num_degenerate_facets(double threshold) const;
 
   // Output in double precision
   // TODO: Define iterators to be more memory friendly
@@ -70,6 +71,7 @@ class CSGCGALDomain3D : public dolfin::Variable
   {
     dolfin::Parameters p("csg_cgal_domain_3d");
     p.add("remove_degenerated", true);
+    p.add("degenerate_threshold", 1e-12);
     p.add("only_keep_largest_component", true);
 
     return p;

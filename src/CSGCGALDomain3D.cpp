@@ -888,9 +888,8 @@ void CSGCGALDomain3D::remove_degenerated_facets(double threshold)
   //dolfin_not_implemented();
   dolfin::warning("CSGCGALDomain3D::remove_degenerated_facets() not implemented");
 
-  // int degenerate_facets = number_of_degenerate_facets(impl->p, threshold);
-
-  // dolfin::cout << "Number of degenerate facets: " << degenerate_facets << dolfin::endl;
+  int degenerate_facets = number_of_degenerate_facets(impl->p, threshold);
+  dolfin::cout << "Number of degenerate facets: " << degenerate_facets << dolfin::endl;
 
   // // FIXME: Use has_degenerate_facets() when in production code
   // if (degenerate_facets > 0)
@@ -938,7 +937,7 @@ void CSGCGALDomain3D::ensure_meshing_preconditions()
   }
 
   if (parameters["remove_degenerated"])
-    remove_degenerated_facets(1e-7);
+    remove_degenerated_facets(parameters["degenerate_threshold"]);
 }
 //-----------------------------------------------------------------------------
 bool CSGCGALDomain3D::is_bounded() const
@@ -990,6 +989,11 @@ bool CSGCGALDomain3D::is_bounded() const
 
   // std::cout << "Number of intersections: " << points.size() << std::endl;
   return points.size() % 2 == 0;
+}
+//-----------------------------------------------------------------------------
+std::size_t CSGCGALDomain3D::num_degenerate_facets(double threshold) const
+{
+  return number_of_degenerate_facets(impl->p, threshold);
 }
 //-----------------------------------------------------------------------------
 } // end namespace mshr

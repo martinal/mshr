@@ -21,6 +21,7 @@
 
 #include <CGAL/basic.h>
 #include <CGAL/Kernel/global_functions.h>
+#include <CGAL/Triangle_3.h>
 
 namespace mshr
 {
@@ -28,7 +29,7 @@ namespace mshr
 //-----------------------------------------------------------------------------
 template<typename Polyhedron>
 static inline double
-get_edge_length(typename Polyhedron::Halfedge::Halfedge_handle halfedge)
+get_edge_length(typename Polyhedron::Halfedge_const_handle halfedge)
 {
   return CGAL::to_double((halfedge->vertex()->point() -
     halfedge->opposite()->vertex()->point()).squared_length());
@@ -37,20 +38,19 @@ get_edge_length(typename Polyhedron::Halfedge::Halfedge_handle halfedge)
 template <typename Polyhedron>
 static inline double get_triangle_area(typename Polyhedron::Facet_handle facet)
 {
-  const typename Polyhedron::Halfedge_handle edge = facet->halfedge();
-  const typename Polyhedron::Point_3 a = edge->vertex()->point();
-  const typename Polyhedron::Point_3 b = edge->next()->vertex()->point();
-  const typename Polyhedron::Point_3 c
-    = edge->next()->next()->vertex()->point();
-
-  return CGAL::to_double(CGAL::cross_product(b-a, c-a).squared_length());
+  typedef typename Polyhedron::Traits::Triangle_3 Triangle;
+  typename Polyhedron::Halfedge_const_handle h = facet->halfedge();
+  Triangle t(h->vertex()->point(),
+             h->next()->vertex()->point(),
+             h->next()->next()->vertex()->point());
+  return t.squared_area();
 }
 //-----------------------------------------------------------------------------
 template<typename Polyhedron>
 static inline double
-get_min_edge_length(typename Polyhedron::Facet_handle facet)
+get_min_edge_length(typename Polyhedron::Facet_const_handle facet)
 {
-  typename Polyhedron::Facet::Halfedge_around_facet_circulator half_edge
+  typename Polyhedron::Facet::Halfedge_around_facet_const_circulator half_edge
     = facet->facet_begin();
   double min_length = CGAL::to_double((half_edge->vertex()->point()
       - half_edge->opposite()->vertex()->point()).squared_length());
@@ -65,18 +65,25 @@ get_min_edge_length(typename Polyhedron::Facet_handle facet)
 }
 //-----------------------------------------------------------------------------
 template<typename Polyhedron>
-bool facet_is_degenerate(typename Polyhedron::Facet_handle facet,
+bool facet_is_degenerate(typename Polyhedron::Facet_const_handle facet,
                          const double threshold)
 {
-  return get_min_edge_length<Polyhedron>(facet) < threshold
-      || get_triangle_area<Polyhedron>(facet) < threshold;
+  // assume facet is a triangle
+  typedef CGAL::Triangle_3<typename Polyhedron::Traits> Triangle;
+
+  typename Polyhedron::Halfedge_const_handle h = facet->halfedge();
+  Triangle t(h->vertex()->point(),
+             h->next()->vertex()->point(),
+             h->next()->next()->vertex()->point());
+
+  return t.squared_area() < threshold || get_min_edge_length<Polyhedron>(facet) < threshold;
 }
 //-----------------------------------------------------------------------------
 template<typename Polyhedron>
-static int number_of_degenerate_facets(Polyhedron& p, const double threshold)
+static int number_of_degenerate_facets(const Polyhedron& p, const double threshold)
 {
   int count = 0;
-  for (typename Polyhedron::Facet_iterator facet = p.facets_begin();
+  for (typename Polyhedron::Facet_const_iterator facet = p.facets_begin();
        facet != p.facets_end(); facet++)
   {
     dolfin_assert(facet->is_triangle());
