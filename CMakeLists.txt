@@ -44,8 +44,9 @@ find_package(GMP REQUIRED)
 find_package(MPFR REQUIRED)
 
 add_subdirectory(3rdparty)
-include_directories(BEFORE ${CGAL_INCLUDE_DIR})
-
+#include_directories(BEFORE ${CGAL_INCLUDE_DIR})
+include_directories(BEFORE ${EXTERNAL_INCLUDE_DIRS})
+add_definitions("${EXTERNAL_DEFINITIONS}")
 
 find_package(DOLFIN REQUIRED)
 include(${DOLFIN_USE_FILE})

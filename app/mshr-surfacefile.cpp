@@ -67,6 +67,7 @@ void handle_commandline(int argc, char** argv, po::variables_map &vm)
     ("stats,s", "Write some statistics of the mesh to stdout")
     ("polyout", po::value<std::string>(), "Write the polyhedron to .poly which Tetgen can read (and do not create a mesh)")
     ("polystats", "Write statistics of polyhedron (and do not create a mesh")
+    ("backend,b", po::value<std::string>()->default_value("cgal"), "Use 3D mesh generation backend [tetgen|cgal]")
     ("help,h",   "write help message");
 
   // Options not shown to the user
@@ -133,7 +134,11 @@ int main(int argc, char** argv)
 
   // Generate the mesh
   dolfin::Mesh m;
-  mshr::CSGMeshGenerator::generate(m, surf, vm["resolution"].as<double>());
+
+  mshr::CSGMeshGenerator::generate(m,
+                                   surf,
+                                   vm["resolution"].as<double>(),
+                                   vm["backend"].as<std::string>());
 
   // Output mesh if requested
   if (vm.count("outfile"))

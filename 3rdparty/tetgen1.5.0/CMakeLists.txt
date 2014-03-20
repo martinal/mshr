@@ -6,9 +6,13 @@ cmake_minimum_required(VERSION 2.6)
 
 #Add a library to the project using the specified source files. 
 # In Linux/Unix, it will creates the libtet.a
+add_definitions("-fPIC")
 add_library(tet STATIC tetgen.cxx predicates.cxx)
 
 #Set properties on a target. 
 #We use this here to set -DTETLIBRARY for when compiling the
 #library
 set_target_properties(tet PROPERTIES "COMPILE_DEFINITIONS" TETLIBRARY)
+set(TETGEN_INCLUDE_DIR ${CMAKE_CURRENT_LIST_DIR} PARENT_SCOPE)
+set(TETGEN_LIB_DIR ${CMAKE_CURRENT_BINARY_DIR} PARENT_SCOPE)
+set(TETGEN_DEFINITIONS "-DTETLIBRARY" PARENT_SCOPE)

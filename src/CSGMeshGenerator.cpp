@@ -25,6 +25,7 @@
 #include <mshr/CSGGeometry.h>
 #include <mshr/CSGCGALMeshGenerator2D.h>
 #include <mshr/CSGCGALMeshGenerator3D.h>
+#include <mshr/TetgenMeshGenerator3D.h>
 
 
 namespace mshr
@@ -33,7 +34,8 @@ namespace mshr
 //-----------------------------------------------------------------------------
 void CSGMeshGenerator::generate(dolfin::Mesh& mesh,
                                 const CSGGeometry& geometry,
-                                std::size_t resolution)
+                                std::size_t resolution,
+                                std::string backend)
 {
   if (geometry.dim() == 2)
   {
@@ -43,9 +45,26 @@ void CSGMeshGenerator::generate(dolfin::Mesh& mesh,
   }
   else if (geometry.dim() == 3)
   {
-    CSGCGALMeshGenerator3D generator(geometry);
-    generator.parameters["mesh_resolution"] = static_cast<int>(resolution);
-    generator.generate(mesh);
+    if (backend == "cgal")
+    {
+      CSGCGALMeshGenerator3D generator(geometry);
+      generator.parameters["mesh_resolution"] = static_cast<int>(resolution);
+      generator.generate(mesh);
+    }
+    else if (backend == "tetgen")
+    {
+      TetgenMeshGenerator3D generator(geometry);
+      generator.parameters["mesh_resolution"] = static_cast<int>(resolution);
+      generator.generate(mesh);
+
+    }
+    else
+    {
+      std::string e = "Unknown mesh generator backend: " + backend;
+      dolfin::dolfin_error("CSGMeshGenerator.cpp",
+                           "Generator mesh of 3D geometry",
+                           e);
+    }
   }
   else
   {
