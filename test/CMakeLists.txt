@@ -30,6 +30,11 @@ set(TESTFILES_NOTCLOSED "cube-ouvert.off;mushroom.off")
 
 foreach(CURRENT_DATA_FILE IN LISTS TESTFILES_VALID)
   message(STATUS "Adding test: ${CURRENT_DATA_FILE}")
-  add_test("FilePass-${CURRENT_DATA_FILE}" "../mshr-surfacefile" "${CGAL_DATA_DIR}/${CURRENT_DATA_FILE}")
+  #add_test("FilePass-${CURRENT_DATA_FILE}" "../mshr-surfacefile" "${CGAL_DATA_DIR}/${CURRENT_DATA_FILE}")
 endforeach(CURRENT_DATA_FILE)
 
+file(GLOB PYTHONDEMOS "${CMAKE_SOURCE_DIR}/demo/python/*.py")
+foreach(CURRENT_DEMO IN LISTS PYTHONDEMOS)
+  add_test("PythonDemo-${CURRENT_DEMO}" "python" "${CURRENT_DEMO}")
+endforeach()
+message(STATUS "Python demos: ${PYTHONDEMOS}")
