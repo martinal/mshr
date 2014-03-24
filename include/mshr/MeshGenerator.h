@@ -33,22 +33,15 @@ namespace dolfin
 namespace mshr
 {
 
-  /// Mesh generator for Constructive Solid Geometry (CSG)
+  /// Generate mesh from CSG geometry
+  void generate(dolfin::Mesh& mesh,
+                const CSGGeometry& geometry,
+                std::size_t resolution,
+                std::string backend="cgal");
 
-  class CSGMeshGenerator
-  {
-  public :
-
-    /// Generate mesh from CSG geometry
-    static void generate(dolfin::Mesh& mesh, 
-                         const CSGGeometry& geometry,
-                         std::size_t resolution,
-                         std::string backend="cgal");
-
-    /// Generate boundary mesh from the surface of a CSG geometry
-    static void generate(dolfin::BoundaryMesh& mesh, 
+  /// Extract boundary of CSG geometry as dolfin::BoundaryMesh
+  void get_boundary_mesh(dolfin::BoundaryMesh& mesh,
                          const CSGGeometry& geometry);
-  };
 }
 
 #endif

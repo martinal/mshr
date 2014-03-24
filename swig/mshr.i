@@ -14,7 +14,7 @@
     #include <mshr/CSGGeometry.h>
     #include <mshr/CSGGeometries3D.h>
 
-    #include <mshr/CSGMeshGenerator.h>
+    #include <mshr/MeshGenerator.h>
     #include <mshr/CSGCGALMeshGenerator2D.h>
     #include <mshr/CSGCGALMeshGenerator3D.h>
 
@@ -58,15 +58,18 @@
 %import(module="dolfin") "dolfin/mesh/Mesh.h"
 
 
-%ignore mshr::CSGGeometry::getType();
+%ignore mshr::CSGGeometry::getType;
 %ignore mshr::CSGUnion::_g0;
 %ignore mshr::CSGUnion::_g1;
 %ignore mshr::CSGUnion::getType;
 
-%ignore mshr::operator+(mshr::CSGGeometry& g0, mshr::CSGGeometry& g1);
-%ignore mshr::operator+(std::shared_ptr<mshr::CSGGeometry>, std::shared_ptr<mshr::CSGGeometry>);
-%ignore mshr::operator+(mshr::CSGGeometry&, std::shared_ptr<mshr::CSGGeometry>);
-%ignore mshr::operator+(std::shared_ptr<mshr::CSGGeometry>, mshr::CSGGeometry&);
+/* %ignore mshr::operator+(mshr::CSGGeometry& g0, mshr::CSGGeometry& g1); */
+/* %ignore mshr::operator+(std::shared_ptr<mshr::CSGGeometry>, std::shared_ptr<mshr::CSGGeometry>); */
+/* %ignore mshr::operator+(mshr::CSGGeometry&, std::shared_ptr<mshr::CSGGeometry>); */
+/* %ignore mshr::operator+(std::shared_ptr<mshr::CSGGeometry>, mshr::CSGGeometry&); */
+
+%ignore mshr::operator+;
+%ignore getType;
 
 
 %shared_ptr(mshr::CSGGeometry)
@@ -91,12 +94,15 @@
 %shared_ptr(mshr::CSGCGALMeshGenerator3D)
 
 
+%rename(_generate) mshr::generate;
+%ignore mshr::get_boundary_mesh;
+
 %include <mshr/CSGGeometry.h>
 %include <mshr/CSGPrimitive.h>
 %include <mshr/CSGOperators.h>
 %include <mshr/CSGPrimitives2D.h>
 %include <mshr/CSGPrimitives3D.h>
-%include <mshr/CSGMeshGenerator.h>
+%include <mshr/MeshGenerator.h>
 %include <mshr/CSGCGALMeshGenerator2D.h>
 %include <mshr/CSGCGALMeshGenerator3D.h>
 %include <mshr/CSGGeometries3D.h>
@@ -114,3 +120,12 @@
 
   %}
  }
+
+// Declare the generate function here. The signature must
+// be in sync with mshr/MeshGenerator.h:generate()
+%pythoncode {
+      def generate(geometry, resolution, backend="cgal") :
+          m = dolfin.Mesh()
+          _generate(m, geometry, resolution, backend)
+          return m
+%}

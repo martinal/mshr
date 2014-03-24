@@ -1,4 +1,4 @@
-#include <mshr/CSGMeshGenerator.h>
+#include <mshr/MeshGenerator.h>
 #include <mshr/CSGOperators.h>
 #include <mshr/CSGPrimitives2D.h>
 #include <mshr/CSGPrimitives3D.h>

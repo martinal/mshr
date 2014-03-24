@@ -135,10 +135,10 @@ int main(int argc, char** argv)
   // Generate the mesh
   dolfin::Mesh m;
 
-  mshr::CSGMeshGenerator::generate(m,
-                                   surf,
-                                   vm["resolution"].as<double>(),
-                                   vm["backend"].as<std::string>());
+  mshr::generate(m,
+                 surf,
+                 vm["resolution"].as<double>(),
+                 vm["backend"].as<std::string>());
 
   // Output mesh if requested
   if (vm.count("outfile"))

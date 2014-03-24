@@ -17,25 +17,24 @@
 //
 // Modified by Joachim B Haga 2012
 
-
-#include <dolfin/log/log.h>
-#include <dolfin/mesh/BoundaryMesh.h>
-
-#include <mshr/CSGMeshGenerator.h>
+#include <mshr/MeshGenerator.h>
 #include <mshr/CSGGeometry.h>
 #include <mshr/CSGCGALMeshGenerator2D.h>
 #include <mshr/CSGCGALMeshGenerator3D.h>
 #include <mshr/TetgenMeshGenerator3D.h>
+
+#include <dolfin/log/log.h>
+#include <dolfin/mesh/BoundaryMesh.h>
 
 
 namespace mshr
 {
 
 //-----------------------------------------------------------------------------
-void CSGMeshGenerator::generate(dolfin::Mesh& mesh,
-                                const CSGGeometry& geometry,
-                                std::size_t resolution,
-                                std::string backend)
+void generate(dolfin::Mesh& mesh,
+              const CSGGeometry& geometry,
+              std::size_t resolution,
+              std::string backend)
 {
   if (geometry.dim() == 2)
   {
@@ -74,8 +73,8 @@ void CSGMeshGenerator::generate(dolfin::Mesh& mesh,
   }
 }
 //-----------------------------------------------------------------------------
-void CSGMeshGenerator::generate(dolfin::BoundaryMesh& mesh,
-                                const CSGGeometry& geometry)
+void get_boundary_mesh(dolfin::BoundaryMesh& mesh,
+                       const CSGGeometry& geometry)
 {
   if (geometry.dim() == 2)
   {
