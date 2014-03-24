@@ -21,23 +21,22 @@ from mshr import *
 
 # Define 3D geometry
 box = Box(0, 0, 0, 1, 1, 1)
-sphere = Sphere(Point(0, 0, 0), 0.3)
-cone = Cone(Point(0, 0, -1), Point(0, 0, 1), 1., .5)
+sphere = Sphere(dolfin.Point(0, 0, 0), 0.3)
+cone = Cone(dolfin.Point(0, 0, -1), dolfin.Point(0, 0, 1), 1., .5)
 
 domain = box + cone - sphere
 
 # Test printing
-info("\nCompact output of 3D geometry:")
-info(domain)
-info("\nVerbose output of 3D geometry:")
-info(domain, True)
+dolfin.info("\nCompact output of 3D geometry:")
+dolfin.info(domain)
+dolfin.info("\nVerbose output of 3D geometry:")
+dolfin.info(domain, True)
 
 # Generate and plot mesh
 m = dolfin.Mesh()
-CSGMeshGenerator.generate(m, domain, 32)
+CSGMeshGenerator.generate(m, domain, 16)
 
-mesh3d = Mesh(g3d, 32)
-info(mesh3d)
-plot(mesh3d, "3D mesh")
+dolfin.info(m)
+dolfin.plot(m, "3D mesh")
 
-interactive()
+dolfin.interactive()
