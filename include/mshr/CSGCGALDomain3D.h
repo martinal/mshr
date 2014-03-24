@@ -59,7 +59,6 @@ class CSGCGALDomain3D : public dolfin::Variable
   void get_facets(std::vector<std::array<std::size_t, 3> > &f) const;
 
   void remove_degenerated_facets(double threshold);
-  unsigned int keep_largest_component();
 
   // This functions attempts to ensure that the preconditions
   // for successfull meshing are fullfilled.
@@ -72,7 +71,6 @@ class CSGCGALDomain3D : public dolfin::Variable
     dolfin::Parameters p("csg_cgal_domain_3d");
     p.add("remove_degenerated", true);
     p.add("degenerate_threshold", 1e-12);
-    p.add("only_keep_largest_component", true);
 
     return p;
   }

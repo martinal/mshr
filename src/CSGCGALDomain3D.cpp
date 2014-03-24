@@ -916,25 +916,12 @@ void CSGCGALDomain3D::remove_degenerated_facets(double threshold)
   // }
 }
 //-----------------------------------------------------------------------------
-unsigned int CSGCGALDomain3D::keep_largest_component()
-{
-  // TODO: Implement splitting i several domains that can be meshed individually
-  return impl->p.keep_largest_connected_components(1);
-}
-//-----------------------------------------------------------------------------
 void CSGCGALDomain3D::ensure_meshing_preconditions()
 {
   if (!impl->p.is_valid())
     dolfin::dolfin_error("CSGCGDomain3D.cpp",
                          "Checking meshing preconditions",
                          "Polyhedron is not valid");
-
-  if (parameters["only_keep_largest_component"])
-  {
-    const unsigned int i = keep_largest_component();
-    if (i > 0)
-      dolfin::warning("Discarded %d components from the polyhedron", i);
-  }
 
   if (parameters["remove_degenerated"])
     remove_degenerated_facets(parameters["degenerate_threshold"]);
