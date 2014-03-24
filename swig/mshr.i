@@ -59,18 +59,14 @@
 
 
 %ignore mshr::CSGGeometry::getType();
-%ignore mshr::CSGOperator;
-%ignore mshr::CSGPrimitive;
-%ignore mshr::CSGPrimitive2D;
-%ignore mshr::CSGPrimitive3D;
 %ignore mshr::CSGUnion::_g0;
 %ignore mshr::CSGUnion::_g1;
 %ignore mshr::CSGUnion::getType;
 
 %ignore mshr::operator+(mshr::CSGGeometry& g0, mshr::CSGGeometry& g1);
-%ignore mshr::operator+(boost::shared_ptr<mshr::CSGGeometry>, boost::shared_ptr<mshr::CSGGeometry>);
-%ignore mshr::operator+(mshr::CSGGeometry&, boost::shared_ptr<mshr::CSGGeometry>);
-%ignore mshr::operator+(boost::shared_ptr<mshr::CSGGeometry>, mshr::CSGGeometry&);
+%ignore mshr::operator+(std::shared_ptr<mshr::CSGGeometry>, std::shared_ptr<mshr::CSGGeometry>);
+%ignore mshr::operator+(mshr::CSGGeometry&, std::shared_ptr<mshr::CSGGeometry>);
+%ignore mshr::operator+(std::shared_ptr<mshr::CSGGeometry>, mshr::CSGGeometry&);
 
 
 %shared_ptr(mshr::CSGGeometry)
