@@ -37,12 +37,12 @@ endforeach(CURRENT_DATA_FILE)
 # time" and applies it when running the test. Changing PYTHONPATH
 # later will not have effect. Not sure how to add tp PYTHONPATH at
 # runtime.
-set(PYTHON_ENVIR "${CMAKE_BINARY_DIR}/swig:$ENV{PYTHONPATH}")
+set(PYTHON_ENVIR "${CMAKE_BINARY_DIR}/swig:$ENV{PYTHONPATH};DOLFIN_NOPLOT=True")
 
 add_test("Python-DummyImport" "python" "${CMAKE_SOURCE_DIR}/test/dummy.py")
 set_property(TEST "Python-DummyImport" PROPERTY
-    ENVIRONMENT "PYTHONPATH=${PYTHON_ENVIR} "
-  )
+    ENVIRONMENT "PYTHONPATH=${PYTHON_ENVIR}"
+)
 
 file(GLOB PYTHONDEMOS "${CMAKE_SOURCE_DIR}/demo/python/*.py")
 foreach(CURRENT_DEMO IN LISTS PYTHONDEMOS)
@@ -50,5 +50,6 @@ foreach(CURRENT_DEMO IN LISTS PYTHONDEMOS)
   set_property(TEST "PythonDemo-${CURRENT_DEMO}" PROPERTY
     ENVIRONMENT "PYTHONPATH=${PYTHON_ENVIR}"
   )
+
 endforeach()
 message(STATUS "Python demos: ${PYTHONDEMOS}")
