@@ -33,8 +33,22 @@ foreach(CURRENT_DATA_FILE IN LISTS TESTFILES_VALID)
   #add_test("FilePass-${CURRENT_DATA_FILE}" "../mshr-surfacefile" "${CGAL_DATA_DIR}/${CURRENT_DATA_FILE}")
 endforeach(CURRENT_DATA_FILE)
 
+# Not sure this is the best way. Is saves the environment at "cmake
+# time" and applies it when running the test. Changing PYTHONPATH
+# later will not have effect. Not sure how to add tp PYTHONPATH at
+# runtime.
+set(PYTHON_ENVIR "${CMAKE_BINARY_DIR}/swig:$ENV{PYTHONPATH}")
+
+add_test("Python-DummyImport" "python" "${CMAKE_SOURCE_DIR}/test/dummy.py")
+set_property(TEST "Python-DummyImport" PROPERTY
+    ENVIRONMENT "PYTHONPATH=${PYTHON_ENVIR} "
+  )
+
 file(GLOB PYTHONDEMOS "${CMAKE_SOURCE_DIR}/demo/python/*.py")
 foreach(CURRENT_DEMO IN LISTS PYTHONDEMOS)
   add_test("PythonDemo-${CURRENT_DEMO}" "python" "${CURRENT_DEMO}")
+  set_property(TEST "PythonDemo-${CURRENT_DEMO}" PROPERTY
+    ENVIRONMENT "PYTHONPATH=${PYTHON_ENVIR}"
+  )
 endforeach()
 message(STATUS "Python demos: ${PYTHONDEMOS}")
