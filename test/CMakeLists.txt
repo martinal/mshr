@@ -30,7 +30,7 @@ set(TESTFILES_NOTCLOSED "cube-ouvert.off;mushroom.off")
 
 foreach(CURRENT_DATA_FILE IN LISTS TESTFILES_VALID)
   message(STATUS "Adding test: ${CURRENT_DATA_FILE}")
-  #add_test("FilePass-${CURRENT_DATA_FILE}" "../mshr-surfacefile" "${CGAL_DATA_DIR}/${CURRENT_DATA_FILE}")
+  add_test("FilePass-${CURRENT_DATA_FILE}" "../mshr-surfacefile" "${CGAL_DATA_DIR}/${CURRENT_DATA_FILE}")
 endforeach(CURRENT_DATA_FILE)
 
 # Not sure this is the best way. Is saves the environment at "cmake
