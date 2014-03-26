@@ -205,7 +205,7 @@ void STLFileReader::read(const std::string filename,
       const double y = strToDouble(*tok_iter); ++tok_iter;
       const double z = strToDouble(*tok_iter); ++tok_iter;
 
-      std::array<double, 3> vertex = {x, y, z};
+      std::array<double, 3> vertex = {{x, y, z}};
 
       // TODO: Use std::map::find()
       // (to avoid two queries)
