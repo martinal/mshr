@@ -1,12 +1,12 @@
-FIND_PACKAGE(SWIG REQUIRED)
-INCLUDE(${SWIG_USE_FILE})
+find_package(SWIG REQUIRED)
+include(${SWIG_USE_FILE})
 
-FIND_PACKAGE(PythonLibs)
-INCLUDE_DIRECTORIES(${PYTHON_INCLUDE_PATH})
+find_package(PythonLibs)
+include_directories(${PYTHON_INCLUDE_PATH})
 
-INCLUDE_DIRECTORIES(${CMAKE_CURRENT_SOURCE_DIR})
+include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
-SET(CMAKE_SWIG_FLAGS 
+set(CMAKE_SWIG_FLAGS 
   -module mshr
   -shadow
   -modern
@@ -26,8 +26,9 @@ SET(CMAKE_SWIG_FLAGS
   ${DOLFIN_PYTHON_DEFINITIONS}
 )
 
-ADD_DEFINITIONS( ${DOLFIN_PYTHON_DEFINITIONS} )
+add_definitions( ${DOLFIN_PYTHON_DEFINITIONS} )
 
-SET_SOURCE_FILES_PROPERTIES(mshr.i PROPERTIES CPLUSPLUS ON)
-SWIG_ADD_MODULE(mshr python mshr.i)
-SWIG_LINK_LIBRARIES(mshr ${PYTHON_LIBRARIES} mshr )
+set_source_files_properties(mshr.i PROPERTIES CPLUSPLUS ON)
+swig_add_module(mshr python mshr.i)
+swig_link_libraries(mshr ${PYTHON_LIBRARIES} mshr )
+
