@@ -29,6 +29,9 @@
 #include <CGAL/Min_sphere_of_spheres_d.h>
 #include <CGAL/Min_sphere_of_spheres_d_traits_3.h>
 
+#include <vector>
+#include <array>
+
 namespace
 {
 //-----------------------------------------------------------------------------
