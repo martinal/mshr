@@ -60,14 +60,14 @@ void generate(dolfin::Mesh& mesh,
     else
     {
       std::string e = "Unknown mesh generator backend: " + backend;
-      dolfin::dolfin_error("CSGMeshGenerator.cpp",
+      dolfin::dolfin_error("MeshGenerator.cpp",
                            "Generator mesh of 3D geometry",
                            e);
     }
   }
   else
   {
-    dolfin::dolfin_error("CSGMeshGenerator.cpp",
+    dolfin::dolfin_error("MeshGenerator.cpp",
                          "create mesh from CSG geometry",
                          "Unhandled geometry dimension %d", geometry.dim());
   }
@@ -93,7 +93,7 @@ void get_boundary_mesh(dolfin::BoundaryMesh& mesh,
   }
   else
   {
-    dolfin::dolfin_error("CSGMeshGenerator.cpp",
+    dolfin::dolfin_error("MeshGenerator.cpp",
                          "create boundary mesh from CSG geometry",
                          "Unhandled geometry dimension %d", geometry.dim());
   }
