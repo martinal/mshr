@@ -237,7 +237,7 @@ void CSGCGALMeshGenerator3D::generate(dolfin::Mesh& mesh) const
     CSGCGALDomain3D exact_domain(*_geometry);
     exact_domain.ensure_meshing_preconditions();
 
-    convert_to_inexact(exact_domain, p, !exact_domain.is_bounded());
+    convert_to_inexact(exact_domain, p, !exact_domain.is_insideout());
 
   }
 

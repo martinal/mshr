@@ -927,7 +927,7 @@ void CSGCGALDomain3D::ensure_meshing_preconditions()
     remove_degenerated_facets(parameters["degenerate_threshold"]);
 }
 //-----------------------------------------------------------------------------
-bool CSGCGALDomain3D::is_bounded() const
+bool CSGCGALDomain3D::is_insideout() const
 {
   typedef Exact_Kernel::Ray_3 Exact_Ray_3;
 

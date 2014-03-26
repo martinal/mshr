@@ -50,7 +50,7 @@ class CSGCGALDomain3D : public dolfin::Variable
   std::size_t num_halfedges() const;
 
   double volume() const;
-  bool is_bounded() const;
+  bool is_insideout() const;
   std::size_t num_degenerate_facets(double threshold) const;
 
   // Output in double precision
