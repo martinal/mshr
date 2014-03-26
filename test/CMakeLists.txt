@@ -15,12 +15,26 @@
 # You should have received a copy of the GNU General Public License
 # along with mshr.  If not, see <http://www.gnu.org/licenses/>.
 
-# This file defines simple regression tests. 
+# This file defines regression tests. 
+
+# Make sure python finds the mshr module.
+# NOTE: Not sure this is the best way. Is saves the environment at "cmake
+# time" and applies it when running the test. Changing PYTHONPATH
+# later will not have effect. Not sure how to add tp PYTHONPATH at
+# runtime.
+set(PYTHON_ENVIR "${CMAKE_BINARY_DIR}/swig:$ENV{PYTHONPATH};DOLFIN_NOPLOT=True")
 
 
-# test with a number of input files
-message(STATUS "Preparing tests")
+############# A python program that just imports dolfin and mshr ################
+add_test("Python-DummyImport" "python" "${CMAKE_SOURCE_DIR}/test/dummy.py")
+set_property(TEST "Python-DummyImport" PROPERTY
+    ENVIRONMENT "PYTHONPATH=${PYTHON_ENVIR}"
+)
 
+
+
+############# Try meshing some surface files found in the cgal source ###########
+# TODO: Print mesh quality measure from program and check the value
 set(CGAL_DATA_DIR "${CMAKE_SOURCE_DIR}/3rdparty/CGAL-4.3/demo/Polyhedron/data")
 
 # Files that should pass
@@ -33,16 +47,9 @@ foreach(CURRENT_DATA_FILE IN LISTS TESTFILES_VALID)
   add_test("FilePass-${CURRENT_DATA_FILE}" "../mshr-surfacefile" "${CGAL_DATA_DIR}/${CURRENT_DATA_FILE}")
 endforeach(CURRENT_DATA_FILE)
 
-# Not sure this is the best way. Is saves the environment at "cmake
-# time" and applies it when running the test. Changing PYTHONPATH
-# later will not have effect. Not sure how to add tp PYTHONPATH at
-# runtime.
-set(PYTHON_ENVIR "${CMAKE_BINARY_DIR}/swig:$ENV{PYTHONPATH};DOLFIN_NOPLOT=True")
 
-add_test("Python-DummyImport" "python" "${CMAKE_SOURCE_DIR}/test/dummy.py")
-set_property(TEST "Python-DummyImport" PROPERTY
-    ENVIRONMENT "PYTHONPATH=${PYTHON_ENVIR}"
-)
+############ Run the demos as regression test  #################################
+
 
 file(GLOB PYTHONDEMOS "${CMAKE_SOURCE_DIR}/demo/python/*.py")
 foreach(CURRENT_DEMO IN LISTS PYTHONDEMOS)
@@ -52,4 +59,3 @@ foreach(CURRENT_DEMO IN LISTS PYTHONDEMOS)
   )
 
 endforeach()
-message(STATUS "Python demos: ${PYTHONDEMOS}")
