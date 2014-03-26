@@ -39,8 +39,7 @@ domain.set_subdomain(2, Rectangle(2., 2., 3., 4.))
 # plot(domain, "2D Geometry (boundary)")
 
 # Generate and plot mesh
-m = dolfin.Mesh()
-mesh2d = CSGMeshGenerator.generate(m, domain, 45)
+mesh2d = generate_mesh(domain, 45)
 print mesh2d
 #dolfin.plot(mesh2d, "2D mesh")
 

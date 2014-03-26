@@ -33,8 +33,7 @@ dolfin.info("\nVerbose output of 3D geometry:")
 dolfin.info(domain, True)
 
 # Generate and plot mesh
-m = dolfin.Mesh()
-CSGMeshGenerator.generate(m, domain, 16)
+m = generate_mesh(domain, 16)
 
 dolfin.info(m)
 dolfin.plot(m, "3D mesh")
