@@ -51,7 +51,7 @@ namespace mshr
     static dolfin::Parameters default_parameters()
     {
       dolfin::Parameters p("csg_cgal_meshgenerator");
-      p.add("mesh_resolution", 64);
+      p.add("mesh_resolution", 64.0);
       p.add("perturb_optimize", false);
       p.add("exude_optimize", false);
       p.add("lloyd_optimize", false);

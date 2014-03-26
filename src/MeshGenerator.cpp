@@ -33,13 +33,13 @@ namespace mshr
 //-----------------------------------------------------------------------------
 void generate(dolfin::Mesh& mesh,
               const CSGGeometry& geometry,
-              std::size_t resolution,
+              double resolution,
               std::string backend)
 {
   if (geometry.dim() == 2)
   {
     CSGCGALMeshGenerator2D generator(geometry);
-    generator.parameters["mesh_resolution"] = static_cast<int>(resolution);
+    generator.parameters["mesh_resolution"] = resolution;
     generator.generate(mesh);
   }
   else if (geometry.dim() == 3)
@@ -47,13 +47,13 @@ void generate(dolfin::Mesh& mesh,
     if (backend == "cgal")
     {
       CSGCGALMeshGenerator3D generator(geometry);
-      generator.parameters["mesh_resolution"] = static_cast<int>(resolution);
+      generator.parameters["mesh_resolution"] = resolution;
       generator.generate(mesh);
     }
     else if (backend == "tetgen")
     {
       TetgenMeshGenerator3D generator(geometry);
-      generator.parameters["mesh_resolution"] = static_cast<int>(resolution);
+      generator.parameters["mesh_resolution"] = resolution;
       generator.generate(mesh);
 
     }

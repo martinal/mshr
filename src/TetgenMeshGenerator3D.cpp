@@ -24,10 +24,15 @@
 #include <dolfin/common/NoDeleter.h>
 #include <tetgen.h>
 
+// Bounding sphere computation
+#include <CGAL/Cartesian.h>
+#include <CGAL/Min_sphere_of_spheres_d.h>
+#include <CGAL/Min_sphere_of_spheres_d_traits_3.h>
+
 namespace
 {
 //-----------------------------------------------------------------------------
-static void build_dolfin_mesh(const tetgenio& tetgenmesh, dolfin::Mesh& dolfinmesh)
+void build_dolfin_mesh(const tetgenio& tetgenmesh, dolfin::Mesh& dolfinmesh)
 {
   // Clear mesh
   dolfinmesh.clear();
@@ -64,6 +69,31 @@ static void build_dolfin_mesh(const tetgenio& tetgenmesh, dolfin::Mesh& dolfinme
   // Close mesh editor
   mesh_editor.close();
 }
+//-----------------------------------------------------------------------------
+double bounding_sphere_radius(const std::vector<dolfin::Point>& vertices)
+{
+  typedef double FT;
+  typedef CGAL::Cartesian<FT> K;
+  typedef CGAL::Min_sphere_of_spheres_d_traits_3<K, FT> MinSphereTraits;
+  typedef CGAL::Min_sphere_of_spheres_d<MinSphereTraits> Min_sphere;
+  typedef MinSphereTraits::Sphere Sphere;
+
+  std::vector<Sphere> S;
+
+  for (std::vector<dolfin::Point>::const_iterator it = vertices.begin();
+       it != vertices.end(); ++it)
+  {
+    S.push_back(Sphere(K::Point_3(it->x(),
+                                  it->y(),
+                                  it->z()), 0.0));
+  }
+
+  Min_sphere ms(S.begin(), S.end());
+  dolfin_assert(ms.is_valid());
+
+  return ms.radius();
+}
+
 } // end anonymous namespace
 //-----------------------------------------------------------------------------
 namespace mshr
@@ -116,7 +146,6 @@ void TetgenMeshGenerator3D::generate(dolfin::Mesh& mesh) const
 
     i++;
   }
-
   
   // Copy the facets
   in.numberoffacets = facets.size();
@@ -147,7 +176,33 @@ void TetgenMeshGenerator3D::generate(dolfin::Mesh& mesh) const
   //   do quality mesh generation (q) with a specified quality bound
   //   (1.414), and apply a maximum volume constraint (a0.1).
 
-  std::string str("pq1.414a0.1");
+  std::stringstream tetgenparams("p");
+  if (!parameters["disable_quality_improvement"])
+  {
+    tetgenparams << "q"
+                 << double(parameters["max_radius_edge_ratio"]) << "/"
+                 << double(parameters["min_dihedral_angle"]);
+
+    tetgenparams << "a";
+    if (double(parameters["max_tet_volume"]) > 0)
+    {
+      tetgenparams << double(parameters["max_tet_volume"]);
+    }
+    else
+    {
+      const double resolution = parameters["mesh_resolution"];
+
+      // Try to compute reasonable parameters
+      const double r = bounding_sphere_radius(vertices);
+      const double cell_size = r/static_cast<double>(resolution)*2.0;
+      tetgenparams << cell_size;
+    }
+  }
+
+
+  // Tetgen requires a char[] (as opposed to a const char[])
+  // so we need to copy of from the string
+  const std::string str = tetgenparams.str();
   std::unique_ptr<char> writable(new char[str.size() + 1]);
   std::copy(str.begin(), str.end(), writable.get());
   writable.get()[str.size()] = '\0'; // terminating 0

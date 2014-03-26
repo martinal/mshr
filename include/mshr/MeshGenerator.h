@@ -36,7 +36,7 @@ namespace mshr
   /// Generate mesh from CSG geometry
   void generate(dolfin::Mesh& mesh,
                 const CSGGeometry& geometry,
-                std::size_t resolution,
+                double resolution,
                 std::string backend="cgal");
 
   /// Extract boundary of CSG geometry as dolfin::BoundaryMesh

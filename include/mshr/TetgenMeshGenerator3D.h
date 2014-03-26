@@ -47,7 +47,14 @@ namespace mshr
     static dolfin::Parameters default_parameters()
     {
       dolfin::Parameters p("tetgen_meshgenerator");
-      p.add("mesh_resolution", 64);
+      p.add("mesh_resolution", 64.0);
+
+      p.add("disable_quality_improvement", false);
+      p.add("max_radius_edge_ratio", 2.0);
+      p.add("min_dihedral_angle", .0);
+
+      // If set to a positive value, this will override "mesh_resolution"
+      p.add("max_tet_volume", -1.0);
 
       return p;
     }
