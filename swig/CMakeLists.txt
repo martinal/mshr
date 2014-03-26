@@ -1,3 +1,4 @@
+find_package(PythonInterp 2)
 find_package(SWIG REQUIRED)
 include(${SWIG_USE_FILE})
 
@@ -32,3 +33,27 @@ set_source_files_properties(mshr.i PROPERTIES CPLUSPLUS ON)
 swig_add_module(mshr python mshr.i)
 swig_link_libraries(mshr ${PYTHON_LIBRARIES} mshr )
 
+get_target_property(SWIG_MODULE_LOCATION
+${SWIG_MODULE_mshr_REAL_NAME} LOCATION)
+
+message(STATUS "Location: ${SWIG_MODULE_LOCATION}")
+
+# Python command string to discover module install location
+if (CMAKE_INSTALL_PREFIX_INITIALIZED_TO_DEFAULT)
+  set(PYTHON_LIB_DISCOVER_STR "import sys, distutils.sysconfig; sys.stdout.write(distutils.sysconfig.get_python_lib(plat_specific=True))")
+else()
+  set(PYTHON_LIB_DISCOVER_STR "import sys, distutils.sysconfig; sys.stdout.write(distutils.sysconfig.get_python_lib(plat_specific=True, prefix='${CMAKE_INSTALL_PREFIX}'))")
+endif()
+
+# Probe Python interpreter
+execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "${PYTHON_LIB_DISCOVER_STR}"
+  OUTPUT_VARIABLE INSTALL_PYTHON_MODULE_DIR
+  )
+
+
+set(INSTALL_PYTHON_MODULE_DIR ${INSTALL_PYTHON_MODULE_DIR}
+  CACHE PATH "Python extension module installation directory.")
+
+
+install(FILES ${SWIG_MODULE_LOCATION} ${CMAKE_CURRENT_BINARY_DIR}/$mshr.py
+  DESTINATION ${INSTALL_PYTHON_MODULE_DIR})

@@ -70,7 +70,6 @@ target_link_libraries( mshr ${Boost_LIBRARIES}
                             ${DOLFIN_3RD_PARTY_LIBRARIES}
                      )
 
-
 # Build the python bindings
 add_subdirectory(swig)
 
@@ -84,6 +83,18 @@ endif()
 
 add_executable( mshr-surfacefile app/mshr-surfacefile.cpp )
 target_link_libraries( mshr-surfacefile mshr)
+
+# install library and app
+install(TARGETS mshr mshr-surfacefile
+  RUNTIME DESTINATION bin
+  LIBRARY DESTINATION lib
+  ARCHIVE DESTINATION lib
+)
+
+# install header files
+install(DIRECTORY include/ DESTINATION include)
+
+# install python module
 
 
 option(ENABLE_TESTS "Enable testing" OFF)
