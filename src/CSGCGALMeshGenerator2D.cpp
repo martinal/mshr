@@ -350,7 +350,7 @@ void CSGCGALMeshGenerator2D::generate(dolfin::Mesh& mesh)
   mesher.set_seeds(list_of_seeds.begin(), list_of_seeds.end(), true);
 
   // Set shape and size criteria
-  const int mesh_resolution = parameters["mesh_resolution"];
+  const double mesh_resolution = parameters["mesh_resolution"];
   if (mesh_resolution > 0)
   {
     const double min_radius = total_domain.compute_boundingcircle_radius();
