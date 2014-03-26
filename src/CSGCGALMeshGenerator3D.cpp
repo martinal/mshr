@@ -46,9 +46,6 @@
 #include <CGAL/Min_sphere_of_spheres_d.h>
 #include <CGAL/Min_sphere_of_spheres_d_traits_3.h>
 
-namespace mshr
-{
-
 // Domain
 typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
 typedef CGAL::Mesh_polyhedron_3<K>::type MeshPolyhedron_3;
@@ -64,11 +61,15 @@ typedef CGAL::Mesh_triangulation_3<PolyhedralMeshDomain>::type Tr;
 
 typedef CGAL::Mesh_complex_3_in_triangulation_3<Tr> C3t3;
 
-
 // Criteria
 typedef CGAL::Mesh_criteria_3<Tr> Mesh_criteria;
+
+namespace
+{
+
+
 //-----------------------------------------------------------------------------
-/*static*/ void build_dolfin_mesh(const C3t3& c3t3, dolfin::Mesh& mesh)
+void build_dolfin_mesh(const C3t3& c3t3, dolfin::Mesh& mesh)
 {
   typedef C3t3::Triangulation Triangulation;
   typedef Triangulation::Vertex_handle Vertex_handle;
@@ -124,7 +125,7 @@ typedef CGAL::Mesh_criteria_3<Tr> Mesh_criteria;
 struct Copy_polyhedron_to
   : public CGAL::Modifier_base<typename MeshPolyhedron_3::HalfedgeDS>
 {
-  Copy_polyhedron_to(const CSGCGALDomain3D& in_poly, bool flip)
+  Copy_polyhedron_to(const mshr::CSGCGALDomain3D& in_poly, bool flip)
     : _in_poly(in_poly), flip(flip) {}
 
   void operator()(typename MeshPolyhedron_3::HalfedgeDS& out_hds)
@@ -174,11 +175,11 @@ struct Copy_polyhedron_to
     builder.end_surface();
   }
 private:
-  const CSGCGALDomain3D& _in_poly;
+  const mshr::CSGCGALDomain3D& _in_poly;
   const bool flip;
 }; 
 
-static void convert_to_inexact(const CSGCGALDomain3D &exact_domain, 
+static void convert_to_inexact(const mshr::CSGCGALDomain3D &exact_domain,
                                MeshPolyhedron_3 &inexact_domain,
                                bool flip)
 {
@@ -187,7 +188,7 @@ static void convert_to_inexact(const CSGCGALDomain3D &exact_domain,
   CGAL_assertion(inexact_domain.is_valid());
 }
 //-----------------------------------------------------------------------------
-/*static*/ double get_bounding_sphere_radius(const MeshPolyhedron_3& polyhedron)
+double get_bounding_sphere_radius(const MeshPolyhedron_3& polyhedron)
 {
   typedef CGAL::Min_sphere_of_spheres_d_traits_3<K, K::FT> MinSphereTraits;
   typedef CGAL::Min_sphere_of_spheres_d<MinSphereTraits> Min_sphere;
@@ -206,7 +207,10 @@ static void convert_to_inexact(const CSGCGALDomain3D &exact_domain,
 
   return CGAL::to_double(ms.radius());
 }
+} //end anonymous namespace
 //-----------------------------------------------------------------------------
+namespace mshr
+{
 CSGCGALMeshGenerator3D::CSGCGALMeshGenerator3D(const CSGGeometry& geometry)
 {
   std::shared_ptr<const CSGGeometry> tmp = dolfin::reference_to_no_delete_pointer<const CSGGeometry>(geometry);
