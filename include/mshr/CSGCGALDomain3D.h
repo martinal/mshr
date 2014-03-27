@@ -53,6 +53,8 @@ class CSGCGALDomain3D : public dolfin::Variable
   bool is_insideout() const;
   std::size_t num_degenerate_facets(double threshold) const;
 
+  void save_off(std::string filename) const;
+
   // Output in double precision
   // TODO: Define iterators to be more memory friendly
   void get_vertices(std::vector<dolfin::Point> &v) const;
@@ -74,8 +76,6 @@ class CSGCGALDomain3D : public dolfin::Variable
 
     return p;
   }
-
-
 
  private :
   boost::scoped_ptr<CSGCGALDomain3DImpl> impl;

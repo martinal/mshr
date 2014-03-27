@@ -45,8 +45,6 @@ namespace mshr
 
     void generate(dolfin::Mesh& mesh) const;
 
-    void save_off(std::string filename) const;
-
     /// Default parameter values
     static dolfin::Parameters default_parameters()
     {

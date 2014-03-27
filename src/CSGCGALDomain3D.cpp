@@ -983,5 +983,18 @@ std::size_t CSGCGALDomain3D::num_degenerate_facets(double threshold) const
   return number_of_degenerate_facets(impl->p, threshold);
 }
 //-----------------------------------------------------------------------------
+void CSGCGALDomain3D::save_off(std::string filename) const
+{
+  {
+    std::string message = "Writing to file: "+filename;
+    log(dolfin::TRACE, message);
+  }
+
+  std::ofstream outfile(filename.c_str());
+
+  outfile << impl->p;
+  outfile.close();
+}
+
 } // end namespace mshr
 

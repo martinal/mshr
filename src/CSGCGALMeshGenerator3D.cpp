@@ -313,21 +313,4 @@ void CSGCGALMeshGenerator3D::generate(dolfin::Mesh& mesh) const
   build_dolfin_mesh(c3t3, mesh);
 }
 //-----------------------------------------------------------------------------
-void CSGCGALMeshGenerator3D::save_off(std::string filename) const
-{
-  CSGCGALDomain3D exact_domain(*_geometry);
-  if (parameters["remove_degenerated"])
-    // TODO: Make the threshold a parameter
-    exact_domain.remove_degenerated_facets(1e-6);
-
-  // Create CGAL mesh domain
-  MeshPolyhedron_3 p;
-  convert_to_inexact(exact_domain, p, false);
-
-  dolfin::cout << "Writing to file " << filename << dolfin::endl;
-  std::ofstream outfile(filename.c_str());
-
-  outfile << p;
-  outfile.close();
-}
 }
