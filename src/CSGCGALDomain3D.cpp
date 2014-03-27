@@ -975,7 +975,7 @@ bool CSGCGALDomain3D::is_insideout() const
   }
 
   // std::cout << "Number of intersections: " << points.size() << std::endl;
-  return points.size() % 2 == 0;
+  return points.size() % 2 != 0;
 }
 //-----------------------------------------------------------------------------
 std::size_t CSGCGALDomain3D::num_degenerate_facets(double threshold) const
