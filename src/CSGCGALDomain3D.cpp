@@ -65,33 +65,29 @@ typedef Exact_Kernel::Vector_3 Vector_3;
 
 
 // Convenience routine to make debugging easier. Remove before releasing.
-void add_facet(CGAL::Polyhedron_incremental_builder_3<Exact_HalfedgeDS>& builder,
-		      std::vector<int>& vertices, bool print=false)
+template<typename Builder, bool print=false>
+inline void add_triangular_facet(Builder& builder,
+                          int v0, int v1, int v2)
 {
   static int facet_no = 0;
 
   if (print)
   {
     std::cout << "Begin facet " << facet_no << std::endl;
-    if (!vertices.size())
-    {
-      std::cout << "No vertices in facet!" << std::endl;
-      return;
-    }
 
     // Print vertices
-    for (std::vector<int>::iterator it=vertices.begin(); it != vertices.end(); it++)
-      std::cout << "Vertex: " << (*it) << std::endl;
+    std::cout << "Vertex: " << v0 << " " << v1 << " " << v2 << std::endl;
 
-    if (builder.test_facet(vertices.begin(), vertices.end()))
-      std::cout << "Facet ok, size: " << vertices.size() << std::endl;
-    else
-      std::cout << "Facet not ok" << std::endl;
+    // if (builder.test_facet(vertices.begin(), vertices.end()))
+    //   std::cout << "Facet ok, size: " << vertices.size() << std::endl;
+    // else
+    //   std::cout << "Facet not ok" << std::endl;
   }
 
   builder.begin_facet();
-  for (std::vector<int>::iterator it=vertices.begin(); it != vertices.end(); it++)
-    builder.add_vertex_to_facet(*it);
+  builder.add_vertex_to_facet(v0);
+  builder.add_vertex_to_facet(v1);
+  builder.add_vertex_to_facet(v2);
   builder.end_facet();
 
   if (print)
@@ -99,15 +95,18 @@ void add_facet(CGAL::Polyhedron_incremental_builder_3<Exact_HalfedgeDS>& builder
   facet_no++;
 }
 //-----------------------------------------------------------------------------
-void add_vertex(CGAL::Polyhedron_incremental_builder_3<Exact_HalfedgeDS>& builder,
-                const Exact_Point_3& point, bool print=false)
+template<typename Builder, bool print=false>
+inline void add_vertex(Builder& builder,
+                const Exact_Point_3& point)
 {
-  static int vertex_no = 0;
   if (print)
+  {
+    static int vertex_no = 0;
     std::cout << "Adding vertex " << vertex_no << " at " << point << std::endl;
+    vertex_no++;
+  }
 
   builder.add_vertex(point);
-  vertex_no++;
 }
 
 //-----------------------------------------------------------------------------
@@ -159,21 +158,8 @@ class Build_sphere : public CGAL::Modifier_base<Exact_HalfedgeDS>
         const std::size_t offset1 = i*num_sectors;
         const std::size_t offset2 = (i+1)*num_sectors;
 
-        {
-          std::vector<int> f;
-          f.push_back(offset1 + j);
-          f.push_back(offset1 + (j+1)%num_sectors);
-          f.push_back(offset2 + j);
-          add_facet(builder, f);
-        }
-
-        {
-          std::vector<int> f;
-          f.push_back(offset2 + (j+1)%num_sectors);
-          f.push_back(offset2 + j);
-          f.push_back(offset1 + (j+1)%num_sectors);
-          add_facet(builder, f);
-        }
+        add_triangular_facet(builder, offset1 + j, offset1 + (j+1)%num_sectors, offset2 + j);
+        add_triangular_facet(builder, offset2 + (j+1)%num_sectors, offset2 + j, offset1 + (j+1)%num_sectors);
       }
     }
 
@@ -181,23 +167,11 @@ class Build_sphere : public CGAL::Modifier_base<Exact_HalfedgeDS>
     const std::size_t top_offset = num_sectors*(num_slices-1);
     for (std::size_t i = 0; i < num_sectors; i++)
     {
-      {
-        // Bottom facet
-        std::vector<int> f;
-        f.push_back( num_vertices-2 );
-        f.push_back( (i+1)%num_sectors );
-        f.push_back(i);
-        add_facet(builder, f);
-      }
+      // Bottom facet
+      add_triangular_facet(builder, num_vertices-2, (i+1)%num_sectors, i);
 
-      {
-        // Top facet
-        std::vector<int> f;
-        f.push_back( num_vertices-1 );
-        f.push_back( top_offset + (i%num_sectors) );
-        f.push_back( top_offset + (i+1)%num_sectors );
-        add_facet(builder, f);
-      }
+      // Top facet
+      add_triangular_facet(builder, num_vertices-1, top_offset + (i%num_sectors), top_offset + (i+1)%num_sectors);
     }
     builder.end_surface();
   }
@@ -243,101 +217,19 @@ class Build_box : public CGAL::Modifier_base<Exact_HalfedgeDS>
     add_vertex(builder, Exact_Point_3(y0, y1, x2));
     add_vertex(builder, Exact_Point_3(y0, y1, y2));
 
-    {
-      std::vector<int> f;
-      f.push_back(1);
-      f.push_back(2);
-      f.push_back(3);
-      add_facet(builder, f);
-    }
 
-    {
-      std::vector<int> f;
-      f.push_back(1);
-      f.push_back(3);
-      f.push_back(5);
-      add_facet(builder, f);
-    }
-
-    {
-      std::vector<int> f;
-      f.push_back(1);
-      f.push_back(5);
-      f.push_back(4);
-      add_facet(builder, f);
-    }
-
-    {
-      std::vector<int> f;
-      f.push_back(4);
-      f.push_back(5);
-      f.push_back(7);
-      add_facet(builder, f);
-    }
-
-    {
-      std::vector<int> f;
-      f.push_back(4);
-      f.push_back(7);
-      f.push_back(0);
-      add_facet(builder, f);
-    }
-
-    {
-      std::vector<int> f;
-      f.push_back(0);
-      f.push_back(7);
-      f.push_back(6);
-      add_facet(builder, f);
-    }
-
-    {
-      std::vector<int> f;
-      f.push_back(0);
-      f.push_back(6);
-      f.push_back(2);
-      add_facet(builder, f);
-    }
-
-    {
-      std::vector<int> f;
-      f.push_back(2);
-      f.push_back(6);
-      f.push_back(3);
-      add_facet(builder, f);
-    }
-
-    {
-      std::vector<int> f;
-      f.push_back(7);
-      f.push_back(5);
-      f.push_back(6);
-      add_facet(builder, f);
-    }
-
-    {
-      std::vector<int> f;
-      f.push_back(6);
-      f.push_back(5);
-      f.push_back(3);
-      add_facet(builder, f);
-    }
-
-    {
-      std::vector<int> f;
-      f.push_back(1);
-      f.push_back(4);
-      f.push_back(2);
-      add_facet(builder, f);
-    }
-
-    {
-      std::vector<int> f;
-      f.push_back(2);
-      f.push_back(4);
-      f.push_back(0);
-      add_facet(builder, f);
-    }
+    add_triangular_facet(builder, 1, 3, 2);
+    add_triangular_facet(builder, 1, 5, 3);
+    add_triangular_facet(builder, 1, 4, 5);
+    add_triangular_facet(builder, 4, 7, 5);
+    add_triangular_facet(builder, 4, 0, 7);
+    add_triangular_facet(builder, 0, 6, 7);
+    add_triangular_facet(builder, 0, 2, 6);
+    add_triangular_facet(builder, 2, 3, 6);
+    add_triangular_facet(builder, 7, 6, 5);
+    add_triangular_facet(builder, 6, 3, 5);
+    add_triangular_facet(builder, 1, 2, 4);
+    add_triangular_facet(builder, 2, 0, 4);
 
     builder.end_surface();
   }
@@ -425,19 +317,11 @@ class Build_cone : public CGAL::Modifier_base<Exact_HalfedgeDS>
     {
       if (top_degenerate)
       {
-        std::vector<int> f;
-        f.push_back((i + 1)%num_sides);
-        f.push_back(i);
-        f.push_back(num_vertices - 1);
-        add_facet(builder, f);
+        add_triangular_facet(builder, (i + 1)%num_sides, num_vertices - 1, i);
       }
       else if (bottom_degenerate)
       {
-        std::vector<int> f;
-        f.push_back( (i) );
-        f.push_back( (i + 1) % num_sides);
-        f.push_back(num_vertices - 1);
-        add_facet(builder, f);
+        add_triangular_facet(builder, i, num_vertices - 1, (i + 1) % num_sides);
       }
       else
       {
@@ -445,18 +329,10 @@ class Build_cone : public CGAL::Modifier_base<Exact_HalfedgeDS>
         const int vertex_offset = i*2;
 
         // First triangle
-        std::vector<int> f;
-        f.push_back(vertex_offset);
-        f.push_back(vertex_offset + 1);
-        f.push_back((vertex_offset + 2) % (num_sides*2));
-        add_facet(builder, f);
+        add_triangular_facet(builder, vertex_offset, (vertex_offset + 2) % (num_sides*2), vertex_offset + 1);
 
         // Second triangle
-        std::vector<int> g;
-        g.push_back((vertex_offset + 3) % (num_sides*2));
-        g.push_back((vertex_offset + 2) % (num_sides*2));
-        g.push_back(vertex_offset + 1);
-        add_facet(builder, g);
+        add_triangular_facet(builder, (vertex_offset + 3) % (num_sides*2), vertex_offset + 1, (vertex_offset + 2) % (num_sides*2));
       }
     }
 
@@ -465,20 +341,14 @@ class Build_cone : public CGAL::Modifier_base<Exact_HalfedgeDS>
     {
       for (int i = num_sides-1; i >= 0; i -= 1)
       {
-        std::vector<int> f;
         if (!top_degenerate)
         {
-          f.push_back(num_vertices-2);
-          f.push_back( i*2);
-          f.push_back( ( (i+1)*2) % (num_sides*2));
+          add_triangular_facet(builder, num_vertices-2,( (i+1)*2) % (num_sides*2), i*2);
         }
         else
         {
-          f.push_back(num_vertices-2);
-          f.push_back(i);
-          f.push_back( (i+1)%num_sides );
+          add_triangular_facet(builder, num_vertices-2, (i+1)%num_sides, i);
         }
-        add_facet(builder, f);
       }
     }
 
@@ -489,19 +359,11 @@ class Build_cone : public CGAL::Modifier_base<Exact_HalfedgeDS>
       {
         if (!bottom_degenerate)
         {
-          std::vector<int> f;
-          f.push_back(num_vertices-1);
-          f.push_back( ( (i+1)*2)%(num_sides*2) +1 );
-          f.push_back( i*2 + 1 );
-          add_facet(builder, f);
+          add_triangular_facet(builder, num_vertices-1, i*2 + 1, ( (i+1)*2)%(num_sides*2) +1);
         }
         else
         {
-          std::vector<int> f;
-          f.push_back(num_vertices-2);
-          f.push_back( (i+1)%num_sides);
-          f.push_back(i);
-          add_facet(builder, f);
+          add_triangular_facet(builder, num_vertices-2, i, (i+1)%num_sides);
         }
       }
     }
@@ -785,7 +647,6 @@ void convert(const CSGGeometry& geometry,
   log(dolfin::TRACE, "Number of vertices: %d",  P.size_of_vertices());
   log(dolfin::TRACE, "Number of facets: %d", P.size_of_facets());
 }
-
 } //end unnamed namespace
 
 
@@ -997,4 +858,3 @@ void CSGCGALDomain3D::save_off(std::string filename) const
 }
 
 } // end namespace mshr
-
