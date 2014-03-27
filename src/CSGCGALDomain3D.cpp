@@ -769,7 +769,7 @@ void convert(const CSGGeometry& geometry,
   }
   else
   {
-    dolfin::cout << "Convert to nef polyhedron" << dolfin::endl;
+    log(dolfin::TRACE, "Convert to nef polyhedron");
     std::shared_ptr<Nef_polyhedron_3> cgal_geometry
       = convertSubTree(&geometry);
     dolfin_assert(cgal_geometry->is_valid());
@@ -782,8 +782,8 @@ void convert(const CSGGeometry& geometry,
                          "Convert geometry to polyhedron",
                          "Geometry contains no facet");
 
-  dolfin::cout << "Number of vertices: " << P.size_of_vertices() << dolfin::endl;
-  dolfin::cout << "Number of facets:   " << P.size_of_facets() << dolfin::endl;
+  log(dolfin::TRACE, "Number of vertices: %d",  P.size_of_vertices());
+  log(dolfin::TRACE, "Number of facets: %d", P.size_of_facets());
 }
 
 } //end unnamed namespace
@@ -889,7 +889,7 @@ void CSGCGALDomain3D::remove_degenerated_facets(double threshold)
   dolfin::warning("CSGCGALDomain3D::remove_degenerated_facets() not implemented");
 
   int degenerate_facets = number_of_degenerate_facets(impl->p, threshold);
-  dolfin::cout << "Number of degenerate facets: " << degenerate_facets << dolfin::endl;
+  log(dolfin::TRACE, "Number of degenerate facets: %d", degenerate_facets);
 
   // // FIXME: Use has_degenerate_facets() when in production code
   // if (degenerate_facets > 0)

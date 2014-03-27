@@ -245,7 +245,8 @@ void CSGCGALMeshGenerator3D::generate(dolfin::Mesh& mesh) const
 
   if (parameters["detect_sharp_features"])
   {
-    dolfin::cout << "Detecting sharp features" << dolfin::endl;
+    log(dolfin::TRACE, "Detecting sharp features");
+
     //const int feature_threshold = parameters["feature_threshold"];
     domain.detect_features();
   }
@@ -280,33 +281,33 @@ void CSGCGALMeshGenerator3D::generate(dolfin::Mesh& mesh) const
   }
 
   // Mesh generation
-  dolfin::cout << "Generating mesh" << dolfin::endl;
+  log(dolfin::TRACE, "Generating mesh");
   C3t3 c3t3 = CGAL::make_mesh_3<C3t3>(domain, *criteria,
                                                 CGAL::parameters::no_perturb(),
                                                 CGAL::parameters::no_exude());
 
   if (parameters["odt_optimize"])
   {
-    dolfin::cout << "Optimizing mesh by odt optimization" << dolfin::endl;
+    log(dolfin::TRACE, "Optimizing mesh by odt optimization");
     odt_optimize_mesh_3(c3t3, domain);
   }
 
   if (parameters["lloyd_optimize"])
   {
-    dolfin::cout << "Optimizing mesh by lloyd optimization" << dolfin::endl;
+    log(dolfin::TRACE,  "Optimizing mesh by lloyd optimization");
     lloyd_optimize_mesh_3(c3t3, domain);
   }
 
   if (parameters["perturb_optimize"])
   {
-    dolfin::cout << "Optimizing mesh by perturbation" << dolfin::endl;
+    log(dolfin::TRACE,  "Optimizing mesh by perturbation");
     // TODO: Set time limit
     CGAL::perturb_mesh_3(c3t3, domain);
   }
 
   if (parameters["exude_optimize"])
   {
-    dolfin::cout << "Optimizing mesh by sliver exudation" << dolfin::endl;
+    log(dolfin::TRACE, "Optimizing mesh by sliver exudation");
     exude_mesh_3(c3t3);
   }
 
