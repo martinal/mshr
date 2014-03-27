@@ -62,6 +62,7 @@ class CSGCGALDomain2D
   void get_holes(std::list<std::vector<dolfin::Point> >& h, 
                  double truncate_threshold) const;
 
+ private:
   boost::scoped_ptr<CSGCGALDomain2DImpl> impl;
 
 };

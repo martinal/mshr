@@ -10,6 +10,8 @@
     #include <mshr/CSGOperators.h>
     #include <mshr/CSGPrimitives2D.h>
     #include <mshr/CSGPrimitives3D.h>
+    #include <mshr/CSGCGALDomain2D.h>
+    #include <mshr/CSGCGALDomain3D.h>
  
     #include <mshr/CSGGeometry.h>
     #include <mshr/CSGGeometries3D.h>
@@ -71,7 +73,6 @@
 %ignore mshr::operator+;
 %ignore getType;
 
-
 %shared_ptr(mshr::CSGGeometry)
 %shared_ptr(mshr::CSGPrimitive)
 %shared_ptr(mshr::CSGOperator)
@@ -92,6 +93,10 @@
 %shared_ptr(mshr::Surface3D)
 %shared_ptr(mshr::CSGCGALMeshGenerator2D)
 %shared_ptr(mshr::CSGCGALMeshGenerator3D)
+%shared_ptr(mshr::CSGCGALDomain2D)
+%shared_ptr(mshr::CSGCGALDomain3D)
+
+
 
 
 %rename(_generate) mshr::generate;
@@ -102,6 +107,8 @@
 %include <mshr/CSGOperators.h>
 %include <mshr/CSGPrimitives2D.h>
 %include <mshr/CSGPrimitives3D.h>
+%include <mshr/CSGCGALDomain2D.h>
+%include <mshr/CSGCGALDomain3D.h>
 %include <mshr/MeshGenerator.h>
 %include <mshr/CSGCGALMeshGenerator2D.h>
 %include <mshr/CSGCGALMeshGenerator3D.h>
