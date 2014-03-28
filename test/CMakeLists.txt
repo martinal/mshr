@@ -44,7 +44,8 @@ set(TESTFILES_NOTCLOSED "cube-ouvert.off;mushroom.off")
 
 foreach(CURRENT_DATA_FILE IN LISTS TESTFILES_VALID)
   message(STATUS "Adding test: ${CURRENT_DATA_FILE}")
-  add_test("FilePass-${CURRENT_DATA_FILE}" "../mshr-surfacefile" "${CGAL_DATA_DIR}/${CURRENT_DATA_FILE}")
+  add_test(FilePass-cgal-${CURRENT_DATA_FILE} ../mshr-surfacefile -s -b cgal ${CGAL_DATA_DIR}/${CURRENT_DATA_FILE})
+  add_test(FilePass-tetgen-${CURRENT_DATA_FILE} ../mshr-surfacefile -s -b tetgen ${CGAL_DATA_DIR}/${CURRENT_DATA_FILE})
 endforeach(CURRENT_DATA_FILE)
 
 
