@@ -39,7 +39,6 @@
 #include <CGAL/IO/Polyhedron_iostream.h>
 #include <CGAL/Origin.h>
 
-
 #define BOOST_FILESYSTEM_NO_DEPRECATED
 #include <boost/filesystem.hpp>
 
@@ -746,35 +745,24 @@ void CSGCGALDomain3D::get_facets(std::vector< std::array<std::size_t, 3> > &f) c
 //-----------------------------------------------------------------------------
 void CSGCGALDomain3D::remove_degenerated_facets(double threshold) 
 {
-  //dolfin_not_implemented();
-  dolfin::warning("CSGCGALDomain3D::remove_degenerated_facets() not implemented");
+  // FIXME: Use has_degenerate_facets() when in production code
+  if (has_degenerate_facets(impl->p, threshold) > 0)
+  {
+    dolfin_assert(impl->p.is_pure_triangle());
+    log(dolfin::TRACE, "Cleaning degenerate facets");
 
-  int degenerate_facets = number_of_degenerate_facets(impl->p, threshold);
-  log(dolfin::TRACE, "Number of degenerate facets: %d", degenerate_facets);
+    log(dolfin::TRACE, "Collapsing short edges");
+    collapse_short_edges(impl->p, threshold);
+    dolfin_assert(impl->p.is_pure_triangle());
 
-  // // FIXME: Use has_degenerate_facets() when in production code
-  // if (degenerate_facets > 0)
-  // {
-  //   dolfin_assert(p.is_pure_triangle());
+    flip_edges(impl->p, threshold);
 
-  //   shortest_edge(p);
+    // Removal of triangles should preserve the triangular structure
+    // of the polyhedron
+    dolfin_assert(impl->p.is_pure_triangle());
 
-  //   dolfin::cout << "Removing triangles with short edges" << dolfin::endl;
-  //   remove_short_edges(p, threshold);
-
-  //   dolfin::cout << "Number of degenerate facets: "
-  //        << number_of_degenerate_facets(p, threshold) << dolfin::endl;
-
-  //   dolfin::cout << "Removing small triangles" << dolfin::endl;
-  //   remove_small_triangles(p, threshold);
-
-  //   dolfin::cout << "Number of degenerate facets: "
-  //        << number_of_degenerate_facets(p, threshold) << dolfin::endl;
-
-  //   // Removal of triangles should preserve the triangular structure
-  //   // of the polyhedron
-  //   dolfin_assert(p.is_pure_triangle());
-  // }
+    dolfin_assert(!has_degenerate_facets(impl->p, threshold));
+  }
 }
 //-----------------------------------------------------------------------------
 void CSGCGALDomain3D::ensure_meshing_preconditions()
@@ -856,5 +844,20 @@ void CSGCGALDomain3D::save_off(std::string filename) const
   outfile << impl->p;
   outfile.close();
 }
+//-----------------------------------------------------------------------------
+double CSGCGALDomain3D::shortest_edge() const
+{
+  Exact_Polyhedron_3::Edge_const_iterator it = impl->p.edges_begin();
+  Exact_Kernel::FT shortest = (it->vertex()->point() - it->opposite()->vertex()->point()).squared_length();
 
+
+  for (; it != impl->p.edges_end(); it++)
+  {
+    const Exact_Kernel::FT l = (it->vertex()->point() - it->opposite()->vertex()->point()).squared_length();
+    if (l < shortest)
+      shortest = l;
+  }
+
+  return CGAL::to_double(shortest);
+}
 } // end namespace mshr

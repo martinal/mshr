@@ -23,12 +23,12 @@
 #include <CGAL/Kernel/global_functions.h>
 #include <CGAL/Triangle_3.h>
 
-namespace mshr
+namespace
 {
 
 //-----------------------------------------------------------------------------
 template<typename Polyhedron>
-static inline double
+inline double
 get_edge_length(typename Polyhedron::Halfedge_const_handle halfedge)
 {
   return CGAL::to_double((halfedge->vertex()->point() -
@@ -36,18 +36,18 @@ get_edge_length(typename Polyhedron::Halfedge_const_handle halfedge)
 }
 //-----------------------------------------------------------------------------
 template <typename Polyhedron>
-static inline double get_triangle_area(typename Polyhedron::Facet_handle facet)
+inline double get_triangle_area(typename Polyhedron::Facet_handle facet)
 {
   typedef typename Polyhedron::Traits::Triangle_3 Triangle;
   typename Polyhedron::Halfedge_const_handle h = facet->halfedge();
   Triangle t(h->vertex()->point(),
              h->next()->vertex()->point(),
              h->next()->next()->vertex()->point());
-  return t.squared_area();
+  return CGAL::to_double(t.squared_area());
 }
 //-----------------------------------------------------------------------------
 template<typename Polyhedron>
-static inline double
+inline double
 get_min_edge_length(typename Polyhedron::Facet_const_handle facet)
 {
   typename Polyhedron::Facet::Halfedge_around_facet_const_circulator half_edge
@@ -62,6 +62,22 @@ get_min_edge_length(typename Polyhedron::Facet_const_handle facet)
   min_length = std::min(min_length, get_edge_length<Polyhedron>(half_edge));
 
   return min_length;
+}
+//-----------------------------------------------------------------------------
+template<typename Polyhedron>
+inline double
+get_max_edge_length(typename Polyhedron::Facet_const_handle facet)
+{
+  typename Polyhedron::Facet::Halfedge_around_facet_const_circulator h = facet->facet_begin();
+  double max_length = get_edge_length<Polyhedron>(h);
+
+  h++;
+  max_length = std::max(max_length, get_edge_length<Polyhedron>(h));
+
+  h++;
+  max_length = std::max(max_length, get_edge_length<Polyhedron>(h));
+
+  return max_length;
 }
 //-----------------------------------------------------------------------------
 template<typename Polyhedron>
@@ -80,7 +96,7 @@ bool facet_is_degenerate(typename Polyhedron::Facet_const_handle facet,
 }
 //-----------------------------------------------------------------------------
 template<typename Polyhedron>
-static int number_of_degenerate_facets(const Polyhedron& p, const double threshold)
+int number_of_degenerate_facets(const Polyhedron& p, const double threshold)
 {
   int count = 0;
   for (typename Polyhedron::Facet_const_iterator facet = p.facets_begin();
@@ -94,7 +110,7 @@ static int number_of_degenerate_facets(const Polyhedron& p, const double thresho
 }
 //-----------------------------------------------------------------------------
 template <typename Polyhedron>
-static typename Polyhedron::Halfedge_handle
+typename Polyhedron::Halfedge_handle
 get_longest_edge(typename Polyhedron::Facet_handle facet)
 {
   typename Polyhedron::Halfedge_handle edge = facet->halfedge();
@@ -136,33 +152,9 @@ double shortest_edge(Polyhedron& p)
 }
 //-----------------------------------------------------------------------------
 template <typename Polyhedron>
-static void remove_edge(Polyhedron& p, typename
-                        Polyhedron::Halfedge_handle& edge)
+void collapse_edge(Polyhedron& p,
+                          typename Polyhedron::Halfedge_handle& edge)
 {
-
-  // // FIXME: Is it possible to do this in a smarter way than a linear scan
-  // for (csg::Polyhedron_3::Facet_iterator facet = p.facets_begin();
-  //      facet != p.facets_end(); facet++)
-  // {
-  //   if ( facet_is_degenerate<csg::Polyhedron_3>(facet, threshold) )
-  //   {
-  //     //print_facet(facet);
-
-  //     // Find a short edge
-  //     csg::Polyhedron_3::Halfedge::Halfedge_handle shortest_edge = facet->facet_begin();
-  //     csg::Polyhedron_3::Facet::Halfedge_around_facet_circulator current_edge = facet->facet_begin();
-  //     double min_length = get_edge_length(current_edge);
-
-  //     for (int i = 0; i < 2; i++)
-  //     {
-  // 	current_edge++;
-  // 	if (get_edge_length(current_edge) < min_length)
-  // 	{
-  // 	  shortest_edge = current_edge;
-  // 	  min_length = get_edge_length(current_edge);
-  // 	}
-  //     }
-
   // Join small triangles with neighbor facets
   edge = p.join_facet(edge->next());
   p.join_facet(edge->opposite()->prev());
@@ -173,129 +165,107 @@ static void remove_edge(Polyhedron& p, typename
 }
 //-----------------------------------------------------------------------------
 template <typename Polyhedron>
-static void remove_short_edges(Polyhedron& p, const double threshold)
+void collapse_short_edges(Polyhedron& p, const double threshold)
 {
-  while (true)
+  bool done;
+
+  do
   {
-    bool removed = false;
+    done = true;
+
     for (typename Polyhedron::Halfedge_iterator halfedge = p.halfedges_begin();
 	 halfedge != p.halfedges_end(); halfedge++)
     {
       if (get_edge_length<Polyhedron>(halfedge) < threshold)
       {
-	remove_edge<Polyhedron>(p, halfedge);
-	removed = true;
+	collapse_edge<Polyhedron>(p, halfedge);
+        done = false;
 	break;
       }
     }
-
-    if (!removed)
-      break;
-  }
+  } while (!done);
 }
 //-----------------------------------------------------------------------------
-template <typename Polyhedron>
-static typename Polyhedron::Point_3
-facet_midpoint(typename Polyhedron::Facet_handle facet)
-{
-  typename Polyhedron::Point_3 p(CGAL::ORIGIN);
+/* template<typename Polyhedron> */
+/* void collapse_triangle(Polyhedron& P, typename Polyhedron::Facet_handle f) */
+/* { */
+/*   dolfin_assert(f->is_triangle()); */
 
-  typename Polyhedron::Facet::Halfedge_around_facet_circulator half_edge
-    = facet->facet_begin();
+/*   typedef typename Polyhedron::Halfedge_handle Halfedge_handle; */
 
-  for (std::size_t i = 0; i < facet->facet_degree(); i++)
-  {
-    p = p + (half_edge->vertex()->point() - CGAL::ORIGIN);
-    half_edge++;
-  }
+/*   // Check if any of the vertices has degree 3, then we can just remove it as a */
+/*   // center vertex */
+/*   Halfedge_handle h_begin = f->halfedge(), h_current = h_begin; */
+/*   do  */
+/*   { */
+/*     if (h_current->vertex()->degree() == 3) */
+/*     { */
+/*       P.erase_center_vertex(h_current); */
+/*       return; */
+/*     } */
 
-  p = CGAL::ORIGIN
-    + (p - CGAL::ORIGIN)/static_cast<double>(facet->facet_degree());
+/*     h_current = h_current->next(); */
+/*   } while (h_current != h_begin); */
 
-  // std::dolfin::cout << "Center coordinates computed: " << p << std::dolfin::endl;
 
-  // half_edge = facet->facet_begin();
-  // for (std::size_t i = 0; i < facet->facet_degree(); i++)
-  // {
-  //   std::dolfin::cout << "Distance to point << " << half_edge->vertex()->point() << " = " << (half_edge->vertex()->point() - p).squared_length() << std::dolfin::endl;
-  //   half_edge++;
-  // }
-
-  return p;
-}
+  //
+// }
 //-----------------------------------------------------------------------------
-template <typename Polyhedron>
-static void
-remove_triangle(Polyhedron& p, typename Polyhedron::Facet_handle facet)
-{
-  dolfin_assert(facet->is_triangle());
+// Remove small triangles, ie. triangles with only short edges.
+// Triangles are collapsed into a vertex.
+/* template<typename Polyhedron> */
+/* void collapse_small_triangles(Polyhedron& p, const double threshold) */
+/* { */
+/*   bool done; */
+/*   do */
+/*   { */
+/*     done = true; */
 
-  // dolfin::cout << "Removing triangle" << dolfin::endl;
-  // print_facet<Polyhedron>(facet);
+/*     for (typename Polyhedron::Facet_iterator facet = p.facets_begin(); */
+/* 	 facet != p.facets_end(); facet++) */
+/*     { */
+/*       dolfin_assert(facet->is_triangle()); */
 
-  // Find the longest edge
-  typename Polyhedron::Halfedge_handle edge
-    = get_longest_edge<Polyhedron>(facet);
-
-  // dolfin::cout << "Longest edge" << dolfin::endl;
-  // print_halfedge<Polyhedron>(edge);
-
-  // dolfin::cout << "Opposite triangle" << dolfin::endl;
-  // print_facet<Polyhedron>(edge->opposite()->facet());
-
-  edge = p.join_facet(edge);
-  // dolfin::cout << "Edge after join: " << dolfin::endl;
-  // print_halfedge<Polyhedron>(edge);
-
-  // dolfin::cout << "Facet after join" << dolfin::endl;
-  // print_facet<Polyhedron>(edge->facet());
-
-  typename Polyhedron::Point_3 new_center
-    = facet_midpoint<Polyhedron>(edge->facet());
-
-  edge = p.create_center_vertex(edge);
-
-  edge->vertex()->point() = new_center;
-
-  // std::dolfin::cout << "Center vertex: " << edge->vertex()->point() << std::dolfin::endl;
-
-  // for (std::size_t i=0; i < 4; i++)
-  // {
-  //   print_facet<Polyhedron>(edge->facet());
-  //   edge = edge->next()->opposite();
-  // }
-}
+/*       if (get_max_edge_length<Polyhedron>(facet) < threshold) */
+/*       { */
+/* 	// dolfin::cout << "Small triangle detected" << dolfin::endl; */
+/* 	// print_facet<Polyhedron>(facet); */
+/* 	collapse_triangle<Polyhedron>(p, facet); */
+/*         done = false; */
+/* 	break; */
+/*       } */
+/*     } */
+/*   } while (!done); */
+/* } */
 //-----------------------------------------------------------------------------
 template<typename Polyhedron>
-static void remove_small_triangles(Polyhedron& p, const double threshold)
+void flip_edges(Polyhedron& p,
+                double threshold)
 {
-  int n = number_of_degenerate_facets(p, threshold);
+  bool done;
 
-  while (n > 0)
+  do
   {
+    done = true;
+
     for (typename Polyhedron::Facet_iterator facet = p.facets_begin();
-	 facet != p.facets_end(); facet++)
+         facet != p.facets_end(); facet++)
     {
       dolfin_assert(facet->is_triangle());
-
       if (get_triangle_area<Polyhedron>(facet) < threshold)
       {
-	// dolfin::cout << "Small triangle detected" << dolfin::endl;
-	// print_facet<Polyhedron>(facet);
-	remove_triangle<Polyhedron>(p, facet);
-	n = number_of_degenerate_facets<Polyhedron>(p, threshold);
-	break;
+        p.flip_edge(get_longest_edge<Polyhedron>(facet));
+        done = false;
       }
     }
-  }
+  } while (!done);
 }
-
 //-----------------------------------------------------------------------------
 template<typename Polyhedron>
-static bool has_degenerate_facets(const Polyhedron& p,
-                                  double threshold)
+bool has_degenerate_facets(const Polyhedron& p,
+                           double threshold)
 {
-  for (typename Polyhedron::Facet_iterator facet = p.facets_begin();
+  for (typename Polyhedron::Facet_const_iterator facet = p.facets_begin();
        facet != p.facets_end(); facet++)
   {
     dolfin_assert(facet->is_triangle());
