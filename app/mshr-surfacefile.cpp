@@ -39,6 +39,9 @@ void print_mesh_statistics(const dolfin::Mesh& m)
   std::cout << "  " << m.num_vertices() << " vertices" << std::endl;
   std::cout << "  " << m.num_cells() << " cells" << std::endl;
 
+  const std::pair<double, double> volume_min_max = DolfinMeshUtils::cell_volume_min_max(m);
+  std::cout << "Min cell volume: " << volume_min_max.first << std::endl;
+  std::cout << "Max cell volume: " << volume_min_max.second << std::endl;
   const std::pair<double, double> radii_ratio = dolfin::MeshQuality::radius_ratio_min_max(m);
   std::cout << "Minimum cell radii ratio: " << radii_ratio.first  << std::endl;
   std::cout << "Maximum cell radii ratio: " << radii_ratio.second << std::endl;

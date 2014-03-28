@@ -9,3 +9,4 @@
 #include <mshr/CSGGeometry.h>
 #include <mshr/CSGPrimitive.h>
 #include <mshr/TetgenFileWriter.h>
+#include <mshr/DolfinMeshUtils.h>
