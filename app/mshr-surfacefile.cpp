@@ -72,6 +72,7 @@ void handle_commandline(int argc, char** argv, po::variables_map &vm)
     ("polyout", po::value<std::string>(), "Write the polyhedron to .poly which Tetgen can read (and do not create a mesh)")
     ("polystats", "Write statistics of polyhedron (and do not create a mesh")
     ("backend,b", po::value<std::string>()->default_value("cgal"), "Use 3D mesh generation backend [tetgen|cgal]")
+    ("verbose,v", "Output more information about what is going on")
     ("help,h",   "write help message");
 
   // Options not shown to the user
@@ -114,6 +115,9 @@ int main(int argc, char** argv)
 
   po::variables_map vm;
   handle_commandline(argc, argv, vm);
+
+  if (vm.count("verbose"))
+    dolfin::set_log_level(dolfin::TRACE);
 
   // Read the infile
   mshr::Surface3D surf(vm["input-file"].as<std::string>());
