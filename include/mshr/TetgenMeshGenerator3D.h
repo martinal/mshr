@@ -51,7 +51,7 @@ namespace mshr
 
       p.add("disable_quality_improvement", false);
       p.add("max_radius_edge_ratio", 2.0);
-      p.add("min_dihedral_angle", .0);
+      p.add("min_dihedral_angle", 12.);
 
       // If set to a positive value, this will override "mesh_resolution"
       p.add("max_tet_volume", -1.0);
