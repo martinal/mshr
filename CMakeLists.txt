@@ -51,6 +51,27 @@ add_definitions("${EXTERNAL_DEFINITIONS}")
 find_package(DOLFIN REQUIRED)
 include(${DOLFIN_USE_FILE})
 
+# Set installation directories
+set(INSTALL_LIB_DIR lib CACHE PATH "Installation directory for libraries")
+set(INSTALL_BIN_DIR bin CACHE PATH "Installation directory for executables")
+set(INSTALL_INCLUDE_DIR include CACHE PATH "Installation directory for header files")
+
+
+if(WIN32 AND NOT CYGWIN)
+  set(INSTALL_CMAKE_DIR CMake)
+else()
+  set(INSTALL_CMAKE_DIR lib/CMake/mshr)
+endif()
+
+# Make relative paths absolute (needed later on)
+foreach(p LIB BIN INCLUDE CMAKE)
+  set(var INSTALL_${p}_DIR)
+  if(NOT IS_ABSOLUTE "${${var}}")
+    set(${var} "${CMAKE_INSTALL_PREFIX}/${${var}}")
+  endif()
+endforeach()
+
+
 # include for local header directory
 include_directories( BEFORE include )
 
@@ -79,7 +100,7 @@ if (INIT_CGAL_RANDOM)
   add_definitions( -DINIT_RANDOM_GENERATOR=0 )
 endif()
 
-
+export(PACKAGE mshr)
 
 add_executable( mshr-surfacefile app/mshr-surfacefile.cpp )
 target_link_libraries( mshr-surfacefile mshr)
@@ -93,6 +114,32 @@ install(TARGETS mshr mshr-surfacefile
 
 # install header files
 install(DIRECTORY include/ DESTINATION include)
+
+message(STATUS "INSTALL DIR: ${INSTALL_CMAKE_DIR}")
+message(STATUS "INCLUDE DIR: ${INSTALL_INCLUDE_DIR}")
+message(STATUS "PROJECT SOURCE: ${PROJECT_SOURCE_DIR}")
+message(STATUS "INSTALL CMAKE: ${INSTALL_CMAKE_DIR}")
+message(STATUS "INSTALL INCLUDE: ${INSTALL_INCLUDE_DIR}")
+
+file(RELATIVE_PATH REL_INCLUDE_DIR "${INSTALL_CMAKE_DIR}" "${INSTALL_INCLUDE_DIR}")
+message(STATUS "REL INCLUDE: ${REL_INCLUDE_DIR}")
+
+# add cmake configuration file
+
+# for the build tree
+set(CONF_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/include")
+set(CONF_LIBRARIES_DIRS "${PROJECT_BINARY_DIR}/lib")
+configure_file(mshr-config.cmake.in
+  "${PROJECT_BINARY_DIR}/mshr-config.cmake" @ONLY)
+
+# ... and for the install tree
+set(CONF_INCLUDE_DIRS "${INSTALL_INCLUDE_DIR}")
+set(CONF_LIBRARIES_DIRS "${INSTALL_LIB_DIR}")
+configure_file(mshr-config.cmake.in
+  "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/mshr-config.cmake" @ONLY)
+
+# Install the FooBarConfig.cmake and FooBarConfigVersion.cmake
+install(FILES "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/mshr-config.cmake" DESTINATION "${INSTALL_CMAKE_DIR}" COMPONENT dev)
 
 # install python module
 
