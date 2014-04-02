@@ -102,11 +102,11 @@ endif()
 
 export(PACKAGE mshr)
 
-add_executable( mshr-surfacefile app/mshr-surfacefile.cpp )
-target_link_libraries( mshr-surfacefile mshr)
+add_executable( mshrable app/mshrable.cpp )
+target_link_libraries( mshrable mshr)
 
 # install library and app
-install(TARGETS mshr mshr-surfacefile
+install(TARGETS mshr mshrable
   RUNTIME DESTINATION bin
   LIBRARY DESTINATION lib
   ARCHIVE DESTINATION lib
