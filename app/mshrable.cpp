@@ -54,10 +54,12 @@ void print_polyhedron_statistics(const mshr::CSGCGALDomain3D& domain)
   std::cout << "  " << domain.num_facets() << " facets," << std::endl;
   std::cout << "  " << domain.num_halfedges() << " halfedges." << std::endl;
 
-  std::cout << "Is inside out: " << (domain.is_insideout() ? "Yes" : "No") << std::endl;
+  std::cout << "Is inside out:        " << (domain.is_insideout() ? "Yes" : "No") << std::endl;
+  std::cout << "Is self-intersecting: " << (domain.is_selfintersecting() ? "Yes" : "No") << std::endl;
   std::cout << "Volume: " << domain.volume() << std::endl;
   std::cout << "Shortest edge: " << domain.shortest_edge() << std::endl;
   std::cout << "Degenerate facets: " << domain.num_degenerate_facets(1e-12) << std::endl;
+
 }
 //-----------------------------------------------------------------------------
 // Define options and parse command line

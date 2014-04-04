@@ -53,6 +53,7 @@ class CSGCGALDomain3D : public dolfin::Variable
   bool is_insideout() const;
   std::size_t num_degenerate_facets(double threshold) const;
   double shortest_edge() const;
+  bool is_selfintersecting() const;
 
   void save_off(std::string filename) const;
 

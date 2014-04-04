@@ -25,7 +25,6 @@
 
 #include "meshclean.h"
 #include "triangulate_polyhedron.h"
-#include "self_intersect.h"
 
 #include <dolfin/geometry/Point.h>
 #include <dolfin/math/basic.h>
@@ -38,6 +37,7 @@
 #include <CGAL/Nef_polyhedron_3.h>
 #include <CGAL/IO/Polyhedron_iostream.h>
 #include <CGAL/Origin.h>
+#include <CGAL/Self_intersection_polyhedron_3.h>
 
 #define BOOST_FILESYSTEM_NO_DEPRECATED
 #include <boost/filesystem.hpp>
@@ -462,26 +462,6 @@ public:
                          "Read surface from file",
                          "Surface is not closed");
   }
-
-  // Check for self intersections
-  // TODO: Disable with a parameter?
-  {
-    std::vector<Exact_Triangle_3> intersecting;
-    std::back_insert_iterator<std::vector<Exact_Triangle_3> > insert_iterator(intersecting);
-    self_intersect<Exact_Polyhedron_3, Exact_Kernel, std::back_insert_iterator<std::vector<Exact_Triangle_3> > >
-      (P, insert_iterator);
-
-    if (intersecting.size() > 0)
-    {
-      dolfin::dolfin_error("CSGCGALDomain3D.cpp",
-                           "Read surface from file",
-                           "Surface is self intersecting");
-    }
-  }
-
-  std::cout << "Vertices: " << P.size_of_vertices()
-            << ", facets: " << P.size_of_facets()
-            << ", halfedges: " << P.size_of_halfedges() << std::endl;
 }
 //-----------------------------------------------------------------------------
 std::shared_ptr<Nef_polyhedron_3>
@@ -825,6 +805,11 @@ bool CSGCGALDomain3D::is_insideout() const
 
   // std::cout << "Number of intersections: " << points.size() << std::endl;
   return points.size() % 2 != 0;
+}
+//-----------------------------------------------------------------------------
+bool CSGCGALDomain3D::is_selfintersecting() const
+{
+  return CGAL::self_intersect<Exact_Kernel, Exact_Polyhedron_3>(impl->p);
 }
 //-----------------------------------------------------------------------------
 std::size_t CSGCGALDomain3D::num_degenerate_facets(double threshold) const
