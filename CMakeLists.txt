@@ -17,7 +17,7 @@ if ( COMMAND cmake_policy )
 endif()
 
 # Borrow some cmake modules from cgal
-set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/3rdparty/CGAL-4.3/cmake/modules")
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/3rdparty/CGAL-4.4/cmake/modules")
 
 
 # Use C++11
@@ -78,7 +78,7 @@ include_directories( BEFORE include )
 file( GLOB_RECURSE SOURCES src/*.cpp )
 
 add_library(mshr SHARED ${SOURCES})
-add_dependencies( mshr CGAL-4.3 )
+add_dependencies( mshr CGAL-4.4 )
 
 # Link the executable to (static) CGAL libraries
 target_link_libraries( mshr ${Boost_LIBRARIES}
