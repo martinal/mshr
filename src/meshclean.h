@@ -46,6 +46,62 @@ inline double get_triangle_area(typename Polyhedron::Facet_handle facet)
   return CGAL::to_double(t.squared_area());
 }
 //-----------------------------------------------------------------------------
+template <typename Polyhedron>
+typename Polyhedron::Halfedge_handle
+get_longest_edge(typename Polyhedron::Facet_handle facet)
+{
+  typename Polyhedron::Halfedge_handle edge = facet->halfedge();
+  double length = get_edge_length<Polyhedron>(edge);
+
+  {
+    typename Polyhedron::Halfedge_handle e_tmp = edge->next();
+    if (get_edge_length<Polyhedron>(e_tmp) > length)
+    {
+      length = get_edge_length<Polyhedron>(e_tmp);
+      edge = e_tmp;
+    }
+  }
+
+  {
+    typename Polyhedron::Halfedge_handle e_tmp = edge->next()->next();
+    if ( get_edge_length<Polyhedron>(e_tmp) > length )
+    {
+      length = get_edge_length<Polyhedron>(e_tmp);
+      edge = e_tmp;
+    }
+  }
+
+  return edge;
+}
+//-----------------------------------------------------------------------------
+template<typename Polyhedron>
+inline void print_facet(typename Polyhedron::Facet_handle facet)
+{
+  typename Polyhedron::Halfedge_handle h1 = facet->halfedge(),
+    h2 = h1->next(), h3 = h2->next();
+  std::cout << "Vertices: " << std::endl;
+  std::cout << "(" << h1->vertex()->point() << ") "
+            << "(" << h2->vertex()->point() << ") "
+            << "(" << h3->vertex()->point() << ")" << std::endl;
+  std::cout << "Edge lengths (squared):"
+            << (h1->vertex()->point()-h2->vertex()->point()).squared_length() << " "
+            << (h2->vertex()->point()-h3->vertex()->point()).squared_length() << " "
+            << (h3->vertex()->point()-h1->vertex()->point()).squared_length() << std::endl;
+  typename Polyhedron::Traits::Triangle_3 t(h1->vertex()->point(),
+                                            h2->vertex()->point(),
+                                            h3->vertex()->point());
+  std::cout << "Area: " << t.squared_area() << std::endl;
+  
+  typename Polyhedron::Halfedge_handle longest = get_longest_edge<Polyhedron>(facet);
+  typename Polyhedron::Traits::Line_3 l(longest->vertex()->point(), longest->opposite()->vertex()->point());
+  std::cout << "Colinear: " << (l.projection(longest->next()->vertex()->point())-longest->next()->vertex()->point()).squared_length() << std::endl;
+
+  int tmp;
+  std::cin >> tmp;
+
+
+}
+//-----------------------------------------------------------------------------
 template<typename Polyhedron>
 inline double
 get_min_edge_length(typename Polyhedron::Facet_const_handle facet)
@@ -110,34 +166,6 @@ int number_of_degenerate_facets(const Polyhedron& p, const double threshold)
 }
 //-----------------------------------------------------------------------------
 template <typename Polyhedron>
-typename Polyhedron::Halfedge_handle
-get_longest_edge(typename Polyhedron::Facet_handle facet)
-{
-  typename Polyhedron::Halfedge_handle edge = facet->halfedge();
-  double length = get_edge_length<Polyhedron>(edge);
-
-  {
-    typename Polyhedron::Halfedge_handle e_tmp = edge->next();
-    if (get_edge_length<Polyhedron>(e_tmp) > length)
-    {
-      length = get_edge_length<Polyhedron>(e_tmp);
-      edge = e_tmp;
-    }
-  }
-
-  {
-    typename Polyhedron::Halfedge_handle e_tmp = edge->next()->next();
-    if ( get_edge_length<Polyhedron>(e_tmp) > length )
-    {
-      length = get_edge_length<Polyhedron>(e_tmp);
-      edge = e_tmp;
-    }
-  }
-
-  return edge;
-}
-//-----------------------------------------------------------------------------
-template <typename Polyhedron>
 double shortest_edge(Polyhedron& p)
 {
   double shortest = std::numeric_limits<double>::max();
@@ -162,29 +190,37 @@ void collapse_edge(Polyhedron& p,
   // The joined facets are now quads
   // Join the two close vertices
   p.join_vertex(edge);
+  dolfin_assert(p.is_valid());
+  dolfin_assert(p.is_pure_triangle());
 }
 //-----------------------------------------------------------------------------
 template <typename Polyhedron>
 void collapse_short_edges(Polyhedron& p, const double threshold)
 {
-  bool done;
+  bool removed;
 
   do
   {
-    done = true;
+    removed = false;
 
     for (typename Polyhedron::Halfedge_iterator halfedge = p.halfedges_begin();
 	 halfedge != p.halfedges_end(); halfedge++)
     {
       if (get_edge_length<Polyhedron>(halfedge) < threshold)
       {
+        std::cout << "Short edge: " << halfedge->vertex()->point() << " " 
+                  << halfedge->opposite()->vertex()->point() << ": " 
+                  << (halfedge->vertex()->point() - halfedge->opposite()->vertex()->point()).squared_length() << std::endl;
 	collapse_edge<Polyhedron>(p, halfedge);
-        done = false;
+        removed = true;
 	break;
       }
     }
-  } while (!done);
+  } while (removed);
+
+  std::cout << "Done removing short edges" << std::endl;
 }
+
 //-----------------------------------------------------------------------------
 /* template<typename Polyhedron> */
 /* void collapse_triangle(Polyhedron& P, typename Polyhedron::Facet_handle f) */
@@ -240,8 +276,10 @@ void collapse_short_edges(Polyhedron& p, const double threshold)
 //-----------------------------------------------------------------------------
 template<typename Polyhedron>
 void flip_edges(Polyhedron& p,
-                double threshold)
+                double tolerance)
 {
+  std::cout << "Tolerance: " << tolerance << std::endl;
+
   bool done;
 
   do
@@ -252,13 +290,18 @@ void flip_edges(Polyhedron& p,
          facet != p.facets_end(); facet++)
     {
       dolfin_assert(facet->is_triangle());
-      if (get_triangle_area<Polyhedron>(facet) < threshold)
-      {
+      if (get_triangle_area<Polyhedron>(facet) < tolerance)
+      {     
+        print_facet<Polyhedron>(facet);
         p.flip_edge(get_longest_edge<Polyhedron>(facet));
+        dolfin_assert(p.is_valid());
+        dolfin_assert(p.is_pure_triangle());
         done = false;
       }
     }
   } while (!done);
+
+  std::cout << "Done flipping edges" << std::endl;
 }
 //-----------------------------------------------------------------------------
 template<typename Polyhedron>
