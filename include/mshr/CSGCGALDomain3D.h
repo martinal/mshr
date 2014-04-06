@@ -62,7 +62,7 @@ class CSGCGALDomain3D : public dolfin::Variable
   void get_vertices(std::vector<dolfin::Point> &v) const;
   void get_facets(std::vector<std::array<std::size_t, 3> > &f) const;
 
-  void remove_degenerated_facets(double threshold);
+  void remove_degenerate_facets(double tolerance);
 
   // This functions attempts to ensure that the preconditions
   // for successfull meshing are fullfilled.
@@ -73,8 +73,8 @@ class CSGCGALDomain3D : public dolfin::Variable
   static dolfin::Parameters default_parameters()
   {
     dolfin::Parameters p("csg_cgal_domain_3d");
-    p.add("remove_degenerated", true);
-    p.add("degenerate_threshold", 1e-12);
+    p.add("remove_degenerate", true);
+    p.add("degenerate_tolerance", 1e-12);
 
     return p;
   }
