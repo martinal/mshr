@@ -847,4 +847,24 @@ double CSGCGALDomain3D::shortest_edge() const
 
   return CGAL::to_double(shortest);
 }
+//-----------------------------------------------------------------------------
+std::string CSGCGALDomain3D::str(bool verbose) const
+{
+  std::stringstream ss;
+  ss << "Triangular polyhedron with" << std::endl;
+  ss << "  " << num_vertices() << " vertices," << std::endl;
+  ss << "  " << num_facets() << " facets," << std::endl;
+  ss << "  " << num_halfedges() << " halfedges." << std::endl;
+
+  if (verbose)
+  {
+    ss << "Volume: " << volume() << std::endl;
+    ss << "Shortest edge: " << shortest_edge() << std::endl;
+    ss << "Degenerate facets: " << num_degenerate_facets(1e-12) << std::endl;
+    ss << "Is inside out:        " << (is_insideout() ? "Yes" : "No") << std::endl;
+    ss << "Is self-intersecting: " << (is_selfintersecting() ? "Yes" : "No");
+  }
+
+  return ss.str();
+}
 } // end namespace mshr

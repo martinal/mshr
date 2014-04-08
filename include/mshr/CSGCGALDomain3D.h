@@ -79,6 +79,9 @@ class CSGCGALDomain3D : public dolfin::Variable
     return p;
   }
 
+  /// Informal string representation
+  std::string str(bool verbose) const;
+
  private :
   boost::scoped_ptr<CSGCGALDomain3DImpl> impl;
 };
