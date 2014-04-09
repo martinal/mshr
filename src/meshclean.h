@@ -13,7 +13,7 @@
 // GNU General Public License for more details.
 // 
 // You should have received a copy of the GNU General Public License
-// along with mshr.  If not, see <http://www.gnu.org/licenses/>.
+// along with mshr. If not, see <http://www.gnu.org/licenses/>.
 //
 
 #ifndef __MESH_CLEAN_H
@@ -22,9 +22,6 @@
 #include <CGAL/basic.h>
 #include <CGAL/Kernel/global_functions.h>
 #include <CGAL/Triangle_3.h>
-
-namespace
-{
 
 //-----------------------------------------------------------------------------
 template<typename Polyhedron>
@@ -47,8 +44,8 @@ inline double get_triangle_area(typename Polyhedron::Facet_handle facet)
 }
 //-----------------------------------------------------------------------------
 template <typename Polyhedron>
-typename Polyhedron::Halfedge_handle
-get_longest_edge(typename Polyhedron::Facet_handle facet)
+inline typename Polyhedron::Halfedge_handle
+  get_longest_edge(typename Polyhedron::Facet_handle facet)
 {
   typename Polyhedron::Halfedge_handle current = facet->halfedge();
   typename Polyhedron::Halfedge_handle longest = current;
@@ -72,8 +69,8 @@ get_longest_edge(typename Polyhedron::Facet_handle facet)
 }
 //-----------------------------------------------------------------------------
 template <typename Polyhedron>
-typename Polyhedron::Halfedge_const_handle
-get_longest_const_edge(typename Polyhedron::Facet_const_handle facet)
+inline typename Polyhedron::Halfedge_const_handle
+  get_longest_const_edge(typename Polyhedron::Facet_const_handle facet)
 {
   typename Polyhedron::Halfedge_const_handle current = facet->halfedge();
   typename Polyhedron::Halfedge_const_handle longest = current;
@@ -105,8 +102,10 @@ inline double triangle_projection(typename Polyhedron::Facet_const_handle f)
   return CGAL::to_double( (l.projection(longest->next()->vertex()->point()) - longest->next()->vertex()->point()).squared_length());
 }
 //-----------------------------------------------------------------------------
+// Print some info about a facet
+// Meant for debugging
 template<typename Polyhedron>
-inline void print_facet(typename Polyhedron::Halfedge_const_handle h)
+void print_facet(typename Polyhedron::Halfedge_const_handle h)
 {
   typename Polyhedron::Halfedge_const_handle h2 = h->next(), h3 = h2->next();
   std::cout << "Vertices: " << std::endl;
@@ -162,14 +161,27 @@ get_max_edge_length(typename Polyhedron::Facet_const_handle facet)
 }
 //-----------------------------------------------------------------------------
 template<typename Polyhedron>
-bool facet_is_degenerate(typename Polyhedron::Facet_const_handle facet,
+inline bool facet_is_degenerate(typename Polyhedron::Facet_const_handle facet,
                          const double tolerance)
 {
   dolfin_assert(facet->is_triangle());
-  //typedef CGAL::Triangle_3<typename Polyhedron::Traits> Triangle;
 
   return get_min_edge_length<Polyhedron>(facet) < tolerance 
     || triangle_projection<Polyhedron>(facet) < tolerance;
+}
+//-----------------------------------------------------------------------------
+template <typename Polyhedron>
+inline double shortest_edge(Polyhedron& p)
+{
+  double shortest = std::numeric_limits<double>::max();
+  for (typename Polyhedron::Halfedge_iterator halfedge = p.halfedges_begin();
+       halfedge != p.halfedges_end(); halfedge++)
+  {
+    const double length = get_edge_length<Polyhedron>(halfedge);
+    shortest = std::min(shortest, length);
+  }
+
+  return shortest;
 }
 //-----------------------------------------------------------------------------
 template<typename Polyhedron>
@@ -187,21 +199,7 @@ int number_of_degenerate_facets(const Polyhedron& p, const double tolerance)
 }
 //-----------------------------------------------------------------------------
 template <typename Polyhedron>
-double shortest_edge(Polyhedron& p)
-{
-  double shortest = std::numeric_limits<double>::max();
-  for (typename Polyhedron::Halfedge_iterator halfedge = p.halfedges_begin();
-       halfedge != p.halfedges_end(); halfedge++)
-  {
-    const double length = get_edge_length<Polyhedron>(halfedge);
-    shortest = std::min(shortest, length);
-  }
-
-  return shortest;
-}
-//-----------------------------------------------------------------------------
-template <typename Polyhedron>
-void collapse_edge(Polyhedron& p,
+inline void collapse_edge(Polyhedron& p,
                           typename Polyhedron::Halfedge_handle& edge)
 {
   // Join small triangles with neighbor facets
@@ -215,6 +213,7 @@ void collapse_edge(Polyhedron& p,
   dolfin_assert(p.is_pure_triangle());
 }
 //-----------------------------------------------------------------------------
+// FIXME: Return the number of edges collapsed
 template <typename Polyhedron>
 void collapse_short_edges(Polyhedron& p, const double tolerance)
 {
@@ -237,6 +236,7 @@ void collapse_short_edges(Polyhedron& p, const double tolerance)
   } while (removed);
 }
 //-----------------------------------------------------------------------------
+// FIXME: Return the number of facets fixed
 template<typename Polyhedron>
 void flip_edges(Polyhedron& p,
                 double tolerance)
@@ -291,6 +291,32 @@ bool has_degenerate_facets(const Polyhedron& p,
   return false;
 }
 //-----------------------------------------------------------------------------
+// Remove degenerate facets of a triangular polyhedron by
+// 1) Collapse edges with squared length less than tolerance
+// 2) Remove (almost) colinear facets by flipping the longest edge of the 
+//    colinear facet. Colinearity defined as the (squared) distance from a
+//    vertex to the opposite edge being less than tolerance
+template<typename Polyhedron>
+std::size_t remove_degenerate(Polyhedron &p, double tolerance)
+{
+  dolfin_assert(p.is_pure_triangle());
+  log(dolfin::TRACE, "Cleaning degenerate facets");
+
+  log(dolfin::TRACE, "  Collapsing short edges");
+  collapse_short_edges(p, tolerance);
+  dolfin_assert(p.is_pure_triangle());
+
+  // log(dolfin::TRACE, "Shortest edge: %f", shortest_edge());
+  log(dolfin::TRACE, "  Removing colinear facets by edge flipping");
+  flip_edges(p, tolerance);
+
+  // Removal of facets should preserve the triangular structure
+  // of the polyhedron
+  dolfin_assert(p.is_pure_triangle());
+  dolfin_assert(!has_degenerate_facets(p, tolerance));
+
+  // FIXME: Return the number of facets removed.
+  return 0;
 }
 
 #endif

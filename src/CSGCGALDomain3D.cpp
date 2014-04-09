@@ -725,26 +725,7 @@ void CSGCGALDomain3D::get_facets(std::vector< std::array<std::size_t, 3> > &f) c
 //-----------------------------------------------------------------------------
 void CSGCGALDomain3D::remove_degenerate_facets(double tolerance) 
 {
-  // FIXME: Use has_degenerate_facets() when in production code
-  if (has_degenerate_facets(impl->p, tolerance) > 0)
-  {
-    dolfin_assert(impl->p.is_pure_triangle());
-    log(dolfin::TRACE, "Cleaning degenerate facets");
-
-    log(dolfin::TRACE, "Collapsing short edges");
-    collapse_short_edges(impl->p, tolerance);
-    dolfin_assert(impl->p.is_pure_triangle());
-
-    log(dolfin::TRACE, "Shortest edge: %f", shortest_edge());
-    log(dolfin::TRACE, "Flipping edges");
-    flip_edges(impl->p, tolerance);
-
-    // Removal of triangles should preserve the triangular structure
-    // of the polyhedron
-    dolfin_assert(impl->p.is_pure_triangle());
-
-    dolfin_assert(!has_degenerate_facets(impl->p, tolerance));
-  }
+  remove_degenerate(impl->p, tolerance);
 }
 //-----------------------------------------------------------------------------
 void CSGCGALDomain3D::ensure_meshing_preconditions()
