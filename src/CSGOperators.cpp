@@ -164,4 +164,31 @@ std::string CSGIntersection::str(bool verbose) const
   return s.str();
 }
 //-----------------------------------------------------------------------------
+CSGTranslation::CSGTranslation(std::shared_ptr<CSGGeometry> g,
+                               dolfin::Point t)
+  : g(g), t(t) 
+{
+  assert(g);
+
+  dim_ = g->dim();
+}
+//-----------------------------------------------------------------------------
+std::string CSGTranslation::str(bool verbose) const
+{
+  std::stringstream s;
+
+  if (verbose)
+  {
+    s << "<Translation>\n"
+      << "{\n"
+      << dolfin::indent(g->str(true) + "\nby\n" + t.str(true))
+      << "\n}";
+  }
+  else
+  {
+    s << "(" << g->str(false) << " + " << t.str(false) << ")";
+  }
+
+  return s.str();
+}
 }

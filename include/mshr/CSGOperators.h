@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Anders Logg
+// Copyright (C) 2012 Anders Logg, 2012-2014 Benjamin Kehlet
 //
 // This file is part of mshr.
 //
@@ -15,15 +15,15 @@
 // You should have received a copy of the GNU General Public License
 // along with mshr.  If not, see <http://www.gnu.org/licenses/>.
 //
-// Modified by Benjamin Kehlet, 2012-2013
 
 #ifndef __MSHR_OPERATORS_H
 #define __MSHR_OPERATORS_H
 
-#include <memory>
-
-#include <dolfin/common/NoDeleter.h>
 #include "CSGGeometry.h"
+#include <dolfin/geometry/Point.h>
+#include <dolfin/common/NoDeleter.h>
+
+#include <memory>
 
 namespace mshr
 {
@@ -94,6 +94,25 @@ namespace mshr
     std::shared_ptr<CSGGeometry> _g1;
 
   };
+
+  // Translate CSG geometry
+  class CSGTranslation : public CSGOperator
+  {
+    public:
+
+    /// Translate geoemtry by the vector represented by point
+    CSGTranslation(std::shared_ptr<CSGGeometry> g,
+                   dolfin::Point t);
+
+    /// Informal string representation
+    std::string str(bool verbose) const;
+
+    Type getType() const { return CSGGeometry::Translation; }
+
+    std::shared_ptr<CSGGeometry> g;
+    dolfin::Point t;
+  };
+
 
   //--- Union operators ---
 
@@ -184,6 +203,13 @@ namespace mshr
                                                CSGGeometry& g1)
   {
     return reference_to_no_delete_pointer(g0) * reference_to_no_delete_pointer(g1);
+  }
+
+  //--- Translation operators ---
+  inline std::shared_ptr<CSGTranslation> operator+(std::shared_ptr<CSGGeometry> g,
+                                                   dolfin::Point t)
+  {
+    return std::shared_ptr<CSGTranslation>(new CSGTranslation(g, t));
   }
 }
 

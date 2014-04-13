@@ -79,6 +79,7 @@
 %shared_ptr(mshr::CSGUnion)
 %shared_ptr(mshr::CSGDifference)
 %shared_ptr(mshr::CSGIntersection)
+%shared_ptr(mshr::CSGTranslation)
 %shared_ptr(mshr::CSGPrimitive2D)
 %shared_ptr(mshr::Circle)
 %shared_ptr(mshr::Ellipse)
@@ -117,8 +118,11 @@
 %extend mshr::CSGGeometry {
   %pythoncode %{
      def __add__(self, other) :
-         return CSGUnion(self, other)
-
+         if isinstance(other, dolfin.Point) :
+             return CSGTranslation(self, other)
+         else :
+             return CSGUnion(self, other)
+  
      def __mul__(self, other) :
          return CSGIntersection(self, other)
 

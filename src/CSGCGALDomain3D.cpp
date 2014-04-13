@@ -500,6 +500,16 @@ convertSubTree(const CSGGeometry *geometry)
       return g0;
       break;
     }
+    case CSGGeometry::Translation :
+    {
+      const CSGTranslation* t = dynamic_cast<const CSGTranslation*>(geometry);
+      dolfin_assert(t);
+      std::shared_ptr<Nef_polyhedron_3> g = convertSubTree(t->g.get());
+      Exact_Kernel::Aff_transformation_3 translation(CGAL::TRANSLATION, Vector_3(t->t.x(), t->t.y(), t->t.z()));
+      g->transform(translation);
+      return g;
+      break;
+    }
     case CSGGeometry::Cone :
     {
       const Cone* c = dynamic_cast<const Cone*>(geometry);
