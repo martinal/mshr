@@ -25,7 +25,8 @@
 #include <dolfin/log/LogStream.h>
 #include <dolfin/mesh/BoundaryMesh.h>
 #include <dolfin/mesh/MeshEditor.h>
-#include <boost/scoped_ptr.hpp>
+
+#include <memory>
 
 
 #define CGAL_NO_DEPRECATED_CODE
@@ -253,7 +254,7 @@ void CSGCGALMeshGenerator3D::generate(dolfin::Mesh& mesh) const
 
   // Workaround, cgal segfaulted when assigning new mesh criterias
   // within the if-else blocks.
-  boost::scoped_ptr<Mesh_criteria> criteria;
+  std::unique_ptr<Mesh_criteria> criteria;
 
   const double mesh_resolution = parameters["mesh_resolution"];
   if (mesh_resolution > 0)

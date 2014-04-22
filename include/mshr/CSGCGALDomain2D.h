@@ -21,8 +21,7 @@
 #include <mshr/CSGGeometry.h>
 
 #include <dolfin/geometry/Point.h>
-#include <boost/scoped_ptr.hpp>
-
+#include <memory>
 
 namespace mshr
 {
@@ -63,7 +62,7 @@ class CSGCGALDomain2D
                  double truncate_threshold) const;
 
  private:
-  boost::scoped_ptr<CSGCGALDomain2DImpl> impl;
+  std::unique_ptr<CSGCGALDomain2DImpl> impl;
 
 };
 }

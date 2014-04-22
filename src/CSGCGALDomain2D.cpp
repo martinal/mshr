@@ -209,7 +209,7 @@ CSGCGALDomain2D::CSGCGALDomain2D(const CSGCGALDomain2D &other)
 //-----------------------------------------------------------------------------
 CSGCGALDomain2D &CSGCGALDomain2D::operator=(const CSGCGALDomain2D &other)
 {
-  boost::scoped_ptr<CSGCGALDomain2DImpl> tmp(new CSGCGALDomain2DImpl(other.impl->polygon_set));
+  std::unique_ptr<CSGCGALDomain2DImpl> tmp(new CSGCGALDomain2DImpl(other.impl->polygon_set));
   
   impl.swap(tmp);
 

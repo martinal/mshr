@@ -19,10 +19,9 @@
 #define __MSHR_CSGCGAL_DOMAIN3D_H
 
 #include <mshr/CSGGeometry.h>
-
 #include <dolfin/geometry/Point.h>
 
-#include <boost/scoped_ptr.hpp>
+#include <memory>
 
 namespace mshr
 {
@@ -83,7 +82,7 @@ class CSGCGALDomain3D : public dolfin::Variable
   std::string str(bool verbose) const;
 
  private :
-  boost::scoped_ptr<CSGCGALDomain3DImpl> impl;
+  std::unique_ptr<CSGCGALDomain3DImpl> impl;
 };
 
 }
