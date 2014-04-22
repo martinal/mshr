@@ -164,6 +164,8 @@ std::string CSGIntersection::str(bool verbose) const
   return s.str();
 }
 //-----------------------------------------------------------------------------
+// CSGTranslation
+//-----------------------------------------------------------------------------
 CSGTranslation::CSGTranslation(std::shared_ptr<CSGGeometry> g,
                                dolfin::Point t)
   : g(g), t(t) 
@@ -191,4 +193,54 @@ std::string CSGTranslation::str(bool verbose) const
 
   return s.str();
 }
+//-----------------------------------------------------------------------------
+// CSGScaling
+//-----------------------------------------------------------------------------
+CSGScaling::CSGScaling(std::shared_ptr<CSGGeometry> g,
+                       dolfin::Point c,
+                       double s)
+  : g(g), c(c), s(s), translate(true), scale_around_center(false)
+{
+  assert(g);
+
+  dim_ = g->dim();
+}
+//-----------------------------------------------------------------------------
+CSGScaling::CSGScaling(std::shared_ptr<CSGGeometry> g,
+                       double s,
+                       bool translate)
+  : g(g), c(0,0,0), s(s), translate(translate), scale_around_center(true)
+{
+  assert(g);
+
+  dim_ = g->dim();
+}
+//-----------------------------------------------------------------------------
+std::string CSGScaling::str(bool verbose) const
+{
+  std::stringstream ss;
+
+  if (verbose)
+  {
+    ss << "<Scaling>\n"
+      << "{\n"
+      << dolfin::indent(g->str(true) + "\nby\n" + std::to_string(s));
+
+      if (!scale_around_center)
+        ss << "\naround " << c.str(true);
+
+      ss << "\n}";
+  }
+  else
+  {
+    ss << "(" << g->str(false) << " * " << std::to_string(s);
+    if (!scale_around_center)
+      ss << "(" << c.str(true) << ")";
+    ss << ")";
+  }
+
+  return ss.str();
+}
+//-----------------------------------------------------------------------------
+
 }

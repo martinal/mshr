@@ -80,6 +80,7 @@
 %shared_ptr(mshr::CSGDifference)
 %shared_ptr(mshr::CSGIntersection)
 %shared_ptr(mshr::CSGTranslation)
+%shared_ptr(mshr::CSGScaling)
 %shared_ptr(mshr::CSGPrimitive2D)
 %shared_ptr(mshr::Circle)
 %shared_ptr(mshr::Ellipse)
@@ -124,7 +125,11 @@
              return CSGUnion(self, other)
   
      def __mul__(self, other) :
-         return CSGIntersection(self, other)
+         from numbers import Number
+         if isinstance(other, Number) :
+             return CSGScaling(self, other)
+         else:
+             return CSGIntersection(self, other)
 
      def __sub__(self, other) :
          return CSGDifference(self, other)

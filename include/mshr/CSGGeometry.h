@@ -56,7 +56,7 @@ namespace mshr
     void set_subdomain(std::size_t i, CSGGeometry& s);
     bool has_subdomains() const;
 
-    enum Type { Box, Sphere, Cone, Tetrahedron, Surface3D, Circle, Ellipse, Rectangle, Polygon, Union, Intersection, Difference, Translation };
+    enum Type { Box, Sphere, Cone, Tetrahedron, Surface3D, Circle, Ellipse, Rectangle, Polygon, Union, Intersection, Difference, Translation, Scaling };
     virtual Type getType() const = 0;
     virtual bool is_operator() const = 0;
 

@@ -95,7 +95,7 @@ namespace mshr
 
   };
 
-  // Translate CSG geometry
+  /// Translate CSG geometry
   class CSGTranslation : public CSGOperator
   {
     public:
@@ -113,6 +113,29 @@ namespace mshr
     dolfin::Point t;
   };
 
+  /// Scale CSG geometry
+  class CSGScaling : public CSGOperator
+  {
+   public:
+
+    CSGScaling(std::shared_ptr<CSGGeometry> g,
+               dolfin::Point c,
+               double scale_factor);
+
+    CSGScaling(std::shared_ptr<CSGGeometry> g,
+               double scale_factor, bool translate=false);
+
+
+    std::string str(bool verbose) const;
+
+    Type getType() const { return CSGGeometry::Scaling; }
+
+    std::shared_ptr<CSGGeometry> g;
+    dolfin::Point c;
+    double s;
+    bool translate;
+    bool scale_around_center;
+  };
 
   //--- Union operators ---
 
@@ -211,6 +234,14 @@ namespace mshr
   {
     return std::shared_ptr<CSGTranslation>(new CSGTranslation(g, t));
   }
+
+  //--- Scaling operators ---
+  inline std::shared_ptr<CSGScaling> operator*(std::shared_ptr<CSGGeometry> g,
+                                                   double s)
+  {
+    return std::shared_ptr<CSGScaling>(new CSGScaling(g, s, false));
+  }
+
 }
 
 #endif
