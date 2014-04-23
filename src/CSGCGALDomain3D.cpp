@@ -473,11 +473,11 @@ void do_scaling(const CSGScaling& s, Nef_polyhedron_3& p)
                                                    Vector_3(-s.c.x(),
                                                             -s.c.y(),
                                                             -s.c.z()));
-    transformation = transformation * translation;
+    transformation = translation * transformation;
   }
 
   Exact_Kernel::Aff_transformation_3 scaling(CGAL::SCALING, s.s);
-  transformation = transformation * scaling;
+  transformation = scaling * transformation;
 
   if (s.translate)
   {
@@ -485,7 +485,7 @@ void do_scaling(const CSGScaling& s, Nef_polyhedron_3& p)
                                                    Vector_3(s.c.x(),
                                                             s.c.y(),
                                                             s.c.z()));
-    transformation = transformation * translation;
+    transformation = translation * transformation;
   }
 
   p.transform(transformation);
@@ -505,7 +505,7 @@ void do_rotation(const CSGRotation& r, Nef_polyhedron_3& p)
                                                    Vector_3(-r.c.x(),
                                                             -r.c.y(),
                                                             -r.c.z()));
-    transformation = transformation * translation;
+    transformation = translation * transformation;
   }
 
   // The Euler-Rodrigues formula
@@ -523,7 +523,7 @@ void do_rotation(const CSGRotation& r, Nef_polyhedron_3& p)
                                               2*(b*d-a*c),
                                               2*(c*d+a*b),
                                               a*a+d*d-b*b-c*c);
-  transformation = transformation * rotation;
+  transformation = rotation * transformation;
 
   if (r.translate)
   {
@@ -531,7 +531,7 @@ void do_rotation(const CSGRotation& r, Nef_polyhedron_3& p)
                                                    Vector_3(r.c.x(),
                                                             r.c.y(),
                                                             r.c.z()));
-    transformation = transformation * translation;
+    transformation = translation * transformation;
   }
 
   p.transform(transformation);
