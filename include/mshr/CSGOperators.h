@@ -123,7 +123,7 @@ namespace mshr
                double scale_factor);
 
     CSGScaling(std::shared_ptr<CSGGeometry> g,
-               double scale_factor, bool translate=false);
+               double scale_factor);
 
 
     std::string str(bool verbose) const;
@@ -134,7 +134,28 @@ namespace mshr
     dolfin::Point c;
     double s;
     bool translate;
-    bool scale_around_center;
+  };
+
+  /// Rotate CSG geometry
+  class CSGRotation : public CSGOperator
+  {
+   public:
+    CSGRotation(std::shared_ptr<CSGGeometry> g,
+                dolfin::Point rot_axis,
+                double theta);
+
+    CSGRotation(std::shared_ptr<CSGGeometry> g,
+                dolfin::Point rot_axis,
+                dolfin::Point rot_center,
+                double theta);
+    Type getType() const { return CSGGeometry::Rotation; }
+    std::string str(bool verbose) const;
+
+    std::shared_ptr<CSGGeometry> g;
+    dolfin::Point rot_axis;
+    dolfin::Point c;
+    double theta;
+    bool translate;
   };
 
   //--- Union operators ---

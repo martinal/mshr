@@ -199,7 +199,7 @@ std::string CSGTranslation::str(bool verbose) const
 CSGScaling::CSGScaling(std::shared_ptr<CSGGeometry> g,
                        dolfin::Point c,
                        double s)
-  : g(g), c(c), s(s), translate(true), scale_around_center(false)
+  : g(g), c(c), s(s), translate(true)
 {
   assert(g);
 
@@ -207,9 +207,8 @@ CSGScaling::CSGScaling(std::shared_ptr<CSGGeometry> g,
 }
 //-----------------------------------------------------------------------------
 CSGScaling::CSGScaling(std::shared_ptr<CSGGeometry> g,
-                       double s,
-                       bool translate)
-  : g(g), c(0,0,0), s(s), translate(translate), scale_around_center(true)
+                       double s)
+  : g(g), c(0,0,0), s(s), translate(false)
 {
   assert(g);
 
@@ -226,7 +225,7 @@ std::string CSGScaling::str(bool verbose) const
       << "{\n"
       << dolfin::indent(g->str(true) + "\nby\n" + std::to_string(s));
 
-      if (!scale_around_center)
+      if (translate)
         ss << "\naround " << c.str(true);
 
       ss << "\n}";
@@ -234,7 +233,7 @@ std::string CSGScaling::str(bool verbose) const
   else
   {
     ss << "(" << g->str(false) << " * " << std::to_string(s);
-    if (!scale_around_center)
+    if (translate)
       ss << "(" << c.str(true) << ")";
     ss << ")";
   }
@@ -242,5 +241,63 @@ std::string CSGScaling::str(bool verbose) const
   return ss.str();
 }
 //-----------------------------------------------------------------------------
+// CSGRotation
+//-----------------------------------------------------------------------------
+CSGRotation::CSGRotation(std::shared_ptr<CSGGeometry> g,
+                         dolfin::Point rot_axis,
+                         double theta)
+  : g(g),
+    rot_axis(rot_axis),
+    c(0,0,0),
+    theta(theta),
+    translate(false)
+{
+  assert(g);
 
+  dim_ = g->dim();
+}
+//-----------------------------------------------------------------------------
+CSGRotation::CSGRotation(std::shared_ptr<CSGGeometry> g,
+                         dolfin::Point rot_axis,
+                         dolfin::Point rot_center,
+                         double theta)
+  : g(g),
+    rot_axis(rot_axis),
+    c(rot_center),
+    theta(theta),
+    translate(true)
+{
+  assert(g);
+
+  dim_ = g->dim();
+}
+//-----------------------------------------------------------------------------
+std::string CSGRotation::str(bool verbose) const
+{
+  std::stringstream ss;
+
+  if (verbose)
+  {
+    ss << "<Rotation>\n"
+      << "{\n"
+      << dolfin::indent(g->str(true)
+                        + (translate ? "\naround "+rot_axis.str(true) : "")
+                        + "\nby" + std::to_string(theta));
+
+      ss << "\n}";
+  }
+  else
+  {
+    ss << "rotate(" << g->str(false)
+       << ", " << std::to_string(theta);
+
+    if (translate)
+      ss << ", " << rot_axis.str(true);
+
+    ss << ")";
+  }
+
+  return ss.str();
+}
+//-----------------------------------------------------------------------------
 }

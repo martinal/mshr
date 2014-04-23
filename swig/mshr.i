@@ -81,6 +81,7 @@
 %shared_ptr(mshr::CSGIntersection)
 %shared_ptr(mshr::CSGTranslation)
 %shared_ptr(mshr::CSGScaling)
+%shared_ptr(mshr::CSGRotation)
 %shared_ptr(mshr::CSGPrimitive2D)
 %shared_ptr(mshr::Circle)
 %shared_ptr(mshr::Ellipse)

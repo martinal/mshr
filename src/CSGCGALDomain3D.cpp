@@ -46,6 +46,7 @@
 #include <iterator>
 #include <fstream>
 #include <set>
+#include <cmath>
 
 using namespace mshr;
 
@@ -408,9 +409,8 @@ public:
   const std::vector<std::array<double, 3> > vertices;
   const std::vector<std::vector<std::size_t> > facets;
 };
-
-
- void make_surface3D(const Surface3D* s, Exact_Polyhedron_3& P)
+//-----------------------------------------------------------------------------
+void make_surface3D(const Surface3D* s, Exact_Polyhedron_3& P)
 {
   dolfin_assert(s);
 
@@ -464,6 +464,27 @@ public:
   }
 }
 //-----------------------------------------------------------------------------
+Exact_Kernel::Aff_transformation_3 compute_rotation(dolfin::Point u, double theta)
+{
+  dolfin_assert(dolfin::near(u.norm(), 1.0));
+
+  // The Euler-Rodrigues formula
+  const double a = cos(theta/2);
+  const double b = -u.x()*sin(theta/2);
+  const double c = -u.y()*sin(theta/2);
+  const double d = -u.z()*sin(theta/2);
+
+  return Exact_Kernel::Aff_transformation_3(a*a+b*b-c*c-d*d,
+                                            2*(b*c-a*d),
+                                            2*(b*d+a*c),
+                                            2*(b*c+a*d),
+                                            a*a+c*c-b*b-d*d,
+                                            2*(c*d-a*b),
+                                            2*(b*d-a*c),
+                                            2*(c*d+a*b),
+                                            a*a+d*d-b*b-c*c);
+}
+//-----------------------------------------------------------------------------
 std::shared_ptr<Nef_polyhedron_3>
 convertSubTree(const CSGGeometry *geometry)
 {
@@ -514,10 +535,66 @@ convertSubTree(const CSGGeometry *geometry)
     {
       const CSGScaling* t = dynamic_cast<const CSGScaling*>(geometry);
       dolfin_assert(t);
+
       std::shared_ptr<Nef_polyhedron_3> g = convertSubTree(t->g.get());
+
+      Exact_Kernel::Aff_transformation_3 transformation(CGAL::IDENTITY);
+      if (t->translate)
+      {
+        Exact_Kernel::Aff_transformation_3 translation(CGAL::TRANSLATION,
+                                                       Vector_3(-t->c.x(),
+                                                                -t->c.y(),
+                                                                -t->c.z()));
+        transformation = transformation * translation;
+      }
+
       Exact_Kernel::Aff_transformation_3 scaling(CGAL::SCALING, t->s);
-      g->transform(scaling);
+      transformation = transformation * scaling;
+
+      if (t->translate)
+      {
+        Exact_Kernel::Aff_transformation_3 translation(CGAL::TRANSLATION,
+                                                       Vector_3(t->c.x(),
+                                                                t->c.y(),
+                                                                t->c.z()));
+        transformation = transformation * translation;
+      }
+
+      g->transform(transformation);
       return g;
+      break;
+    }
+    case CSGGeometry::Rotation :
+    {
+      const CSGRotation* t = dynamic_cast<const CSGRotation*>(geometry);
+      dolfin_assert(t);
+
+      std::shared_ptr<Nef_polyhedron_3> g = convertSubTree(t->g.get());
+
+      Exact_Kernel::Aff_transformation_3 transformation(CGAL::IDENTITY);
+      if (t->translate)
+      {
+        Exact_Kernel::Aff_transformation_3 translation(CGAL::TRANSLATION,
+                                                       Vector_3(-t->c.x(),
+                                                                -t->c.y(),
+                                                                -t->c.z()));
+        transformation = transformation * translation;
+      }
+
+      transformation = transformation * compute_rotation(t->rot_axis, t->theta);
+
+      if (t->translate)
+      {
+        Exact_Kernel::Aff_transformation_3 translation(CGAL::TRANSLATION,
+                                                       Vector_3(t->c.x(),
+                                                                t->c.y(),
+                                                                t->c.z()));
+        transformation = transformation * translation;
+      }
+
+      g->transform(transformation);
+      return g;
+
       break;
     }
     case CSGGeometry::Cone :
