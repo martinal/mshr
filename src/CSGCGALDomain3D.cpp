@@ -587,11 +587,8 @@ convertSubTree(const CSGGeometry *geometry)
     {
       const CSGScaling* t = dynamic_cast<const CSGScaling*>(geometry);
       dolfin_assert(t);
-
       std::shared_ptr<Nef_polyhedron_3> g = convertSubTree(t->g.get());
-
       do_scaling(*t, *g);
-
       return g;
       break;
     }
