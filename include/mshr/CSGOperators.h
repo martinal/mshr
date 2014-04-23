@@ -140,10 +140,17 @@ namespace mshr
   class CSGRotation : public CSGOperator
   {
    public:
+    // 2D only
     CSGRotation(std::shared_ptr<CSGGeometry> g,
-                dolfin::Point rot_axis,
+                             double theta);
+
+    // In 2D: v is the rotation center
+    // In 3D: v is the rotation axis
+    CSGRotation(std::shared_ptr<CSGGeometry> g,
+                dolfin::Point v,
                 double theta);
 
+    // 3D only
     CSGRotation(std::shared_ptr<CSGGeometry> g,
                 dolfin::Point rot_axis,
                 dolfin::Point rot_center,

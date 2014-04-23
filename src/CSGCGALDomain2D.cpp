@@ -34,6 +34,7 @@
 // Polygon typedefs
 typedef CGAL::Exact_predicates_exact_constructions_kernel Exact_Kernel;
 typedef Exact_Kernel::Point_2                             Point_2;
+typedef Exact_Kernel::Vector_2                            Vector_2;
 typedef CGAL::Polygon_2<Exact_Kernel>                     Polygon_2;
 typedef Polygon_2::Vertex_const_iterator                  Vertex_const_iterator;
 typedef CGAL::Polygon_with_holes_2<Exact_Kernel>          Polygon_with_holes_2;
@@ -117,6 +118,33 @@ Polygon_2 make_polygon(const Polygon* p)
   return Polygon_2(pts.begin(), pts.end());
 }
 //-----------------------------------------------------------------------------
+std::unique_ptr<CSGCGALDomain2DImpl> do_transformation(const Polygon_set_2& p, Exact_Kernel::Aff_transformation_2 t)
+{
+  std::unique_ptr<CSGCGALDomain2DImpl> result(new CSGCGALDomain2DImpl);
+
+  std::list<Polygon_with_holes_2> polygon_list;
+  p.polygons_with_holes(std::back_inserter(polygon_list));
+
+  std::list<Polygon_with_holes_2>::const_iterator pit;
+  for (pit = polygon_list.begin(); pit != polygon_list.end(); ++pit)
+  {
+    const Polygon_with_holes_2& pwh = *pit;
+
+    // Transform outer boundary
+    Polygon_with_holes_2 transformed(CGAL::transform(t, pwh.outer_boundary()));
+
+    // Transform holes
+    for (Hole_const_iterator hit = pwh.holes_begin(); hit != pwh.holes_end(); hit++)
+    {
+      transformed.add_hole(CGAL::transform(t, *hit));
+    }
+
+    result->polygon_set.insert(transformed);
+  }
+
+  return result;
+}
+//-----------------------------------------------------------------------------
 CSGCGALDomain2D::CSGCGALDomain2D()
   : impl(new CSGCGALDomain2DImpl)
 {
@@ -172,6 +200,64 @@ CSGCGALDomain2D::CSGCGALDomain2D(const CSGGeometry *geometry)
       
       impl.swap(a.impl);
       impl->polygon_set.difference(b.impl->polygon_set);
+      break;
+    }
+    case CSGGeometry::Translation :
+    {
+      const CSGTranslation* t = dynamic_cast<const CSGTranslation*>(geometry);
+      dolfin_assert(t);
+      CSGCGALDomain2D a(t->g.get());
+      Exact_Kernel::Aff_transformation_2 translation(CGAL::TRANSLATION, Vector_2(t->t.x(), t->t.y()));
+      std::unique_ptr<CSGCGALDomain2DImpl> transformed = do_transformation(a.impl->polygon_set, translation);
+      impl.swap(transformed);
+      break;
+    }
+    case CSGGeometry::Scaling :
+    {
+      const CSGScaling* t = dynamic_cast<const CSGScaling*>(geometry);
+      dolfin_assert(t);
+      CSGCGALDomain2D a(t->g.get());
+      Exact_Kernel::Aff_transformation_2 tr(CGAL::IDENTITY);
+
+      // Translate if requested
+      if (t->translate)
+        tr = Exact_Kernel::Aff_transformation_2 (CGAL::TRANSLATION,
+                                                 Vector_2(-t->c.x(), -t->c.y())) * tr;
+
+      // Do the scaling
+      tr = Exact_Kernel::Aff_transformation_2(CGAL::SCALING, t->s) * tr;
+
+      if (t->translate)
+        tr = Exact_Kernel::Aff_transformation_2(CGAL::TRANSLATION,
+                                                Vector_2(t->c.x(), t->c.y())) * tr;
+
+      std::unique_ptr<CSGCGALDomain2DImpl> transformed = do_transformation(a.impl->polygon_set,
+                                                                           tr);
+      impl.swap(transformed);
+      break;
+    }
+    case CSGGeometry::Rotation :
+    {
+      const CSGRotation* t = dynamic_cast<const CSGRotation*>(geometry);
+      dolfin_assert(t);
+      CSGCGALDomain2D a(t->g.get());
+      Exact_Kernel::Aff_transformation_2 tr(CGAL::IDENTITY);
+
+      // Translate if requested
+      if (t->translate)
+        tr = Exact_Kernel::Aff_transformation_2 (CGAL::TRANSLATION,
+                                                 Vector_2(-t->c.x(), -t->c.y())) * tr;
+
+      // Do the rotation
+      tr = Exact_Kernel::Aff_transformation_2(CGAL::ROTATION, sin(t->theta), cos(t->theta)) *tr;
+
+      if (t->translate)
+        tr = Exact_Kernel::Aff_transformation_2(CGAL::TRANSLATION,
+                                                Vector_2(t->c.x(), t->c.y())) * tr;
+
+      std::unique_ptr<CSGCGALDomain2DImpl> transformed = do_transformation(a.impl->polygon_set,
+                                                                           tr);
+      impl.swap(transformed);
       break;
     }
     case CSGGeometry::Circle:
@@ -340,10 +426,41 @@ void CSGCGALDomain2D::get_holes(std::list<std::vector<dolfin::Point> >& h,
         prev = current;
       }
       current = hit->vertices_begin();
-      if ( (*current - *prev).squared_length() > truncate_threshold)
+      if ( (*current - *prev).squared_length() > truncate_tolerance)
         v.push_back(dolfin::Point(CGAL::to_double(current->x()), 
                                   CGAL::to_double(current->y())));
     }
   }
 }
+//-----------------------------------------------------------------------------
+std::string CSGCGALDomain2D::str(bool verbose) const
+{
+  std::stringstream ss;
+  ss << "<Polygonal domain with" << std::endl;
+
+  {
+    std::list<Polygon_with_holes_2> polygon_list;
+    impl->polygon_set.polygons_with_holes(std::back_inserter(polygon_list));
+    ss << "  " << polygon_list.size() << " polygons" << std::endl;
+  }
+
+  std::list<std::vector<dolfin::Point> > vertices;
+  get_vertices(vertices, 0);
+
+  if (verbose)
+  {
+    for (std::list<std::vector<dolfin::Point> >::const_iterator lit = vertices.begin();
+         lit != vertices.end(); lit++)
+    {
+      ss << "  Polygon" << std::endl;
+      for (std::vector<dolfin::Point>::const_iterator vit = lit->begin();
+           vit != lit->end(); vit++)
+      {
+        ss << "    " << vit->str(false) << std::endl;
+      }
+    }
+  }
+  return ss.str();
+}
+
 }

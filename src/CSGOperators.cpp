@@ -22,6 +22,7 @@
 
 #include <dolfin/common/utils.h>
 #include <dolfin/log/log.h>
+#include <dolfin/common/constants.h>
 
 #include <sstream>
 
@@ -172,6 +173,8 @@ CSGTranslation::CSGTranslation(std::shared_ptr<CSGGeometry> g,
 {
   assert(g);
 
+  dolfin::cout << "Creating Translation" << dolfin::endl;
+
   dim_ = g->dim();
 }
 //-----------------------------------------------------------------------------
@@ -244,17 +247,32 @@ std::string CSGScaling::str(bool verbose) const
 // CSGRotation
 //-----------------------------------------------------------------------------
 CSGRotation::CSGRotation(std::shared_ptr<CSGGeometry> g,
-                         dolfin::Point rot_axis,
+                         double theta)
+  : g(g), rot_axis(.0,.0), c(.0,.0), theta(theta), translate(false)
+{
+  if (g->dim() > 2)
+    dolfin::dolfin_error("CSGOperators.cpp",
+                         "Constructing CSG rotation",
+                         "Rotation axis must be given in 3D");
+}
+//-----------------------------------------------------------------------------
+CSGRotation::CSGRotation(std::shared_ptr<CSGGeometry> g,
+                         dolfin::Point v,
                          double theta)
   : g(g),
-    rot_axis(rot_axis),
-    c(0,0,0),
+    rot_axis(v),
+    c(v),
     theta(theta),
     translate(false)
 {
   assert(g);
 
   dim_ = g->dim();
+
+  if (dim_ == 2)
+    translate = true;
+  else
+    translate = false;
 }
 //-----------------------------------------------------------------------------
 CSGRotation::CSGRotation(std::shared_ptr<CSGGeometry> g,
@@ -270,6 +288,11 @@ CSGRotation::CSGRotation(std::shared_ptr<CSGGeometry> g,
   assert(g);
 
   dim_ = g->dim();
+
+  if (dim_ < 3)
+    dolfin::dolfin_error("CSGOperators.cpp",
+                 "Constructing CSG rotation",
+                 "Can't give rotation axis for dimension < 3");
 }
 //-----------------------------------------------------------------------------
 std::string CSGRotation::str(bool verbose) const
@@ -282,14 +305,14 @@ std::string CSGRotation::str(bool verbose) const
       << "{\n"
       << dolfin::indent(g->str(true)
                         + (translate ? "\naround "+rot_axis.str(true) : "")
-                        + "\nby" + std::to_string(theta));
+                        + "\nby " + std::to_string(theta/DOLFIN_PI) + " PI");
 
       ss << "\n}";
   }
   else
   {
     ss << "rotate(" << g->str(false)
-       << ", " << std::to_string(theta);
+       << ", " << std::to_string(theta/DOLFIN_PI) << " PI";
 
     if (translate)
       ss << ", " << rot_axis.str(true);

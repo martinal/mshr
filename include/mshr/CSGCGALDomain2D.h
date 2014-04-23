@@ -25,10 +25,10 @@
 
 namespace mshr
 {
-  // Forward declaration
-  struct CSGCGALDomain2DImpl;
+// Forward declaration
+struct CSGCGALDomain2DImpl;
 
-class CSGCGALDomain2D
+class CSGCGALDomain2D : public dolfin::Variable
 {
  public:
   // Create empty polygon
@@ -60,6 +60,8 @@ class CSGCGALDomain2D
 
   void get_holes(std::list<std::vector<dolfin::Point> >& h, 
                  double truncate_tolerance) const;
+
+  std::string str(bool verbose) const;
 
  private:
   std::unique_ptr<CSGCGALDomain2DImpl> impl;
