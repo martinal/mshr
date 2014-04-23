@@ -258,11 +258,11 @@ bool CSGCGALDomain2D::point_in_domain(dolfin::Point p) const
 }
 //-----------------------------------------------------------------------------
 void CSGCGALDomain2D::get_vertices(std::list<std::vector<dolfin::Point> >& l, 
-                                   double truncate_threshold) const
+                                   double truncate_tolerance) const
 {
   l.clear();
 
-  truncate_threshold *= truncate_threshold;
+  truncate_tolerance *= truncate_tolerance;
 
   std::list<Polygon_with_holes_2> polygon_list;
   impl->polygon_set.polygons_with_holes(std::back_inserter(polygon_list));
@@ -281,7 +281,7 @@ void CSGCGALDomain2D::get_vertices(std::list<std::vector<dolfin::Point> >& l,
     ++current;
     for (; current != outer.vertices_end(); ++current)
     {
-      if ( (*current - *prev).squared_length() < truncate_threshold)
+      if ( (*current - *prev).squared_length() < truncate_tolerance)
         continue;
 
       const double x = CGAL::to_double(current->x());
@@ -292,15 +292,16 @@ void CSGCGALDomain2D::get_vertices(std::list<std::vector<dolfin::Point> >& l,
     }
   
     current = outer.vertices_begin();
-    if ( (*current - *prev).squared_length() > truncate_threshold)
+    if ( (*current - *prev).squared_length() > truncate_tolerance)
       v.push_back(dolfin::Point(CGAL::to_double(current->x()), 
                         CGAL::to_double(current->y())));
   }
 }
 //-----------------------------------------------------------------------------
 void CSGCGALDomain2D::get_holes(std::list<std::vector<dolfin::Point> >& h,
-                                double truncate_threshold) const
+                                double truncate_tolerance) const
 {
+  truncate_tolerance *= truncate_tolerance;
   h.clear();
 
   std::list<Polygon_with_holes_2> polygon_list;
@@ -322,7 +323,7 @@ void CSGCGALDomain2D::get_holes(std::list<std::vector<dolfin::Point> >& h,
 
       for (; current != hit->vertices_end(); ++current)
       {
-        if ( (*current - *prev).squared_length() < truncate_threshold)
+        if ( (*current - *prev).squared_length() < truncate_tolerance)
           continue;
 
         const double x = CGAL::to_double(current->x());

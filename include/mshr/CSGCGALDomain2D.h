@@ -56,10 +56,10 @@ class CSGCGALDomain2D
   // implementation, ie, take an outputiterator as arugment
   // or define iterator
   void get_vertices(std::list<std::vector<dolfin::Point> >& v, 
-                    double truncate_threshold) const;
+                    double truncate_tolerance) const;
 
   void get_holes(std::list<std::vector<dolfin::Point> >& h, 
-                 double truncate_threshold) const;
+                 double truncate_tolerance) const;
 
  private:
   std::unique_ptr<CSGCGALDomain2DImpl> impl;
