@@ -130,6 +130,13 @@ CSGCGALDomain2D::~CSGCGALDomain2D()
 CSGCGALDomain2D::CSGCGALDomain2D(const CSGGeometry *geometry)
 : impl(new CSGCGALDomain2DImpl)
 {
+
+  if (geometry->dim() != 2)
+    dolfin::dolfin_error("CSGCGALDomain2D.cpp",
+                         "Creating polygonal domain",
+                         "Geometry has dimension %d, expected 2", geometry->dim());
+
+
   switch (geometry->getType()) 
   {
     case CSGGeometry::Union:

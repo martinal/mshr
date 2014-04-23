@@ -751,6 +751,11 @@ CSGCGALDomain3D::CSGCGALDomain3D(const mshr::CSGGeometry &csg)
 {
   parameters = default_parameters();
 
+  if (csg.dim() != 3)
+    dolfin::dolfin_error("CSGCGALDomain3D.cpp",
+                         "Creating polyhedral domain",
+                         "Geometry has dimension %d, expected 3", csg.dim());
+
   convert(csg,
           impl->p);
 
