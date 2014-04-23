@@ -464,25 +464,77 @@ void make_surface3D(const Surface3D* s, Exact_Polyhedron_3& P)
   }
 }
 //-----------------------------------------------------------------------------
-Exact_Kernel::Aff_transformation_3 compute_rotation(dolfin::Point u, double theta)
+void do_scaling(const CSGScaling& s, Nef_polyhedron_3& p)
 {
-  dolfin_assert(dolfin::near(u.norm(), 1.0));
+  Exact_Kernel::Aff_transformation_3 transformation(CGAL::IDENTITY);
+  if (s.translate)
+  {
+    Exact_Kernel::Aff_transformation_3 translation(CGAL::TRANSLATION,
+                                                   Vector_3(-s.c.x(),
+                                                            -s.c.y(),
+                                                            -s.c.z()));
+    transformation = transformation * translation;
+  }
+
+  Exact_Kernel::Aff_transformation_3 scaling(CGAL::SCALING, s.s);
+  transformation = transformation * scaling;
+
+  if (s.translate)
+  {
+    Exact_Kernel::Aff_transformation_3 translation(CGAL::TRANSLATION,
+                                                   Vector_3(s.c.x(),
+                                                            s.c.y(),
+                                                            s.c.z()));
+    transformation = transformation * translation;
+  }
+
+  p.transform(transformation);
+}
+//-----------------------------------------------------------------------------
+void do_rotation(const CSGRotation& r, Nef_polyhedron_3& p)
+{
+
+  // Normalize rotation axis vector
+  dolfin::Point axis = r.rot_axis/(r.rot_axis.norm());
+  dolfin_assert(dolfin::near(axis.norm(), 1.0));
+
+  Exact_Kernel::Aff_transformation_3 transformation(CGAL::IDENTITY);
+  if (r.translate)
+  {
+    Exact_Kernel::Aff_transformation_3 translation(CGAL::TRANSLATION,
+                                                   Vector_3(-r.c.x(),
+                                                            -r.c.y(),
+                                                            -r.c.z()));
+    transformation = transformation * translation;
+  }
 
   // The Euler-Rodrigues formula
-  const double a = cos(theta/2);
-  const double b = -u.x()*sin(theta/2);
-  const double c = -u.y()*sin(theta/2);
-  const double d = -u.z()*sin(theta/2);
+  const double a = cos(r.theta/2);
+  const double b = -axis.x()*sin(r.theta/2);
+  const double c = -axis.y()*sin(r.theta/2);
+  const double d = -axis.z()*sin(r.theta/2);
 
-  return Exact_Kernel::Aff_transformation_3(a*a+b*b-c*c-d*d,
-                                            2*(b*c-a*d),
-                                            2*(b*d+a*c),
-                                            2*(b*c+a*d),
-                                            a*a+c*c-b*b-d*d,
-                                            2*(c*d-a*b),
-                                            2*(b*d-a*c),
-                                            2*(c*d+a*b),
-                                            a*a+d*d-b*b-c*c);
+  Exact_Kernel::Aff_transformation_3 rotation(a*a+b*b-c*c-d*d,
+                                              2*(b*c-a*d),
+                                              2*(b*d+a*c),
+                                              2*(b*c+a*d),
+                                              a*a+c*c-b*b-d*d,
+                                              2*(c*d-a*b),
+                                              2*(b*d-a*c),
+                                              2*(c*d+a*b),
+                                              a*a+d*d-b*b-c*c);
+  transformation = transformation * rotation;
+
+  if (r.translate)
+  {
+    Exact_Kernel::Aff_transformation_3 translation(CGAL::TRANSLATION,
+                                                   Vector_3(r.c.x(),
+                                                            r.c.y(),
+                                                            r.c.z()));
+    transformation = transformation * translation;
+  }
+
+  p.transform(transformation);
 }
 //-----------------------------------------------------------------------------
 std::shared_ptr<Nef_polyhedron_3>
@@ -538,29 +590,8 @@ convertSubTree(const CSGGeometry *geometry)
 
       std::shared_ptr<Nef_polyhedron_3> g = convertSubTree(t->g.get());
 
-      Exact_Kernel::Aff_transformation_3 transformation(CGAL::IDENTITY);
-      if (t->translate)
-      {
-        Exact_Kernel::Aff_transformation_3 translation(CGAL::TRANSLATION,
-                                                       Vector_3(-t->c.x(),
-                                                                -t->c.y(),
-                                                                -t->c.z()));
-        transformation = transformation * translation;
-      }
+      do_scaling(*t, *g);
 
-      Exact_Kernel::Aff_transformation_3 scaling(CGAL::SCALING, t->s);
-      transformation = transformation * scaling;
-
-      if (t->translate)
-      {
-        Exact_Kernel::Aff_transformation_3 translation(CGAL::TRANSLATION,
-                                                       Vector_3(t->c.x(),
-                                                                t->c.y(),
-                                                                t->c.z()));
-        transformation = transformation * translation;
-      }
-
-      g->transform(transformation);
       return g;
       break;
     }
@@ -570,31 +601,8 @@ convertSubTree(const CSGGeometry *geometry)
       dolfin_assert(t);
 
       std::shared_ptr<Nef_polyhedron_3> g = convertSubTree(t->g.get());
-
-      Exact_Kernel::Aff_transformation_3 transformation(CGAL::IDENTITY);
-      if (t->translate)
-      {
-        Exact_Kernel::Aff_transformation_3 translation(CGAL::TRANSLATION,
-                                                       Vector_3(-t->c.x(),
-                                                                -t->c.y(),
-                                                                -t->c.z()));
-        transformation = transformation * translation;
-      }
-
-      transformation = transformation * compute_rotation(t->rot_axis, t->theta);
-
-      if (t->translate)
-      {
-        Exact_Kernel::Aff_transformation_3 translation(CGAL::TRANSLATION,
-                                                       Vector_3(t->c.x(),
-                                                                t->c.y(),
-                                                                t->c.z()));
-        transformation = transformation * translation;
-      }
-
-      g->transform(transformation);
+      do_rotation(*t, *g);
       return g;
-
       break;
     }
     case CSGGeometry::Cone :
