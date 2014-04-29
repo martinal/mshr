@@ -35,7 +35,7 @@ set_property(TEST "Python-DummyImport" PROPERTY
 
 ############# Try meshing some surface files found in the cgal source ###########
 # TODO: Print mesh quality measure from program and check the value
-set(CGAL_DATA_DIR "${CMAKE_SOURCE_DIR}/3rdparty/CGAL-4.3/demo/Polyhedron/data")
+set(CGAL_DATA_DIR "${CMAKE_SOURCE_DIR}/3rdparty/CGAL-4.4/demo/Polyhedron/data")
 
 # Files that should pass
 set(TESTFILES_VALID "anchor.off;couplingdown.off;cross.off;cube.off;dragknob.off;elephant.off;ellipsoid.off;handle.off;icosahedron.off;joint.off;knot1.off;knot2.off;pinion.off;pipe.off;pyramid.off;rotor.off;sphere.off;spool.off;star.off;translated-cube.off;tripod.off")
@@ -44,8 +44,8 @@ set(TESTFILES_NOTCLOSED "cube-ouvert.off;mushroom.off")
 
 foreach(CURRENT_DATA_FILE IN LISTS TESTFILES_VALID)
   message(STATUS "Adding test: ${CURRENT_DATA_FILE}")
-  add_test(FilePass-cgal-${CURRENT_DATA_FILE} ../mshr-surfacefile -s -b cgal ${CGAL_DATA_DIR}/${CURRENT_DATA_FILE})
-  add_test(FilePass-tetgen-${CURRENT_DATA_FILE} ../mshr-surfacefile -s -b tetgen ${CGAL_DATA_DIR}/${CURRENT_DATA_FILE})
+  add_test(FilePass-cgal-${CURRENT_DATA_FILE} ../mshrable -s -b cgal ${CGAL_DATA_DIR}/${CURRENT_DATA_FILE})
+  add_test(FilePass-tetgen-${CURRENT_DATA_FILE} ../mshrable -s -b tetgen ${CGAL_DATA_DIR}/${CURRENT_DATA_FILE})
 endforeach(CURRENT_DATA_FILE)
 
 
