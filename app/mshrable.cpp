@@ -22,6 +22,7 @@
 #include <boost/program_options/options_description.hpp>
 #include <boost/program_options/variables_map.hpp>
 #include <boost/program_options/parsers.hpp>
+#include <boost/filesystem.hpp>
 
 #include <string>
 #include <iostream>
@@ -107,6 +108,13 @@ int main(int argc, char** argv)
     dolfin::set_log_level(dolfin::TRACE);
 
   // Read the infile
+  if (!boost::filesystem::exists(vm["input-file"].as<std::string>()))
+  {
+    std::cerr << "File " << vm["input-file"].as<std::string>() << "does not exist" << std::endl;
+    exit(1);
+  }
+
+
   mshr::Surface3D surf(vm["input-file"].as<std::string>());
 
   // Operations that disable mesh generation
@@ -115,9 +123,23 @@ int main(int argc, char** argv)
     mshr::CSGCGALDomain3D domain(surf);
     if (vm.count("polyout"))
     {
-      // Write the polyhedron to tetgen's file format
-      mshr::TetgenFileWriter::write(domain,
-                                    vm["polyout"].as<std::string>());
+      std::string extension = boost::filesystem::extension(vm["polyout"].as<std::string>());
+
+      if (extension == ".poly")
+      {
+        // Write the polyhedron to tetgen's file format
+        mshr::TetgenFileWriter::write(domain,
+                                      vm["polyout"].as<std::string>());
+      }
+      else if (extension == ".off")
+      {
+        domain.save_off(vm["polyout"].as<std::string>());
+      }
+      else
+      {
+        std::cerr << "Unknown file type: " << extension << std::endl;
+        exit(1);
+      }
     }
 
     if (vm.count("polystats"))
