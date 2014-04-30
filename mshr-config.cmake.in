@@ -1,12 +1,17 @@
 # - Config file for the mshr package
 # It defines the following variables
-#  MSHR_INCLUDE_DIRS  - include directories for FooBar
+#  MSHR_INCLUDE_DIRS  - include directories for mshr
 #  MSHR_LIBRARIES_DIR - directory where the mshr library is located
 #  MSHR_LIBRARIES     - libraries to link against
  
 # Compute paths
 get_filename_component(MSHR_CMAKE_DIR "${CMAKE_CURRENT_LIST_FILE}" PATH)
 set(MSHR_INCLUDE_DIRS "@CONF_INCLUDE_DIRS@")
+set(MSHR_EXTERNAL_INCLUDE_DIRS "@CONF_EXTERNAL_INCLUDE_DIRS@")
 set(MSHR_LIBRARIES_DIRS "@CONF_LIBRARIES_DIRS@")
+set(MSHR_EXTERNAL_LIBRARIES "@CONF_EXTERNAL_LIBRARIES@")
+set(MSHR_CXX_DEFINITIONS "@CONF_CXX_DEFINITIONS@")
+set(MSHR_CXX_FLAGS "@CONF_CXX_FLAGS@")
 set(MSHR_LIBRARIES mshr)
 
+set(MSHR_USE_FILE "${MSHR_CMAKE_DIR}/use-mshr.cmake")

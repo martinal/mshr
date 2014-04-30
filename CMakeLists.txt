@@ -124,13 +124,23 @@ message(STATUS "INSTALL INCLUDE: ${INSTALL_INCLUDE_DIR}")
 file(RELATIVE_PATH REL_INCLUDE_DIR "${INSTALL_CMAKE_DIR}" "${INSTALL_INCLUDE_DIR}")
 message(STATUS "REL INCLUDE: ${REL_INCLUDE_DIR}")
 
-# add cmake configuration file
+### add cmake configuration file ###
+
+# common for both config files
+set(CONF_EXTERNAL_INCLUDE_DIRS "${DOLFIN_INCLUDE_DIRS};${DOLFIN_3RD_PARTY_INCLUDE_DIRS};${DOLFIN_PYTHON_INCLUDE_DIRS}")
+set(CONF_EXTERNAL_LIBRARIES "${DOLFIN_LIBRARIES};${DOLFIN_3RD_PARTY_LIBRARIES};${DOLFIN_PYTHON_LIBRARIES}")
+set(CONF_CXX_DEFINITIONS "${DOLFIN_CXX_DEFINITIONS}")
+string(REPLACE "\"" "\\\"" CONF_CXX_DEFINITIONS "${CONF_CXX_DEFINITIONS}")
+set(CONF_CXX_FLAGS "${DOLFIN_CXX_FLAGS}")
 
 # for the build tree
 set(CONF_INCLUDE_DIRS "${PROJECT_SOURCE_DIR}/include")
 set(CONF_LIBRARIES_DIRS "${PROJECT_BINARY_DIR}/lib")
-configure_file(mshr-config.cmake.in
-  "${PROJECT_BINARY_DIR}/mshr-config.cmake" @ONLY)
+
+configure_file(mshr-config.cmake.in "${PROJECT_BINARY_DIR}/mshr-config.cmake" @ONLY)
+file(COPY use-mshr.cmake DESTINATION "${PROJECT_BINARY_DIR}/")
+
+
 
 # ... and for the install tree
 set(CONF_INCLUDE_DIRS "${INSTALL_INCLUDE_DIR}")
@@ -140,6 +150,8 @@ configure_file(mshr-config.cmake.in
 
 # Install the FooBarConfig.cmake and FooBarConfigVersion.cmake
 install(FILES "${PROJECT_BINARY_DIR}${CMAKE_FILES_DIRECTORY}/mshr-config.cmake" DESTINATION "${INSTALL_CMAKE_DIR}" COMPONENT dev)
+install(FILES "use-mshr.cmake" DESTINATION "${INSTALL_CMAKE_DIR}" COMPONENT dev)
+
 
 # install python module
 
