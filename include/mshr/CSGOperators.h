@@ -169,28 +169,28 @@ namespace mshr
 
   /// Create union of two geometries
   inline std::shared_ptr<CSGUnion> operator+(std::shared_ptr<CSGGeometry> g0,
-                                        std::shared_ptr<CSGGeometry> g1)
+                                             std::shared_ptr<CSGGeometry> g1)
   {
     return std::shared_ptr<CSGUnion>(new CSGUnion(g0, g1));
   }
 
   /// Create union of two geometries
   inline std::shared_ptr<CSGUnion> operator+(CSGGeometry& g0,
-                                        std::shared_ptr<CSGGeometry> g1)
+                                             std::shared_ptr<CSGGeometry> g1)
   {
     return reference_to_no_delete_pointer(g0) + g1;
   }
 
   /// Create union of two geometries
   inline std::shared_ptr<CSGUnion> operator+(std::shared_ptr<CSGGeometry> g0,
-                                        CSGGeometry& g1)
+                                             CSGGeometry& g1)
   {
     return g0 + reference_to_no_delete_pointer(g1);
   }
 
   /// Create union of two geometries
   inline std::shared_ptr<CSGUnion> operator+(CSGGeometry& g0,
-                                        CSGGeometry& g1)
+                                             CSGGeometry& g1)
   {
     return reference_to_no_delete_pointer(g0) + reference_to_no_delete_pointer(g1);
   }
