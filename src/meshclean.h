@@ -199,18 +199,43 @@ int number_of_degenerate_facets(const Polyhedron& p, const double tolerance)
 }
 //-----------------------------------------------------------------------------
 template <typename Polyhedron>
-inline void collapse_edge(Polyhedron& p,
-                          typename Polyhedron::Halfedge_handle& edge)
+inline bool has_slivers(const Polyhedron& p)
 {
+  for (typename Polyhedron::Vertex_const_iterator vit = p.vertices_begin(); vit != p.vertices_end(); vit++)
+  {
+    if (vit->vertex_degree() < 3)
+      return true;
+  }
+
+  return false;
+}
+//-----------------------------------------------------------------------------
+template <typename Polyhedron>
+inline void collapse_edge(Polyhedron& p,
+                          typename Polyhedron::Halfedge_handle edge)
+{
+  dolfin_assert(edge->facet()->facet_degree() == 3);
+  dolfin_assert(edge->opposite()->facet()->facet_degree() == 3);
+  dolfin_assert(p.is_pure_triangle());
+  dolfin_assert(edge->vertex()->vertex_degree() > 2);
+  dolfin_assert(edge->opposite()->vertex()->vertex_degree() > 2);
+
+  std::cout << edge->vertex()->vertex_degree() << " " << edge->opposite()->vertex()->vertex_degree() << std::endl;
+
   // Join small triangles with neighbor facets
+  std::cout << "Removing one" << std::endl;
   edge = p.join_facet(edge->next());
+
+  std::cout << "Removing two" << std::endl;
   p.join_facet(edge->opposite()->prev());
 
   // The joined facets are now quads
   // Join the two close vertices
+  std::cout << "Joining" << std::endl;
   p.join_vertex(edge);
   dolfin_assert(p.is_valid());
   dolfin_assert(p.is_pure_triangle());
+  dolfin_assert(!has_slivers(p));
 }
 //-----------------------------------------------------------------------------
 // FIXME: Return the number of edges collapsed
@@ -221,6 +246,8 @@ void collapse_short_edges(Polyhedron& p, const double tolerance)
 
   do
   {
+    std::cout << "Collapsing edge" << std::endl;
+
     removed = false;
 
     for (typename Polyhedron::Halfedge_iterator halfedge = p.halfedges_begin();
