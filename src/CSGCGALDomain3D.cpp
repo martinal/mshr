@@ -45,6 +45,7 @@
 #include <vector>
 #include <iterator>
 #include <fstream>
+#include <iomanip>
 #include <set>
 #include <cmath>
 
@@ -915,8 +916,35 @@ void CSGCGALDomain3D::save_off(std::string filename) const
   }
 
   std::ofstream outfile(filename.c_str());
+  // outfile.precision(16);
 
   outfile << impl->p;
+
+  // std::map<Exact_Polyhedron_3::Vertex_const_handle, std::size_t> vertex_map;
+  // std::size_t vertex_counter = 0;
+
+  // // Write header
+  // outfile << "OFF " << std::endl << impl->p.size_of_vertices() << " " << impl->p.size_of_facets() << " 0" << std::endl << std::endl;
+
+  // // Write vertices
+  // for (Exact_Polyhedron_3::Vertex_const_iterator vit = impl->p.vertices_begin(); vit != impl->p.vertices_end(); vit++)
+  // {
+  //   vertex_map[vit] = vertex_counter;
+  //   outfile << std::fixed << std::setprecision(16) << CGAL::to_double(vit->point().x()) << " "
+  //           << CGAL::to_double(vit->point().y()) << " "
+  //           << CGAL::to_double(vit->point().z()) << std::endl;
+  //   vertex_counter++;
+  // }
+
+  // for (Exact_Polyhedron_3::Facet_const_iterator fit = impl->p.facets_begin(); fit != impl->p.facets_end(); fit++)
+  // {
+  //   Exact_Polyhedron_3::Halfedge_const_iterator h = fit->halfedge();
+  //   outfile << "3";
+  //   outfile << vertex_map[h->vertex()] << " "
+  //           << vertex_map[h->next()->vertex()] << " "
+  //           << vertex_map[h->next()->next()->vertex()] << std::endl;
+  // }
+
   outfile.close();
 }
 //-----------------------------------------------------------------------------
