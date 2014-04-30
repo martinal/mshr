@@ -121,6 +121,8 @@ int main(int argc, char** argv)
   if (vm.count("polyout") || vm.count("polystats"))
   {
     mshr::CSGCGALDomain3D domain(surf);
+    domain.remove_degenerate_facets(1e-12);
+
     if (vm.count("polyout"))
     {
       std::string extension = boost::filesystem::extension(vm["polyout"].as<std::string>());
