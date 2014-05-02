@@ -161,6 +161,12 @@ get_max_edge_length(typename Polyhedron::Facet_const_handle facet)
 }
 //-----------------------------------------------------------------------------
 template<typename Polyhedron>
+std::size_t get_vertex_id(const Polyhedron& p, typename Polyhedron::Vertex_const_handle v)
+{
+  return std::distance(p.vertices_begin(), v);
+}
+//-----------------------------------------------------------------------------
+template<typename Polyhedron>
 inline bool facet_is_degenerate(typename Polyhedron::Facet_const_handle facet,
                          const double tolerance)
 {
@@ -217,14 +223,14 @@ inline void remove_degree3_center_vertex(Polyhedron& p,
   // Remove center vertex, but assure the degree of the vertex is 3 and that at least
   // one of the sides of the incident triangles is short
 
-  std::cout << "Remove degree 3 center vertex" << std::endl;
+  //std::cout << "Remove degree 3 center vertex" << std::endl;
 
   dolfin_assert(h->vertex()->vertex_degree() == 3);
 
   // FIXME: Remove debug output
-  std::cout << get_edge_length<Polyhedron>(h->prev()) << " "
-            << get_edge_length<Polyhedron>(h->opposite()->next()) << " "
-            << get_edge_length<Polyhedron>(h->next()->opposite()->prev()) << std::endl;
+  /* std::cout << get_edge_length<Polyhedron>(h->prev()) << " " */
+  /*           << get_edge_length<Polyhedron>(h->opposite()->next()) << " " */
+  /*           << get_edge_length<Polyhedron>(h->next()->opposite()->prev()) << std::endl; */
 
   p.erase_center_vertex(h);
 }
@@ -237,7 +243,18 @@ inline void collapse_edge(Polyhedron& p,
   dolfin_assert(edge->vertex()->vertex_degree() > 2);
   dolfin_assert(edge->opposite()->vertex()->vertex_degree() > 2);
 
-  std::cout << edge->vertex()->vertex_degree() << " " << edge->opposite()->vertex()->vertex_degree() << std::endl;
+  if (edge->vertex()->is_trivalent())
+  {
+    p.erase_center_vertex(edge);
+    return;
+  }
+
+  if (edge->opposite()->vertex()->is_trivalent())
+  {
+    p.erase_center_vertex(edge->opposite());
+    return;
+  }
+
 
   // Join small triangles with neighbor facets
 
@@ -246,25 +263,54 @@ inline void collapse_edge(Polyhedron& p,
   while (edge->next()->vertex()->is_trivalent())
     remove_degree3_center_vertex(p, edge->next());
 
-  dolfin_assert(!has_slivers(p));
+  dolfin_assert(p.is_valid());
   dolfin_assert(p.is_pure_triangle());
-
-  std::cout << "Removing one:" << edge->next()->vertex()->vertex_degree() << std::endl;
-  edge = p.join_facet(edge->next());
-
-  std::cout << "Removing two: " << edge->opposite()->next()->vertex()->vertex_degree() << std::endl;
+  dolfin_assert(!has_slivers(p));
 
   while (edge->opposite()->next()->vertex()->is_trivalent())
     remove_degree3_center_vertex(p, edge->opposite()->next());
 
+  dolfin_assert(p.is_valid());
+  dolfin_assert(p.is_pure_triangle());
+  dolfin_assert(!has_slivers(p));
+
+  if (edge->vertex()->is_trivalent())
+  {
+    p.erase_center_vertex(edge);
+    return;
+  }
+
+  if (edge->opposite()->vertex()->is_trivalent())
+  {
+    p.erase_center_vertex(edge->opposite());
+    return;
+  }
+
+  /* std::cout << "Collapsing edge: ( " */
+  /*           << "(" << get_vertex_id(p, edge->opposite()->vertex()) << ", " << edge->opposite()->vertex_degree() << ") --> " */
+  /*           << "(" << get_vertex_id(p, edge->vertex()) << ", " << edge->vertex()->vertex_degree() << ") ), length: " */
+  /*           << get_edge_length<Polyhedron>(edge) << std::endl; */
+
+  /* std::cout << "Removing one:" << edge->next()->vertex()->vertex_degree() << std::endl; */
+  edge = p.join_facet(edge->next());
+
+  dolfin_assert(p.is_valid());
+  dolfin_assert(!has_slivers(p));
+
+  // std::cout << "Removing two: " << edge->opposite()->next()->vertex()->vertex_degree() << std::endl;
   p.join_facet(edge->opposite()->prev());
+
+  dolfin_assert(p.is_valid());
+
+  // We can possibly have a sliver now
+  // dolfin_assert(!has_slivers(p));
 
   // The joined facets are now quads
   // Join the two close vertices
-  std::cout << "Joining" << std::endl;
+  // std::cout << "Joining" << std::endl;
   p.join_vertex(edge);
   dolfin_assert(p.is_valid());
-  dolfin_assert(p.is_pure_triangle());
+
   dolfin_assert(!has_slivers(p));
 }
 //-----------------------------------------------------------------------------
@@ -276,8 +322,6 @@ void collapse_short_edges(Polyhedron& p, const double tolerance)
 
   do
   {
-    std::cout << "Collapsing edge" << std::endl;
-
     removed = false;
 
     for (typename Polyhedron::Halfedge_iterator halfedge = p.halfedges_begin();
