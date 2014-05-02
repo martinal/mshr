@@ -26,9 +26,10 @@ sphere = Sphere(dolfin.Point(0, 0, 0), 0.5)
 cone = Cone(dolfin.Point(0, 0, 0), dolfin.Point(0, 0, -1), .5, .1)
 
 geometry = cone + sphere
-meshing_domain = CSGCGALDomain3D(geometry)
-meshing_domain.remove_degenerate_facets(1e-10)
-meshing_domain.save_off("domain.off")
+
+# meshing_domain = CSGCGALDomain3D(geometry)
+# meshing_domain.remove_degenerate_facets(1e-12)
+# meshing_domain.save_off("domain.off")
 
 # # Test printing
 # dolfin.info("\nCompact output of 3D geometry:")
@@ -36,8 +37,8 @@ meshing_domain.save_off("domain.off")
 # dolfin.info("\nVerbose output of 3D geometry:")
 # dolfin.info(geometry, True)
 
-# # Generate and plot mesh
-# m = generate_mesh(geometry, 16, "tetgen")
+# Generate and plot mesh
+m = generate_mesh(geometry, 16, "cgal")
 
 # dolfin.info(m)
 # dolfin.plot(m, "3D mesh")
