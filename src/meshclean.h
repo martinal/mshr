@@ -211,11 +211,28 @@ inline bool has_slivers(const Polyhedron& p)
 }
 //-----------------------------------------------------------------------------
 template <typename Polyhedron>
+inline void remove_degree3_center_vertex(Polyhedron& p,
+                                         typename Polyhedron::Halfedge_handle h)
+{
+  // Remove center vertex, but assure the degree of the vertex is 3 and that at least
+  // one of the sides of the incident triangles is short
+
+  std::cout << "Remove degree 3 center vertex" << std::endl;
+
+  dolfin_assert(h->vertex()->vertex_degree() == 3);
+
+  // FIXME: Remove debug output
+  std::cout << get_edge_length<Polyhedron>(h->prev()) << " "
+            << get_edge_length<Polyhedron>(h->opposite()->next()) << " "
+            << get_edge_length<Polyhedron>(h->next()->opposite()->prev()) << std::endl;
+
+  p.erase_center_vertex(h);
+}
+//-----------------------------------------------------------------------------
+template <typename Polyhedron>
 inline void collapse_edge(Polyhedron& p,
                           typename Polyhedron::Halfedge_handle edge)
 {
-  dolfin_assert(edge->facet()->facet_degree() == 3);
-  dolfin_assert(edge->opposite()->facet()->facet_degree() == 3);
   dolfin_assert(p.is_pure_triangle());
   dolfin_assert(edge->vertex()->vertex_degree() > 2);
   dolfin_assert(edge->opposite()->vertex()->vertex_degree() > 2);
@@ -223,10 +240,23 @@ inline void collapse_edge(Polyhedron& p,
   std::cout << edge->vertex()->vertex_degree() << " " << edge->opposite()->vertex()->vertex_degree() << std::endl;
 
   // Join small triangles with neighbor facets
-  std::cout << "Removing one" << std::endl;
+
+  // Make sure we don't introduce slivers
+  // (ie. vertices of degree 2)
+  while (edge->next()->vertex()->is_trivalent())
+    remove_degree3_center_vertex(p, edge->next());
+
+  dolfin_assert(!has_slivers(p));
+  dolfin_assert(p.is_pure_triangle());
+
+  std::cout << "Removing one:" << edge->next()->vertex()->vertex_degree() << std::endl;
   edge = p.join_facet(edge->next());
 
-  std::cout << "Removing two" << std::endl;
+  std::cout << "Removing two: " << edge->opposite()->next()->vertex()->vertex_degree() << std::endl;
+
+  while (edge->opposite()->next()->vertex()->is_trivalent())
+    remove_degree3_center_vertex(p, edge->opposite()->next());
+
   p.join_facet(edge->opposite()->prev());
 
   // The joined facets are now quads
