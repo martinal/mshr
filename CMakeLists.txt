@@ -84,21 +84,21 @@ add_library(mshr SHARED ${SOURCES})
 add_dependencies( mshr CGAL-4.4 )
 
 # Link the executable to (static) CGAL libraries
-target_link_libraries( mshr ${Boost_LIBRARIES}
+target_link_libraries( mshr ${CGAL_LIB_DIR}/libCGAL.a
+                            ${CGAL_LIB_DIR}/libCGAL_Core.a
+			    ${Boost_LIBRARIES}
                             ${GMP_LIBRARIES}
                             ${MPFR_LIBRARIES}
-                            ${CGAL_LIB_DIR}/libCGAL.a
-                            ${CGAL_LIB_DIR}/libCGAL_Core.a
 			    tet
                             ${DOLFIN_LIBRARIES}
-#                            ${DOLFIN_3RD_PARTY_LIBRARIES}
+			    ${DOLFIN_3RD_PARTY_LIBRARIES}
                      )
 
 # Build the python bindings
 add_subdirectory(swig)
 
 # Fix CGAL's random generator (usefull to reproduce bugs)
-option(INIT_CGAL_RANDOM "Seed for CGAL's random generator" OFF)
+option(INIT_CGAL_RANDOM "Use fixed seed for CGAL's pseudo random generator" OFF)
 if (INIT_CGAL_RANDOM)
   add_definitions( -DINIT_RANDOM_GENERATOR=0 )
 endif()
@@ -107,8 +107,10 @@ export(PACKAGE mshr)
 
 add_executable( mshrable app/mshrable.cpp )
 target_link_libraries( mshrable mshr 
-                                ${Boost_LIBRARIES} 
-				${MPI_CXX_LIBRARIES} )
+                                ${DOLFIN_LIBRARIES}
+                                ${Boost_LIBRARIES}
+				${DOLFIN_3RD_PARTY_LIBRARIES})
+
 
 # install library and app
 install(TARGETS mshr mshrable
