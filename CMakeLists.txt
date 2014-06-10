@@ -88,7 +88,7 @@ target_link_libraries( mshr ${Boost_LIBRARIES}
                             ${CGAL_LIB_DIR}/libCGAL_Core.a
 			    tet
                             ${DOLFIN_LIBRARIES}
-                            ${DOLFIN_3RD_PARTY_LIBRARIES}
+#                            ${DOLFIN_3RD_PARTY_LIBRARIES}
                      )
 
 # Build the python bindings
