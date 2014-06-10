@@ -24,11 +24,14 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/3rdparty/CGAL-4.4/cmake/modules")
 SET(CMAKE_CXX_FLAGS "-std=c++0x -Wall")
 
 # Boost
-find_package( Boost REQUIRED system thread)
+find_package( Boost REQUIRED system filesystem program_options )
 
 if ( NOT Boost_FOUND )
   message(FATAL_ERROR "This project requires the Boost library, and will not be compiled.")
 endif()
+
+# Temporary: attempt to find linking problem
+find_package(MPI REQUIRED)
 
 #  GMP_INCLUDE_DIR       - the GMP include directory
 #  GMP_LIBRARIES_DIR     - directory where the GMP libraries are located
@@ -103,7 +106,9 @@ endif()
 export(PACKAGE mshr)
 
 add_executable( mshrable app/mshrable.cpp )
-target_link_libraries( mshrable mshr)
+target_link_libraries( mshrable mshr 
+                                ${Boost_LIBRARIES} 
+				${MPI_CXX_LIBRARIES} )
 
 # install library and app
 install(TARGETS mshr mshrable
