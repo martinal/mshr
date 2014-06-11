@@ -23,13 +23,13 @@ dolfin.set_log_level(dolfin.TRACE)
 
 # Define 3D geometry
 sphere = Sphere(dolfin.Point(0, 0, 0), 0.5)
-cone = Cone(dolfin.Point(0, 0, 0), dolfin.Point(0, 0, -1), .5, .1)
+cone = Cone(dolfin.Point(0, 0, 0), dolfin.Point(0, 0, -1), .45, .1)
 
 geometry = cone + sphere
 
 # meshing_domain = CSGCGALDomain3D(geometry)
 # meshing_domain.remove_degenerate_facets(1e-12)
-# meshing_domain.save_off("domain.off")
+# meshing_domain.save_off("icecream.off")
 
 # # Test printing
 # dolfin.info("\nCompact output of 3D geometry:")
