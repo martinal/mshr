@@ -49,26 +49,31 @@ namespace
 
 // A custom compare function class to be used in std::map
 // to avoid duplicated vertices.
-class FuzzyPointLess
+class PointFuzzyStrictlyLess
 {
  public:
-  FuzzyPointLess(double arg_ = 1e-10) : epsilon(arg_) {}
+  PointFuzzyStrictlyLess(double tolerance = 1e-10) : tol(tolerance) {}
   bool operator()(const std::array<double, 3>& left,
                   const std::array<double, 3>& right) const
   {
-    if (std::abs(left[0]-right[0]) > epsilon)
+    if (std::abs(left[0]-right[0]) > tol || std::abs(left[1]-right[1]) > tol || std::abs(left[2]-right[2]) > tol)
+      std::cout << "Not equal: (" << left[0] << ", " << left[1] << ", " << left[2] << ") <--> (" << right[0] << ", " << right[1] << ", " << right[2] << ")" << std::endl;
+
+    if (std::abs(left[0]-right[0]) > tol)
       return left[0] < right[0];
 
-    if (std::abs(left[1] - right[1]) > epsilon)
+    if (std::abs(left[1] - right[1]) > tol)
       return left[1] < right[1];
 
-    if (std::abs(left[2] - right[2]) > epsilon)
+    if (std::abs(left[2] - right[2]) > tol)
       return left[2] < right[2];
+
+    std::cout << "Equal: (" << left[0] << ", " << left[1] << ", " << left[2] << ") <--> (" << right[0] << ", " << right[1] << ", " << right[2] << ")" << std::endl;
 
     return false;
   }
  private:
-  double epsilon;
+  double tol;
 };
 
 inline void get_next_line(std::ifstream& file, std::string& line, std::size_t &lineno)
@@ -100,7 +105,7 @@ void STLFileReader::read(const std::string filename,
   }
 
   std::size_t num_vertices = 0;
-  std::map<std::array<double, 3>, std::size_t, FuzzyPointLess> vertex_map;
+  std::map<std::array<double, 3>, std::size_t, PointFuzzyStrictlyLess> vertex_map;
   std::string line;
   std::size_t lineno = 0;
   const boost::char_separator<char> sep(" ");
