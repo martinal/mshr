@@ -57,7 +57,7 @@ class PointFuzzyStrictlyLess
                   const std::array<double, 3>& right) const
   {
     if (std::abs(left[0]-right[0]) > tol || std::abs(left[1]-right[1]) > tol || std::abs(left[2]-right[2]) > tol)
-      std::cout << "Not equal: (" << left[0] << ", " << left[1] << ", " << left[2] << ") <--> (" << right[0] << ", " << right[1] << ", " << right[2] << ")" << std::endl;
+      // std::cout << "Not equal: (" << left[0] << ", " << left[1] << ", " << left[2] << ") <--> (" << right[0] << ", " << right[1] << ", " << right[2] << ")" << std::endl;
 
     if (std::abs(left[0]-right[0]) > tol)
       return left[0] < right[0];
@@ -68,7 +68,7 @@ class PointFuzzyStrictlyLess
     if (std::abs(left[2] - right[2]) > tol)
       return left[2] < right[2];
 
-    std::cout << "Equal: (" << left[0] << ", " << left[1] << ", " << left[2] << ") <--> (" << right[0] << ", " << right[1] << ", " << right[2] << ")" << std::endl;
+    // std::cout << "Equal: (" << left[0] << ", " << left[1] << ", " << left[2] << ") <--> (" << right[0] << ", " << right[1] << ", " << right[2] << ")" << std::endl;
 
     return false;
   }

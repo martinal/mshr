@@ -40,12 +40,14 @@ void VTPFileReader::read(const std::string filename,
   const vtkIdType num_points = polydata->GetNumberOfPoints();
   vertices.resize(num_points);
 
-  const vtkIdType num_polys = polydata->GetNumberOfPolys();
-  facets.resize(num_polys);
-
   //read in all of the points
   for(vtkIdType i = 0; i < num_points; i++)
     polydata->GetPoint(i, vertices[i].data());
+
+  log(dolfin::TRACE, "Read %d points from vtp file", num_points);
+
+  const vtkIdType num_polys = polydata->GetNumberOfPolys();
+  facets.resize(num_polys);
 
  
   vtkCellArray* TriangleCells = polydata->GetPolys();
@@ -62,6 +64,7 @@ void VTPFileReader::read(const std::string filename,
     facet_counter++;
   }
 
+  log(dolfin::TRACE, "Read %d triangles from vtp file", facet_counter);
   dolfin_assert(facet_counter == num_polys);
 }
 
