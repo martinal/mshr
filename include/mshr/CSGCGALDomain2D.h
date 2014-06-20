@@ -23,6 +23,7 @@
 #include <dolfin/geometry/Point.h>
 #include <memory>
 
+
 namespace mshr
 {
 // Forward declaration
@@ -52,20 +53,34 @@ class CSGCGALDomain2D : public dolfin::Variable
   bool point_in_domain(dolfin::Point p) const;
   double compute_boundingcircle_radius() const ;
   
+  std::string str(bool verbose) const;
+
+  std::unique_ptr<CSGCGALDomain2DImpl> impl;
+
+};
+
+// Forward declaration
+struct PSLGImpl;
+
+class PSLG
+{
+ public:
+  PSLG(const CSGCGALDomain2D& domain);
+  ~PSLG();
+
+  void add_subdomain(const CSGCGALDomain2D& subdomain);
+
+  void collapse_short_edges(double tolerance);
+
   // TODO: Replace this with a more C++-ish
   // implementation, ie, take an outputiterator as arugment
   // or define iterator
-  void get_vertices(std::list<std::vector<dolfin::Point> >& v, 
-                    double truncate_tolerance) const;
+  void get_vertices(std::vector<dolfin::Point>& v) const;
 
-  void get_holes(std::list<std::vector<dolfin::Point> >& h, 
-                 double truncate_tolerance) const;
+  void get_edges(std::vector<std::pair<std::size_t, std::size_t> >& e) const;
 
-  std::string str(bool verbose) const;
-
- private:
-  std::unique_ptr<CSGCGALDomain2DImpl> impl;
-
+private:
+  std::unique_ptr<PSLGImpl> impl;
 };
 }
 

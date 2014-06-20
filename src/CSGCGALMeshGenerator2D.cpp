@@ -45,6 +45,7 @@
 
 
 typedef CGAL::Exact_predicates_inexact_constructions_kernel Inexact_Kernel;
+//typedef CGAL::Exact_predicates_exact_constructions_kernel Inexact_Kernel;
 
 typedef CGAL::Triangulation_vertex_base_2<Inexact_Kernel>  Vertex_base;
 typedef CGAL::Delaunay_mesh_face_base_2<Inexact_Kernel> Face_base;
@@ -91,8 +92,10 @@ typedef CGAL::Triangulation_vertex_base_2<Inexact_Kernel> Vb;
 typedef CGAL::Triangulation_vertex_base_with_info_2<std::size_t, Inexact_Kernel, Vb> Vbb;
 typedef Enriched_face_base_2<Inexact_Kernel, Face_base> Fb;
 typedef CGAL::Triangulation_data_structure_2<Vbb, Fb> TDS;
+// typedef CGAL::Triangulation_data_structure_2<Vbb, Face_base> TDS;
 typedef CGAL::Exact_predicates_tag Itag;
 typedef CGAL::Constrained_Delaunay_triangulation_2<Inexact_Kernel, TDS, Itag> CDT;
+///typedef CGAL::Constrained_Delaunay_triangulation_2<Inexact_Kernel, TDS> CDT;
 typedef CGAL::Delaunay_mesh_size_criteria_2<CDT> Mesh_criteria_2;
 typedef CGAL::Delaunay_mesher_2<CDT, Mesh_criteria_2> CGAL_Mesher_2;
 
@@ -116,8 +119,8 @@ CSGCGALMeshGenerator2D::CSGCGALMeshGenerator2D(const CSGGeometry& geometry)
 CSGCGALMeshGenerator2D::~CSGCGALMeshGenerator2D() {}
 //-----------------------------------------------------------------------------
 void explore_subdomain(CDT &ct,
-                        CDT::Face_handle start,
-                        std::list<CDT::Face_handle>& other_domains)
+                       CDT::Face_handle start,
+                       std::list<CDT::Face_handle>& other_domains)
 {
   std::list<Face_handle> queue;
   queue.push_back(start);
@@ -141,7 +144,8 @@ void explore_subdomain(CDT &ct,
         {
           // Reached a border
           other_domains.push_back(n);
-        } else
+        } 
+        else
         {
           // Set neighbor interface to the same and push to queue
           n->set_counter(face->counter());
@@ -202,58 +206,59 @@ void explore_subdomains(CDT& cdt,
   }
 }
 //-----------------------------------------------------------------------------
-void add_subdomain(CDT& cdt, const CSGCGALDomain2D& cgal_geometry,
+void add_subdomain(PSLG& pslg, 
+                   const CSGCGALDomain2D& cgal_geometry,
                    double threshold)
 {
 
-  // Insert the outer boundaries of the domain
-  {
-    std::list<std::vector<dolfin::Point> > v;
-    cgal_geometry.get_vertices(v, threshold);
+  // // Insert the outer boundaries of the domain
+  // {
+  //   std::list<std::vector<dolfin::Point> > v;
+  //   cgal_geometry.get_vertices(v, threshold);
 
-    for (std::list<std::vector<dolfin::Point> >::const_iterator pit = v.begin();
-         pit != v.end(); ++pit)
-    {
-      std::vector<dolfin::Point>::const_iterator it = pit->begin();
-      Vertex_handle first = cdt.insert(Point_2(it->x(), it->y()));
-      Vertex_handle prev = first;
-      ++it;
+  //   for (std::list<std::vector<dolfin::Point> >::const_iterator pit = v.begin();
+  //        pit != v.end(); ++pit)
+  //   {
+  //     std::vector<dolfin::Point>::const_iterator it = pit->begin();
+  //     Vertex_handle first = cdt.insert(Point_2(it->x(), it->y()));
+  //     Vertex_handle prev = first;
+  //     ++it;
 
-      for(; it != pit->end(); ++it)
-      {
-        Vertex_handle current = cdt.insert(Point_2(it->x(), it->y()));
-        cdt.insert_constraint(prev, current);
-        prev = current;
-      }
+  //     for(; it != pit->end(); ++it)
+  //     {
+  //       Vertex_handle current = cdt.insert(Point_2(it->x(), it->y()));
+  //       cdt.insert_constraint(prev, current);
+  //       prev = current;
+  //     }
 
-      cdt.insert_constraint(first, prev);
-    }
-  }
+  //     cdt.insert_constraint(first, prev);
+  //   }
+  // }
 
-  // Insert holes
-  {
-    std::list<std::vector<dolfin::Point> > holes;
-    cgal_geometry.get_holes(holes, threshold);
+  // // Insert holes
+  // {
+  //   std::list<std::vector<dolfin::Point> > holes;
+  //   cgal_geometry.get_holes(holes, threshold);
 
-    for (std::list<std::vector<dolfin::Point> >::const_iterator hit = holes.begin();
-         hit != holes.end(); ++hit)
-    {
+  //   for (std::list<std::vector<dolfin::Point> >::const_iterator hit = holes.begin();
+  //        hit != holes.end(); ++hit)
+  //   {
 
-      std::vector<dolfin::Point>::const_iterator pit = hit->begin();
-      Vertex_handle first = cdt.insert(Point_2(pit->x(), pit->y()));
-      Vertex_handle prev = first;
-      ++pit;
+  //     std::vector<dolfin::Point>::const_iterator pit = hit->begin();
+  //     Vertex_handle first = cdt.insert(Point_2(pit->x(), pit->y()));
+  //     Vertex_handle prev = first;
+  //     ++pit;
 
-      for(; pit != hit->end(); ++pit)
-      {
-        Vertex_handle current = cdt.insert(Point_2(pit->x(), pit->y()));
-        cdt.insert_constraint(prev, current);
-        prev = current;
-      }
+  //     for(; pit != hit->end(); ++pit)
+  //     {
+  //       Vertex_handle current = cdt.insert(Point_2(pit->x(), pit->y()));
+  //       cdt.insert_constraint(prev, current);
+  //       prev = current;
+  //     }
 
-      cdt.insert_constraint(first, prev);
-    }
-  }
+  //     cdt.insert_constraint(first, prev);
+  //   }
+  // }
 }
 //-----------------------------------------------------------------------------
 double shortest_constrained_edge(const CDT &cdt)
@@ -281,16 +286,19 @@ double shortest_constrained_edge(const CDT &cdt)
   return min_length;
 }
 //-----------------------------------------------------------------------------
+
+
+//-----------------------------------------------------------------------------
 void CSGCGALMeshGenerator2D::generate(dolfin::Mesh& mesh)
 {
-  // Create empty CGAL triangulation
-  CDT cdt;
-
-  // Convert the CSG geometry to a CGAL Polygon
   log(dolfin::TRACE, "Converting geometry to CGAL polygon");
   CSGCGALDomain2D total_domain(&geometry);
 
-  add_subdomain(cdt, total_domain, parameters["edge_minimum"]);
+  log(dolfin::TRACE, "Adding total domain to triangulation");
+  PSLG pslg(total_domain);
+
+  //add_subdomain(cdt, total_domain, parameters["edge_minimum"]);
+  //log(dolfin::TRACE, "Number of vertices: %d", cdt.number_of_vertices());
 
   // Empty polygon, will be populated when traversing the subdomains
   CSGCGALDomain2D overlaying;
@@ -298,7 +306,7 @@ void CSGCGALMeshGenerator2D::generate(dolfin::Mesh& mesh)
   std::vector<std::pair<std::size_t, CSGCGALDomain2D> >
     subdomain_geometries;
 
-  // Add the subdomains to the CDT. Traverse in reverse order to get the latest
+  // Add the subdomains to the PSLG. Traverse in reverse order to get the latest
   // added subdomain on top
   std::list<std::pair<std::size_t, std::shared_ptr<const CSGGeometry> > >::const_reverse_iterator it;
 
@@ -317,12 +325,45 @@ void CSGCGALMeshGenerator2D::generate(dolfin::Mesh& mesh)
     subdomain_geometries.push_back(std::make_pair(current_index,
                                                   cgal_geometry));
 
-    add_subdomain(cdt, cgal_geometry, parameters["edge_minimum"]);
+    log(dolfin::TRACE, "Adding subdomain to pslg");
+    pslg.add_subdomain(cgal_geometry);
+    //add_subdomain(pslg, cgal_geometry, parameters["edge_minimum"]);
+    //log(dolfin::TRACE, "Number of vertices: %d", cdt.number_of_vertices());
 
     overlaying.join_inplace(cgal_geometry);
   }
 
-  explore_subdomains(cdt, total_domain, subdomain_geometries);
+  // Create empty CGAL triangulation and copy data from the PSLG
+  CDT cdt;
+
+  {
+    std::vector<CDT::Vertex_handle> vertices;
+    {
+      // Insert the vertices into the triangulation
+      std::vector<dolfin::Point> v;
+      pslg.get_vertices(v);
+      vertices.reserve(v.size());
+      for (auto vit = v.begin(); vit != v.end(); vit++)
+        vertices.push_back(cdt.insert(Point_2(vit->x(), vit->y())));
+    }
+
+    // Insert the edges as constraints
+    std::vector<std::pair<std::size_t, std::size_t> > edges;
+    pslg.get_edges(edges);
+    for (auto eit = edges.begin(); eit != edges.end(); eit++)
+    {
+      std::cout << "Inserting constrained edge:" << eit->first << " " << eit->second << std::endl;
+      auto v1 = vertices[eit->first];
+      auto v2 = vertices[eit->second];
+      std::cout << *v1 << " " << *v2 << std::endl;
+      cdt.insert_constraint(vertices[eit->first], vertices[eit->second]);
+    }
+  }
+  
+
+
+  log(dolfin::TRACE, "Exploring subdomains in triangulation");
+  //explore_subdomains(cdt, total_domain, subdomain_geometries);
 
   log(dolfin::TRACE, "Refining mesh");
 
@@ -343,10 +384,14 @@ void CSGCGALMeshGenerator2D::generate(dolfin::Mesh& mesh)
 
     if (total_domain.point_in_domain(dolfin::Point(x, y)))
     {
+      log(dolfin::TRACE, "Added seed point (%f, %f)", x, y);
       list_of_seeds.push_back(Point_2(x, y));
     }
+    else
+      log(dolfin::TRACE, "Facet not in total domain");
   }
 
+  log(dolfin::TRACE, "Added %d seed points", list_of_seeds.size());
   mesher.set_seeds(list_of_seeds.begin(), list_of_seeds.end(), true);
 
   // Set shape and size criteria
@@ -355,6 +400,7 @@ void CSGCGALMeshGenerator2D::generate(dolfin::Mesh& mesh)
   {
     const double min_radius = total_domain.compute_boundingcircle_radius();
     const double cell_size = 2.0*min_radius/mesh_resolution;
+    log(dolfin::TRACE, "Requested cell size: %f", cell_size);
     const double shape_bound = parameters["triangle_shape_bound"];
 
     Mesh_criteria_2 criteria(shape_bound,
@@ -372,11 +418,12 @@ void CSGCGALMeshGenerator2D::generate(dolfin::Mesh& mesh)
 
   // Refine CGAL mesh/triangulation
   mesher.refine_mesh();
-
+  
   // Make sure triangulation is valid
   dolfin_assert(cdt.is_valid());
 
   // Mark the subdomains
+  log(dolfin::TRACE, "Exploring subdomains in mesh");
   explore_subdomains(cdt, total_domain, subdomain_geometries);
 
   // Clear mesh
@@ -388,8 +435,7 @@ void CSGCGALMeshGenerator2D::generate(dolfin::Mesh& mesh)
 
   // Count valid cells
   std::size_t num_cells = 0;
-  CDT::Finite_faces_iterator cgal_cell;
-  for (cgal_cell = cdt.finite_faces_begin();
+  for (CDT::Finite_faces_iterator cgal_cell = cdt.finite_faces_begin();
        cgal_cell != cdt.finite_faces_end(); ++cgal_cell)
   {
     // Add cell if it is in the domain
@@ -399,6 +445,8 @@ void CSGCGALMeshGenerator2D::generate(dolfin::Mesh& mesh)
     }
   }
 
+  log(dolfin::TRACE, "Mesh with %d vertices and %d cells created", num_vertices, num_cells);
+
   // Create a MeshEditor and open
   dolfin::MeshEditor mesh_editor;
   mesh_editor.open(mesh, tdim, gdim);
@@ -407,8 +455,7 @@ void CSGCGALMeshGenerator2D::generate(dolfin::Mesh& mesh)
 
   // Add vertices to mesh
   std::size_t vertex_index = 0;
-  CDT::Finite_vertices_iterator cgal_vertex;
-  for (cgal_vertex = cdt.finite_vertices_begin();
+  for (CDT::Finite_vertices_iterator cgal_vertex = cdt.finite_vertices_begin();
        cgal_vertex != cdt.finite_vertices_end(); ++cgal_vertex)
   {
     // Get vertex coordinates and add vertex to the mesh
@@ -429,7 +476,7 @@ void CSGCGALMeshGenerator2D::generate(dolfin::Mesh& mesh)
   dolfin::MeshDomains &domain_markers = mesh.domains();
   std::size_t cell_index = 0;
   const bool mark_cells = geometry.has_subdomains();
-  for (cgal_cell = cdt.finite_faces_begin();
+  for (CDT::Finite_faces_iterator cgal_cell = cdt.finite_faces_begin();
        cgal_cell != cdt.finite_faces_end(); ++cgal_cell)
   {
     // Add cell if it is in the domain
