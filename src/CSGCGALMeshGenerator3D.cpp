@@ -264,7 +264,7 @@ void CSGCGALMeshGenerator3D::generate(dolfin::Mesh& mesh) const
     const double cell_size = r/mesh_resolution*2.0;
     log(dolfin::TRACE, "Chose cell size %f", cell_size);
 
-    criteria.reset(new Mesh_criteria(CGAL::parameters::edge_size = cell_size/2, // ???
+    criteria.reset(new Mesh_criteria(CGAL::parameters::edge_size = cell_size,
                                           CGAL::parameters::facet_angle = 30.0,
                                           CGAL::parameters::facet_size = cell_size,
                                           CGAL::parameters::facet_distance = cell_size/10.0, // ???
@@ -275,11 +275,11 @@ void CSGCGALMeshGenerator3D::generate(dolfin::Mesh& mesh) const
   {
     // Mesh criteria
     criteria.reset(new Mesh_criteria(CGAL::parameters::edge_size = parameters["edge_size"],
-                                          CGAL::parameters::facet_angle = parameters["facet_angle"],
-                                          CGAL::parameters::facet_size = parameters["facet_size"],
-                                          CGAL::parameters::facet_distance = parameters["facet_distance"],
-                                          CGAL::parameters::cell_radius_edge_ratio = parameters["cell_radius_edge_ratio"],
-                                          CGAL::parameters::cell_size = parameters["cell_size"]));
+                                     CGAL::parameters::facet_angle = parameters["facet_angle"],
+                                     CGAL::parameters::facet_size = parameters["facet_size"], //  <-----------
+                                     CGAL::parameters::facet_distance = parameters["facet_distance"],
+                                     CGAL::parameters::cell_radius_edge_ratio = parameters["cell_radius_edge_ratio"],
+                                     CGAL::parameters::cell_size = parameters["cell_size"])); // <--------------
   }
 
   // Mesh generation
