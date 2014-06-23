@@ -73,6 +73,9 @@
 %ignore mshr::operator+;
 %ignore getType;
 
+%ignore CSGCGALDomain2D::impl;
+%ignore mshr::PSLG;
+
 %shared_ptr(mshr::CSGGeometry)
 %shared_ptr(mshr::CSGPrimitive)
 %shared_ptr(mshr::CSGOperator)

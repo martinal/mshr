@@ -33,7 +33,13 @@ dolfin.info("\nVerbose output of 3D geometry:")
 dolfin.info(domain, True)
 
 # Generate and plot mesh
-m = generate_mesh(domain, 16)
+generator = CSGCGALMeshGenerator3D(domain)
+generator.parameters["edge_size"] = 0.025
+generator.parameters["facet_angle"] = 25.0
+generator.parameters["facet_size"] = 0.05
+
+m = dolfin.Mesh()
+generator.generate(m)
 
 dolfin.info(m)
 dolfin.plot(m, "3D mesh")

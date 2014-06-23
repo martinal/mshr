@@ -55,22 +55,21 @@ class CSGCGALDomain2D : public dolfin::Variable
   
   std::string str(bool verbose) const;
 
+ private:
   std::unique_ptr<CSGCGALDomain2DImpl> impl;
-
+  friend class PSLG;
 };
 
 // Forward declaration
 struct PSLGImpl;
 
+// TODO: Merge this class with CSGCGALDomain2D
 class PSLG
 {
  public:
-  PSLG(const CSGCGALDomain2D& domain);
+  PSLG(std::list<const CSGCGALDomain2D*> domains, double rounding_tolerance);
   ~PSLG();
 
-  void add_subdomain(const CSGCGALDomain2D& subdomain);
-
-  void collapse_short_edges(double tolerance);
 
   // TODO: Replace this with a more C++-ish
   // implementation, ie, take an outputiterator as arugment

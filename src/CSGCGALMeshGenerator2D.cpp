@@ -291,11 +291,13 @@ double shortest_constrained_edge(const CDT &cdt)
 //-----------------------------------------------------------------------------
 void CSGCGALMeshGenerator2D::generate(dolfin::Mesh& mesh)
 {
+  std::list<const CSGCGALDomain2D*> domain_list;
+
   log(dolfin::TRACE, "Converting geometry to CGAL polygon");
   CSGCGALDomain2D total_domain(&geometry);
 
   log(dolfin::TRACE, "Adding total domain to triangulation");
-  PSLG pslg(total_domain);
+  domain_list.push_back(&total_domain);
 
   //add_subdomain(cdt, total_domain, parameters["edge_minimum"]);
   //log(dolfin::TRACE, "Number of vertices: %d", cdt.number_of_vertices());
@@ -326,12 +328,12 @@ void CSGCGALMeshGenerator2D::generate(dolfin::Mesh& mesh)
                                                   cgal_geometry));
 
     log(dolfin::TRACE, "Adding subdomain to pslg");
-    pslg.add_subdomain(cgal_geometry);
-    //add_subdomain(pslg, cgal_geometry, parameters["edge_minimum"]);
-    //log(dolfin::TRACE, "Number of vertices: %d", cdt.number_of_vertices());
+    domain_list.push_back(&subdomain_geometries.back().second);
 
     overlaying.join_inplace(cgal_geometry);
   }
+
+  PSLG pslg(domain_list, 1e-10);
 
   // Create empty CGAL triangulation and copy data from the PSLG
   CDT cdt;

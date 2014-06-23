@@ -28,12 +28,8 @@ domain = Rectangle(0., 0., 5., 5.) - Rectangle(2., 1.25, 3., 1.75) - Circle(1, 4
 domain.set_subdomain(1, Rectangle(1., 1., 4., 3.))
 domain.set_subdomain(2, Rectangle(2., 2., 3., 4.))
 
-# Test printing
-# info("\nCompact output of 2D geometry:")
-# info(domain)
-# info("")
-# info("\nVerbose output of 2D geometry:")
-# info(domain, True)
+dolfin.info("\nVerbose output of 2D geometry:")
+dolfin.info(domain, True)
 
 # # Plot geometry
 # plot(domain, "2D Geometry (boundary)")
@@ -44,8 +40,8 @@ print mesh2d
 #dolfin.plot(mesh2d, "2D mesh")
 
 # Convert subdomains to mesh function for plotting
-# mf = MeshFunction("size_t", mesh2d, 2, mesh2d.domains())
-# plot(mf, "Subdomains")
+mf = dolfin.MeshFunction("size_t", mesh2d, 2, mesh2d.domains())
+dolfin.plot(mf, "Subdomains")
 
 
-#interactive()
+dolfin.interactive()
