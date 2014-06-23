@@ -38,7 +38,7 @@ void SurfaceConsistency::checkConnectivity(const std::vector<std::vector<std::si
     // Check for (topologically) degenerate facets
     if ( (*it)[0] == (*it)[1] || (*it)[0] == (*it)[2] || (*it)[1] == (*it)[2] )
       dolfin::dolfin_error("SurfaceConsistency.cpp",
-                           "Check surface connectivity",
+                           "confirm surface connectivity",
                            "Facet %d is degenerate", facet_no);
 
 
@@ -48,7 +48,7 @@ void SurfaceConsistency::checkConnectivity(const std::vector<std::vector<std::si
       if (halfedges.count( e ) > 0 )
       {
         dolfin::dolfin_error("SurfaceConsistency.cpp",
-                             "Check surface connectivity",
+                             "confirm halfedge connectivity",
                              "Facet %d and %d share halfedge", halfedges[e], facet_no);
       }
 
