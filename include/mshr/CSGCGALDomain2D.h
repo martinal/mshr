@@ -70,16 +70,8 @@ class PSLG
   PSLG(std::list<const CSGCGALDomain2D*> domains, double rounding_tolerance);
   ~PSLG();
 
-
-  // TODO: Replace this with a more C++-ish
-  // implementation, ie, take an outputiterator as arugment
-  // or define iterator
-  void get_vertices(std::vector<dolfin::Point>& v) const;
-
-  void get_edges(std::vector<std::pair<std::size_t, std::size_t> >& e) const;
-
-private:
-  std::unique_ptr<PSLGImpl> impl;
+  std::vector<dolfin::Point> vertices;
+  std::vector<std::pair<std::size_t, std::size_t> > edges;
 };
 }
 

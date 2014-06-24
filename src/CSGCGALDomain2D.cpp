@@ -15,6 +15,9 @@
 // You should have received a copy of the GNU General Public License
 // along with mshr.  If not, see <http://www.gnu.org/licenses/>.
 
+#include <CGAL/Cartesian.h>
+#include <CGAL/Quotient.h>
+#include <CGAL/MP_Float.h>
 
 #include <mshr/CSGCGALDomain2D.h>
 #include <mshr/CSGPrimitives2D.h>
@@ -35,7 +38,10 @@
 #include <CGAL/Snap_rounding_2.h>
 
 // Polygon typedefs
-typedef CGAL::Exact_predicates_exact_constructions_kernel Exact_Kernel;
+//typedef CGAL::Exact_predicates_exact_constructions_kernel Exact_Kernel;
+typedef CGAL::Quotient<CGAL::MP_Float>                    Quotient;
+typedef CGAL::Cartesian<Quotient>                         Exact_Kernel;
+
 typedef Exact_Kernel::Point_2                             Point_2;
 typedef Exact_Kernel::Vector_2                            Vector_2;
 typedef Exact_Kernel::Segment_2                           Segment_2;
@@ -45,8 +51,9 @@ typedef CGAL::Polygon_with_holes_2<Exact_Kernel>          Polygon_with_holes_2;
 typedef Polygon_with_holes_2::Hole_const_iterator         Hole_const_iterator;
 typedef CGAL::Polygon_set_2<Exact_Kernel>                 Polygon_set_2;
 
-typedef CGAL::Snap_rounding_traits_2<Exact_Kernel>     Snap_rounding_traits;
-typedef std::list<std::list<Point_2> >                 Polyline_list_2;
+typedef CGAL::Snap_rounding_traits_2<Exact_Kernel>        snap_rounding_traits;
+typedef std::list<Point_2>                                Polyline_2;
+typedef std::list<Polyline_2>                             Polyline_list_2;
 
 // Min enclosing circle typedefs
 typedef CGAL::Min_circle_2_traits_2<Exact_Kernel>  Min_Circle_Traits;
@@ -387,7 +394,6 @@ std::string CSGCGALDomain2D::str(bool verbose) const
   return ss.str();
 }
 //-----------------------------------------------------------------------------
-// TODO: Consider if the 2D snap rounding package in CGAL can be used for this
 class PSLGImpl
 {
  public:
@@ -395,7 +401,7 @@ class PSLGImpl
   std::vector<std::pair<std::size_t, std::size_t> > edges;
 };
 //-----------------------------------------------------------------------------
-static inline void add_simple_polygon(std::vector<Segment_2> segments, const Polygon_2& p)
+static inline void add_simple_polygon(std::vector<Segment_2>& segments, const Polygon_2& p)
 {
   Polygon_2::Vertex_const_iterator first = p.vertices_begin(); 
   Polygon_2::Vertex_const_iterator prev = first;
@@ -404,17 +410,38 @@ static inline void add_simple_polygon(std::vector<Segment_2> segments, const Pol
 
   while (current != p.vertices_end())
   {
+    // std::cout << "Add segment:" << *prev << ", " << *current << std::endl;
     segments.push_back(Segment_2(*prev, *current));
 
     prev = current;
     current++;
   }
 
+  // std::cout << "Add segment:" << *prev << ", " << *first << std::endl;
   segments.push_back(Segment_2(*prev, *first));
 }
 //-----------------------------------------------------------------------------
+static inline std::size_t get_vertex_index(std::map<Point_2, std::size_t>& m,
+                                           std::vector<dolfin::Point>& v,
+                                           Point_2 p)
+{
+  std::size_t i;
+  std::map<Point_2, std::size_t>::const_iterator it = m.find(p);
+  if (it == m.end())
+  {
+    v.push_back(dolfin::Point(CGAL::to_double(p.x()), CGAL::to_double(p.y())));
+    m[p] = v.size()-1;
+    i = v.size()-1;
+  }
+  else
+  {
+    i = it->second;
+  }
+
+  return i;
+}
+//-----------------------------------------------------------------------------
 PSLG::PSLG(std::list<const CSGCGALDomain2D*> domains, double rounding_tolerance)
-  : impl(new PSLGImpl)
 {
 
   // Collect all segments from all domains to send to snap rounding
@@ -422,15 +449,17 @@ PSLG::PSLG(std::list<const CSGCGALDomain2D*> domains, double rounding_tolerance)
 
   for (auto it = domains.begin(); it != domains.end(); it++)
   {
+    log(dolfin::TRACE, "Adding domain");
     const Polygon_set_2& p = (*it)->impl->polygon_set; 
 
     std::list<Polygon_with_holes_2> polygon_list;
     p.polygons_with_holes(std::back_inserter(polygon_list));
-
+    // std::cout << "Number of polygons: " << polygon_list.size() << std::endl;
 
     for (std::list<Polygon_with_holes_2>::const_iterator pit = polygon_list.begin();
          pit != polygon_list.end(); ++pit)
     {
+      // std::cout << "adding polygon with holes" << std::endl;
       add_simple_polygon(segments, pit->outer_boundary());
 
       // Add holes
@@ -442,30 +471,53 @@ PSLG::PSLG(std::list<const CSGCGALDomain2D*> domains, double rounding_tolerance)
     }
   }
 
-  Polyline_list_2 snapped_polylines;
+  // for (auto it = segments.begin(); it != segments.end(); it++)
+    // std::cout << *it << std::endl;
 
-  CGAL::snap_rounding_2<Snap_rounding_traits, 
+
+  log(dolfin::TRACE, "Snap rounding polygons");
+  Polyline_list_2 snapped_polylines;
+  CGAL::snap_rounding_2<snap_rounding_traits,
                         std::vector<Segment_2>::const_iterator,
                         Polyline_list_2>
-    (segments.begin(), segments.end(), snapped_polylines, 1.0, true, false, 5);
+    (segments.begin(), segments.end(),  // input
+     snapped_polylines,                 // output
+     Quotient(1.0, 1e10), // pixel size
+     true,                              // do iterated snap rounding
+     false);                            // output as integers
+     // 5);                             // number of kd-trees
 
+  int counter = 0;
+  std::map<Point_2, std::size_t> point_to_index;
+
+  for (Polyline_list_2::const_iterator iter1 = snapped_polylines.begin();
+       iter1 != snapped_polylines.end(); ++iter1)
+  {
+    // std::cout << "Polyline number " << ++counter << ":\n";
+    Polyline_2::const_iterator iter2 = iter1->begin();
+    // std::cout << "    (" << iter2->x() << ":" << iter2->y() << ")\n";
+    const std::size_t first = get_vertex_index(point_to_index,
+                                               vertices,
+                                               *iter2);
+    std::size_t prev = first;
+    iter2++;
+
+    while(iter2 != iter1->end())
+    {
+      // std::cout << "    (" << iter2->x() << ":" << iter2->y() << ")\n";
+      std::size_t current = get_vertex_index(point_to_index,
+                                             vertices,
+                                             *iter2);
+
+      edges.push_back(std::make_pair(prev, current));
+      prev = current;
+      ++iter2;
+    }
+
+    edges.push_back(std::make_pair(prev, first));
+  }
 }
 //-----------------------------------------------------------------------------
 PSLG::~PSLG(){}
 //-----------------------------------------------------------------------------
-void PSLG::get_vertices(std::vector<dolfin::Point>& v) const
-{
-  // v.clear();
-  // for (auto it = impl->vertices.begin(); it != impl->vertices.end(); it++)
-  // {
-  //   v.push_back(dolfin::Point(CGAL::to_double(it->x()), CGAL::to_double(it->y())));
-  //   dolfin::cout << v.back() << dolfin::endl;
-  // }
-}
-//-----------------------------------------------------------------------------
-void PSLG::get_edges(std::vector<std::pair<std::size_t, std::size_t> >& e) const
-{
-  // std::copy(impl->edges.begin(), impl->edges.end(), std::back_inserter(e));
-  // std::cout << "Copied edges" << impl->edges.size() << " " << e.size() << std::endl;
-}
 }

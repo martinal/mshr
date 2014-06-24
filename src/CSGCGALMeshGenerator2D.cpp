@@ -342,16 +342,14 @@ void CSGCGALMeshGenerator2D::generate(dolfin::Mesh& mesh)
     std::vector<CDT::Vertex_handle> vertices;
     {
       // Insert the vertices into the triangulation
-      std::vector<dolfin::Point> v;
-      pslg.get_vertices(v);
+      std::vector<dolfin::Point>& v = pslg.vertices;
       vertices.reserve(v.size());
       for (auto vit = v.begin(); vit != v.end(); vit++)
         vertices.push_back(cdt.insert(Point_2(vit->x(), vit->y())));
     }
 
     // Insert the edges as constraints
-    std::vector<std::pair<std::size_t, std::size_t> > edges;
-    pslg.get_edges(edges);
+    std::vector<std::pair<std::size_t, std::size_t> > edges = pslg.edges;
     for (auto eit = edges.begin(); eit != edges.end(); eit++)
     {
       std::cout << "Inserting constrained edge:" << eit->first << " " << eit->second << std::endl;
