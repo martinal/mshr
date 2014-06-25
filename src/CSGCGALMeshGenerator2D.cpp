@@ -292,22 +292,19 @@ double shortest_constrained_edge(const CDT &cdt)
 //-----------------------------------------------------------------------------
 void CSGCGALMeshGenerator2D::generate(dolfin::Mesh& mesh)
 {
-  std::list<const CSGCGALDomain2D*> domain_list;
+  std::vector<std::pair<std::size_t, CSGCGALDomain2D> >
+    subdomain_geometries;
 
   log(dolfin::TRACE, "Converting geometry to CGAL polygon");
   CSGCGALDomain2D total_domain(&geometry);
 
   log(dolfin::TRACE, "Adding total domain to triangulation");
-  domain_list.push_back(&total_domain);
 
   //add_subdomain(cdt, total_domain, parameters["edge_minimum"]);
   //log(dolfin::TRACE, "Number of vertices: %d", cdt.number_of_vertices());
 
   // Empty polygon, will be populated when traversing the subdomains
   CSGCGALDomain2D overlaying;
-
-  std::vector<std::pair<std::size_t, CSGCGALDomain2D> >
-    subdomain_geometries;
 
   // Add the subdomains to the PSLG. Traverse in reverse order to get the latest
   // added subdomain on top
@@ -323,18 +320,26 @@ void CSGCGALMeshGenerator2D::generate(dolfin::Mesh& mesh)
     std::shared_ptr<const CSGGeometry> current_subdomain = it->second;
 
     CSGCGALDomain2D cgal_geometry(current_subdomain.get());
+
+    // Only the part inside the total domain
+    cgal_geometry.intersect_inplace(total_domain);
+
+    // Only the part outside overlaying subdomains
     cgal_geometry.difference_inplace(overlaying);
 
     subdomain_geometries.push_back(std::make_pair(current_index,
                                                   cgal_geometry));
 
     log(dolfin::TRACE, "Adding subdomain to pslg");
-    domain_list.push_back(&subdomain_geometries.back().second);
 
     overlaying.join_inplace(cgal_geometry);
   }
 
-  PSLG pslg(domain_list, 1e-10);
+  CSGCGALDomain2D remaining(total_domain);
+  remaining.difference_inplace(overlaying);
+  subdomain_geometries.push_back(std::make_pair(0, remaining));
+
+  PSLG pslg(subdomain_geometries, 1e-10);
 
   // Create empty CGAL triangulation and copy data from the PSLG
   CDT cdt;

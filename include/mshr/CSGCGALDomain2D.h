@@ -67,7 +67,7 @@ struct PSLGImpl;
 class PSLG
 {
  public:
-  PSLG(std::list<const CSGCGALDomain2D*> domains, double rounding_tolerance);
+  PSLG(const std::vector<std::pair<std::size_t, CSGCGALDomain2D> > &domains, double rounding_tolerance);
   ~PSLG();
 
   std::vector<dolfin::Point> vertices;

@@ -446,16 +446,15 @@ static inline std::size_t get_vertex_index(std::map<Point_2, std::size_t>& m,
   return i;
 }
 //-----------------------------------------------------------------------------
-PSLG::PSLG(std::list<const CSGCGALDomain2D*> domains, double rounding_tolerance)
+PSLG::PSLG(const std::vector<std::pair<std::size_t, CSGCGALDomain2D> >& domains, double rounding_tolerance)
 {
-
   // Collect all segments from all domains to send to snap rounding
   std::vector<Segment_2> segments;
 
   for (auto it = domains.begin(); it != domains.end(); it++)
   {
     log(dolfin::TRACE, "Adding domain");
-    const Polygon_set_2& p = (*it)->impl->polygon_set; 
+    const Polygon_set_2& p = it->second.impl->polygon_set;
 
     std::list<Polygon_with_holes_2> polygon_list;
     p.polygons_with_holes(std::back_inserter(polygon_list));
