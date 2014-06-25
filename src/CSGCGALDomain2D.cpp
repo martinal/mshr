@@ -15,6 +15,11 @@
 // You should have received a copy of the GNU General Public License
 // along with mshr.  If not, see <http://www.gnu.org/licenses/>.
 
+// This file must be included to get the compiler flags
+// They should idellay have been added via the command line,
+// but since CGAL configure time is at mshr compile time, we don't
+// have access to CGALConfig.cmake at configure time...
+#include <CGAL/compiler_config.h>
 #include <CGAL/Cartesian.h>
 #include <CGAL/Quotient.h>
 #include <CGAL/MP_Float.h>
@@ -514,7 +519,7 @@ PSLG::PSLG(std::list<const CSGCGALDomain2D*> domains, double rounding_tolerance)
       ++iter2;
     }
 
-    edges.push_back(std::make_pair(prev, first));
+    // edges.push_back(std::make_pair(prev, first));
   }
 }
 //-----------------------------------------------------------------------------
