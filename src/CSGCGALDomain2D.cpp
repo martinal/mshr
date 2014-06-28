@@ -415,14 +415,11 @@ static inline void add_simple_polygon(std::vector<Segment_2>& segments, const Po
 
   while (current != p.vertices_end())
   {
-    // std::cout << "Add segment:" << *prev << ", " << *current << std::endl;
     segments.push_back(Segment_2(*prev, *current));
 
     prev = current;
     current++;
   }
-
-  // std::cout << "Add segment:" << *prev << ", " << *first << std::endl;
   segments.push_back(Segment_2(*prev, *first));
 }
 //-----------------------------------------------------------------------------
@@ -453,17 +450,14 @@ PSLG::PSLG(const std::vector<std::pair<std::size_t, CSGCGALDomain2D> >& domains,
 
   for (auto it = domains.begin(); it != domains.end(); it++)
   {
-    log(dolfin::TRACE, "Adding domain");
     const Polygon_set_2& p = it->second.impl->polygon_set;
 
     std::list<Polygon_with_holes_2> polygon_list;
     p.polygons_with_holes(std::back_inserter(polygon_list));
-    // std::cout << "Number of polygons: " << polygon_list.size() << std::endl;
 
     for (std::list<Polygon_with_holes_2>::const_iterator pit = polygon_list.begin();
          pit != polygon_list.end(); ++pit)
     {
-      // std::cout << "adding polygon with holes" << std::endl;
       add_simple_polygon(segments, pit->outer_boundary());
 
       // Add holes
@@ -475,31 +469,25 @@ PSLG::PSLG(const std::vector<std::pair<std::size_t, CSGCGALDomain2D> >& domains,
     }
   }
 
-  // for (auto it = segments.begin(); it != segments.end(); it++)
-    // std::cout << *it << std::endl;
-
-
-  log(dolfin::TRACE, "Snap rounding polygons");
+  log(dolfin::TRACE, "Snap rounding PSLG");
   Polyline_list_2 snapped_polylines;
+
   CGAL::snap_rounding_2<snap_rounding_traits,
                         std::vector<Segment_2>::const_iterator,
                         Polyline_list_2>
     (segments.begin(), segments.end(),  // input
      snapped_polylines,                 // output
-     Quotient(1.0, 1e10), // pixel size
-     true,                              // do iterated snap rounding
-     false);                            // output as integers
-     // 5);                             // number of kd-trees
+     Quotient(1.0, 1e10),               // pixel size
+     false,                              // do iterated snap rounding
+     false,                             // output as integers
+     1);                                // number of kd-trees
 
-  int counter = 0;
   std::map<Point_2, std::size_t> point_to_index;
 
   for (Polyline_list_2::const_iterator iter1 = snapped_polylines.begin();
        iter1 != snapped_polylines.end(); ++iter1)
   {
-    // std::cout << "Polyline number " << ++counter << ":\n";
     Polyline_2::const_iterator iter2 = iter1->begin();
-    // std::cout << "    (" << iter2->x() << ":" << iter2->y() << ")\n";
     const std::size_t first = get_vertex_index(point_to_index,
                                                vertices,
                                                *iter2);
@@ -508,7 +496,6 @@ PSLG::PSLG(const std::vector<std::pair<std::size_t, CSGCGALDomain2D> >& domains,
 
     while(iter2 != iter1->end())
     {
-      // std::cout << "    (" << iter2->x() << ":" << iter2->y() << ")\n";
       std::size_t current = get_vertex_index(point_to_index,
                                              vertices,
                                              *iter2);
@@ -517,8 +504,6 @@ PSLG::PSLG(const std::vector<std::pair<std::size_t, CSGCGALDomain2D> >& domains,
       prev = current;
       ++iter2;
     }
-
-    // edges.push_back(std::make_pair(prev, first));
   }
 }
 //-----------------------------------------------------------------------------

@@ -298,11 +298,6 @@ void CSGCGALMeshGenerator2D::generate(dolfin::Mesh& mesh)
   log(dolfin::TRACE, "Converting geometry to CGAL polygon");
   CSGCGALDomain2D total_domain(&geometry);
 
-  log(dolfin::TRACE, "Adding total domain to triangulation");
-
-  //add_subdomain(cdt, total_domain, parameters["edge_minimum"]);
-  //log(dolfin::TRACE, "Number of vertices: %d", cdt.number_of_vertices());
-
   // Empty polygon, will be populated when traversing the subdomains
   CSGCGALDomain2D overlaying;
 
@@ -330,8 +325,6 @@ void CSGCGALMeshGenerator2D::generate(dolfin::Mesh& mesh)
     subdomain_geometries.push_back(std::make_pair(current_index,
                                                   cgal_geometry));
 
-    log(dolfin::TRACE, "Adding subdomain to pslg");
-
     overlaying.join_inplace(cgal_geometry);
   }
 
@@ -358,20 +351,16 @@ void CSGCGALMeshGenerator2D::generate(dolfin::Mesh& mesh)
     std::vector<std::pair<std::size_t, std::size_t> > edges = pslg.edges;
     for (auto eit = edges.begin(); eit != edges.end(); eit++)
     {
-      std::cout << "Inserting constrained edge:" << eit->first << " " << eit->second << std::endl;
-      auto v1 = vertices[eit->first];
-      auto v2 = vertices[eit->second];
-      std::cout << *v1 << " " << *v2 << std::endl;
       cdt.insert_constraint(vertices[eit->first], vertices[eit->second]);
     }
   }
   
 
 
-  log(dolfin::TRACE, "Exploring subdomains in triangulation");
-  //explore_subdomains(cdt, total_domain, subdomain_geometries);
+  // log(dolfin::TRACE, "Exploring subdomains in triangulation");
+  // explore_subdomains(cdt, total_domain, subdomain_geometries);
 
-  log(dolfin::TRACE, "Refining mesh");
+  log(dolfin::TRACE, "Initializing mesh refinement");
 
   // Create mesher
   CGAL_Mesher_2 mesher(cdt);
@@ -390,14 +379,11 @@ void CSGCGALMeshGenerator2D::generate(dolfin::Mesh& mesh)
 
     if (total_domain.point_in_domain(dolfin::Point(x, y)))
     {
-      log(dolfin::TRACE, "Added seed point (%f, %f)", x, y);
       list_of_seeds.push_back(Point_2(x, y));
     }
-    else
-      log(dolfin::TRACE, "Facet not in total domain");
   }
 
-  log(dolfin::TRACE, "Added %d seed points", list_of_seeds.size());
+  // log(dolfin::TRACE, "Added %d seed points", list_of_seeds.size());
   mesher.set_seeds(list_of_seeds.begin(), list_of_seeds.end(), true);
 
   // Set shape and size criteria
@@ -451,7 +437,7 @@ void CSGCGALMeshGenerator2D::generate(dolfin::Mesh& mesh)
     }
   }
 
-  log(dolfin::TRACE, "Mesh with %d vertices and %d cells created", num_vertices, num_cells);
+  log(dolfin::DBG, "Mesh with %d vertices and %d cells created", num_vertices, num_cells);
 
   // Create a MeshEditor and open
   dolfin::MeshEditor mesh_editor;
