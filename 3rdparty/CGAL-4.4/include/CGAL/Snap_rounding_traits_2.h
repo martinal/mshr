@@ -26,6 +26,45 @@
 
 #include <CGAL/Arr_segment_traits_2.h>
 
+namespace
+{
+template<typename NT>
+inline NT floor_exact(NT x)
+{
+  const bool negative = x < 0;
+  if (negative)
+    x = -x;
+
+  const int base = 10;
+  NT f = 0;
+
+  NT current = 1;
+  while (x > current)
+    current *= base;
+
+  while (x >= 1)
+  {
+    while(x > current)
+    {
+      f += current;
+      x -= current;
+    }
+
+    current /= base;
+  }
+
+  if (negative)
+  {
+    if (x > 0)
+      f += 1;
+
+    f = -f;
+  }
+
+  return f;
+}
+}
+
 namespace CGAL {
 
 template<class Base_kernel>
@@ -61,13 +100,13 @@ public:
   public:
     void operator()(const Point_2& p, NT pixel_size, NT &x, NT &y)
     {
-      NT x_tmp = p.x() / pixel_size;
-      NT y_tmp = p.y() / pixel_size;
+      const NT x_tmp = p.x() / pixel_size;
+      const NT y_tmp = p.y() / pixel_size;
 
-      double x_floor = std::floor(CGAL::to_double(x_tmp));
-      double y_floor = std::floor(CGAL::to_double(y_tmp));
-      x = NT(x_floor) * pixel_size + pixel_size / NT(2.0);
-      y = NT(y_floor) * pixel_size + pixel_size / NT(2.0);
+      // double x_floor = std::floor(CGAL::to_double(x_tmp));
+      // double y_floor = std::floor(CGAL::to_double(y_tmp));
+      x = floor_exact(x_tmp) * pixel_size + pixel_size / NT(2.0);
+      y = floor_exact(y_tmp) * pixel_size + pixel_size / NT(2.0);
     }
   };
 
