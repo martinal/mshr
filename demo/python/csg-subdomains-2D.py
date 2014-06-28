@@ -22,6 +22,7 @@
 import dolfin
 from mshr import *
 
+dolfin.set_log_level(dolfin.TRACE)
 
 # Define 2D geometry
 domain = Rectangle(0., 0., 5., 5.) - Rectangle(2., 1.25, 3., 1.75) - Circle(1, 4, .25) - Circle(4, 4, .25)
