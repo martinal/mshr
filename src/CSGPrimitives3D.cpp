@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Anders Logg
+// Copyright (C) 2012 Anders Logg, 2012, 2014 Benjamin Kehlet
 //
 // This file is part of mshr.
 //
@@ -15,13 +15,11 @@
 // You should have received a copy of the GNU General Public License
 // along with mshr.  If not, see <http://www.gnu.org/licenses/>.
 //
-// Modified by Benjamin Kehlet, 2012
 
 #include <mshr/CSGPrimitives3D.h>
 
 #include <dolfin/math/basic.h>
 #include <dolfin/log/LogStream.h>
-
 #include <sstream>
 
 namespace mshr
@@ -54,8 +52,8 @@ std::string Sphere::str(bool verbose) const
 
   if (verbose)
   {
-    s << "<Sphere at " << c << " "
-      << "with radius " << r << ">";
+    s << "<Sphere with center at " << c << " "
+      << "withand radius " << r << ">";
   }
   else
     s << "Sphere(" << c << ", " << r << ")";
@@ -65,16 +63,18 @@ std::string Sphere::str(bool verbose) const
 //-----------------------------------------------------------------------------
 // Box
 //-----------------------------------------------------------------------------
-Box::Box(double x0, double x1, double x2,
-         double y0, double y1, double y2)
-  : _x0(x0), _x1(x1), _x2(x2), _y0(y0), _y1(y1), _y2(y2)
+Box::Box(dolfin::Point a, dolfin::Point b)
+  : a(a), b(b)
 {
-  // FIXME: Check validity of coordinates here
-  if (dolfin::near(x0, y0) || dolfin::near(x1, y2) || dolfin::near(x2, y2))
+  if (dolfin::near(a.x(), b.x()) || dolfin::near(a.y(), b.y()) || dolfin::near(a.z(), b.z()))
+  {
+    std::stringstream s;
+    s << "Box with corner " << a.str() << " and " << b.str() << " degenerated";
+
     dolfin::dolfin_error("CSGPrimitives3D.cpp",
                          "Create axis aligned box",
-                         "Box with corner (%f, %f, %f) and (%f, %f, %f) degenerated", 
-                         x0, x1, x2, y0, y1, y2);
+                         s.str());
+  }
 }
 //-----------------------------------------------------------------------------
 std::string Box::str(bool verbose) const
@@ -83,14 +83,12 @@ std::string Box::str(bool verbose) const
 
   if (verbose)
   {
-    s << "<Box with first corner at (" << _x0 << ", " << _x1 << ", " << _x2 << ") "
-      << "and second corner at (" << _y0 << ", " << _y1 << ", " << _y2 << ")>";
+    s << "<Box with first corner at (" << a.str(true) << ") "
+      << "and second corner at (" << b.str(true) << ")>";
   }
   else
   {
-    s << "Box("
-      << _x0 << ", " << _x1 << ", " << _x2 << ", "
-      << _y0 << ", " << _y1 << ", " << _y2 << ")";
+    s << "Box(" << a.str(false) << ", " << b.str(false) << ")";
   }
 
   return s.str();
@@ -139,12 +137,14 @@ std::string Cone::str(bool verbose) const
   return s.str();
 }
 //-----------------------------------------------------------------------------
-Tetrahedron::Tetrahedron(dolfin::Point x0, 
-                         dolfin::Point x1, 
-                         dolfin::Point x2, 
-                         dolfin::Point x3)
-  : _x0(x0), _x1(x1), _x2(x2), _x3(x3)
-{}
+Tetrahedron::Tetrahedron(dolfin::Point a,
+                         dolfin::Point b, 
+                         dolfin::Point c, 
+                         dolfin::Point d)
+  : a(a), b(b), c(c), d(d)
+{
+  // TODO: Check validity of coordinates
+}
 //-----------------------------------------------------------------------------
 /// Informal string representation
 std::string Tetrahedron::str(bool verbose) const
@@ -152,13 +152,13 @@ std::string Tetrahedron::str(bool verbose) const
   std::stringstream s;
   if (verbose)
   {
-    s << "<Tetrahedron with point at " << _x0 << ", " << _x1 << ", "
-      << _x2 << ", " << _x3 << ">";
+    s << "<Tetrahedron with points at " << a << ", " << b << ", "
+      << c << ", " << d << ">";
   }
   else
   {
-    s << "Tetrahedron( " << _x0 << ", " << _x1 << ", " << _x2 << ", "
-      << _x3 << ")";
+    s << "Tetrahedron( " << a << ", " << b << ", " << c << ", "
+      << d << ")";
   }
   return s.str();
 }

@@ -34,22 +34,23 @@ namespace mshr
 //-----------------------------------------------------------------------------
 // Circle
 //-----------------------------------------------------------------------------
-Circle::Circle(double x0, double x1, double r, std::size_t fragments)
-  : _x0(x0), _x1(x1), _r(r), _fragments(fragments)
+Circle::Circle(dolfin::Point(c), double r, std::size_t fragments)
+  : c(c), _r(r), _fragments(fragments)
 {
   if (_r < DOLFIN_EPS)
   {
+    std::stringstream s;
+    s << "Circle with center " << c.str() << " has zero or negative radius";
     dolfin::dolfin_error("CSGPrimitives2D.cpp",
-                 "create circle",
-                 "Circle with center (%f, %f) has zero or negative radius",
-                 _x0, _x1);
+                         "create circle",
+                         s.str());
   }
+
   if (_fragments < 3)
   {
     dolfin::dolfin_error("CSGPrimitives2D.cpp",
-                 "create circle",
-                 "Unable to create circle with less than 3 fragments");
-
+                         "create circle",
+                         "Unable to create circle with less than 3 fragments");
   }
 }
 //-----------------------------------------------------------------------------
@@ -59,12 +60,11 @@ std::string Circle::str(bool verbose) const
 
   if (verbose)
   {
-    s << "<Circle at (" << _x0 << ", " << _x1 << ") with radius " << _r << ">";
+    s << "<Circle at (" << c.str() << ") with radius " << _r << ">";
   }
   else
   {
-    s << "Circle("
-      << _x0 << ", " << _x1 << ", " << _r << ")";
+    s << "Circle(" << c.str() << ", " << _r << ")";
   }
 
   return s.str();
@@ -72,23 +72,24 @@ std::string Circle::str(bool verbose) const
 //-----------------------------------------------------------------------------
 // Ellipse
 //-----------------------------------------------------------------------------
-Ellipse::Ellipse(double x0, double x1, double a, double b,
+Ellipse::Ellipse(dolfin::Point c, double a, double b,
                  std::size_t fragments)
-  : _x0(x0), _x1(x1), _a(a), _b(b), _fragments(fragments)
+  : c(c), _a(a), _b(b), _fragments(fragments)
 {
   if (_a < DOLFIN_EPS || _b < DOLFIN_EPS)
   {
+    std::stringstream s;
+    s << "Ellipse with center " << c.str() << " has invalid semi-axis";
     dolfin::dolfin_error("CSGPrimitives2D.cpp",
-                 "create ellipse",
-                 "Ellipse with center (%f, %f) has invalid semi-axis",
-                 _x0, _x1);
+                         "create ellipse",
+                         s.str());
   }
+
   if (_fragments < 3)
   {
     dolfin::dolfin_error("CSGPrimitives2D.cpp",
                  "create ellipse",
                  "Unable to create ellipse with less than 3 fragments");
-
   }
 }
 //-----------------------------------------------------------------------------
@@ -98,13 +99,12 @@ std::string Ellipse::str(bool verbose) const
 
   if (verbose)
   {
-    s << "<Ellipse at (" << _x0 << ", " << _x1 << ") with horizontal semi-axis "
+    s << "<Ellipse centered at (" << c.str() << ") with horizontal semi-axis "
       << _a << " and vertical semi-axis " << _b << ">";
   }
   else
   {
-    s << "Ellipse("
-      << _x0 << ", " << _x1 << ", " << _a << ", " << _b << ")";
+    s << "Ellipse(" << c.str() << ", " << _a << ", " << _b << ")";
   }
 
   return s.str();
@@ -112,15 +112,16 @@ std::string Ellipse::str(bool verbose) const
 //-----------------------------------------------------------------------------
 // Rectangle
 //-----------------------------------------------------------------------------
-Rectangle::Rectangle(double x0, double x1, double y0, double y1)
-  : _x0(x0), _x1(x1), _y0(y0), _y1(y1)
+Rectangle::Rectangle(dolfin::Point a, dolfin::Point b)
+  : a(a), b(b)
 {
-  if (dolfin::near(x0, y0) || dolfin::near(x1, y1))
+  if (dolfin::near(a.x(), b.x()) || dolfin::near( a.y(), b.y()))
   {
+    std::stringstream s;
+    s << "Rectangle with corner " << a.str() << " and " << b.str() << " degenerated";
     dolfin::dolfin_error("CSGPrimitives2D.cpp",
                  "create rectangle",
-                 "Rectangle with corner (%f, %f) and (%f, %f) degenerated",
-                 x0, x1, y0, y1);
+                         s.str());
   }
 }
 //-----------------------------------------------------------------------------
@@ -130,13 +131,12 @@ std::string Rectangle::str(bool verbose) const
 
   if (verbose)
   {
-    s << "<Rectangle with first corner at (" << _x0 << ", " << _x1 << ") "
-      << "and second corner at (" << _y0 << ", " << _y1 << ")>";
+    s << "<Rectangle with first corner at (" << a.str() << ") "
+      << "and second corner at (" << b.str() << ")>";
   }
   else
   {
-    s << "Rectangle("
-      << _x0 << ", " << _x1 << ", " << _y0 << ", " << _y1 << ")";
+    s << "Rectangle( (" << a.str() << "), (" << b.str() << ") )";
   }
 
   return s.str();

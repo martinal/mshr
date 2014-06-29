@@ -43,8 +43,8 @@ std::shared_ptr<CSGGeometry> CSGGeometries::lego(std::size_t n0,
 
   // Create brick
   std::shared_ptr<CSGGeometry>
-    lego(new Box(x0 + 0.5*d, x1 + 0.5*d, x2,
-                 x0 + n0*P - 0.5*d, x1 + n1*P - 0.5*d, x2 + n2*h));
+    lego(new Box(dolfin::Point(x0 + 0.5*d, x1 + 0.5*d, x2),
+                 dolfin::Point(x0 + n0*P - 0.5*d, x1 + n1*P - 0.5*d, x2 + n2*h)));
 
   // Add knobs
   for (std::size_t i = 0; i < n0; i++)
@@ -76,13 +76,13 @@ std::shared_ptr<CSGGeometry> CSGGeometries::propeller(double r, double R,
 
   // // Create blades
   std::shared_ptr<CSGGeometry>
-    blade_0(new Box(0.8*r, -0.5*h, -0.5*w, R, 0.5*h, 0.5*w));
+    blade_0(new Box(dolfin::Point(0.8*r, -0.5*h, -0.5*w), dolfin::Point(R, 0.5*h, 0.5*w)));
   std::shared_ptr<CSGGeometry>
-    blade_1(new Box(-R, -0.5*h, -0.5*w, -0.8*r, 0.5*h, 0.5*w));
+    blade_1(new Box(dolfin::Point(-R, -0.5*h, -0.5*w), dolfin::Point(-0.8*r, 0.5*h, 0.5*w)));
   std::shared_ptr<CSGGeometry>
-    blade_2(new Box(-0.5*h, 0.8*r, -0.5*w,  0.5*h, R, 0.5*w));
+    blade_2(new Box(dolfin::Point(-0.5*h, 0.8*r, -0.5*w), dolfin::Point(0.5*h, R, 0.5*w)));
   std::shared_ptr<CSGGeometry>
-    blade_3(new Box(-0.5*h, -R, -0.5*w, 0.5*h, -0.8*r, 0.5*w));
+    blade_3(new Box(dolfin::Point(-0.5*h, -R, -0.5*w), dolfin::Point(0.5*h, -0.8*r, 0.5*w)));
 
   // // Rotate blades
   // // blade_0.rotate(-v, 0);

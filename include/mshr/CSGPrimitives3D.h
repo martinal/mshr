@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Anders Logg
+// Copyright (C) 2012 Anders Logg, 2012-2014 Benjamin Kehlet
 //
 // This file is part of mshr.
 //
@@ -15,7 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with mshr.  If not, see <http://www.gnu.org/licenses/>.
 //
-// Modified by Benjamin Kehlet, 2012
 // Modified by Johannes Ring, 2012
 
 #ifndef __MSHR_PRIMITIVES_3D_H
@@ -44,15 +43,11 @@ namespace mshr
   {
   public:
 
-    /// Create sphere at x = (x0, x1, x2) with radius r.
+    /// Create sphere at c with radius r.
     ///
     /// *Arguments*
-    ///     x0 (double)
-    ///         x0-coordinate of center.
-    ///     x1 (double)
-    ///         x1-coordinate of center.
-    ///     x2 (double)
-    ///         x2-coordinate of center.
+    ///     c  (dolfin::Point)
+    ///         center.
     ///     r (double)
     ///         radius.
     Sphere(dolfin::Point center, double radius, std::size_t slices=16);
@@ -76,23 +71,13 @@ namespace mshr
   public:
 
     /// Create box defined by two opposite corners
-    /// x = (x0, x1, x2) and y = (y0, y1, y2).
     ///
     /// *Arguments*
-    ///     x0 (double)
-    ///         x0-coordinate of first corner.
-    ///     x1 (double)
-    ///         x1-coordinate of first corner.
-    ///     x2 (double)
-    ///         x2-coordinate of first corner.
-    ///     y0 (double)
-    ///         y0-coordinate of second corner.
-    ///     y1 (double)
-    ///         y1-coordinate of second corner.
-    ///     y2 (double)
-    ///         y2-coordinate of second corner.
-    Box(double x0, double x1, double x2,
-        double y0, double y1, double y2);
+    ///     a dolfin::Point
+    ///         first corner.
+    ///     b dolfin::Point
+    ///         second corner
+    Box(dolfin::Point a, dolfin::Point b);
 
     /// Informal string representation
     std::string str(bool verbose) const;
@@ -100,7 +85,7 @@ namespace mshr
     Type getType() const
     { return CSGGeometry::Box; }
 
-    double _x0, _x1, _x2, _y0, _y1, _y2;
+    dolfin::Point a, b;
   };
 
   /// This class describes a 3D cone which can be used to build
@@ -113,11 +98,11 @@ namespace mshr
     /// and radius respectively.
     ///
     /// *Arguments*
-    ///     top (Point)
+    ///     top (dolfin::Point)
     ///         Center at top of cone.
     ///     top_radius(double)
     ///         Radius bottom of cone.
-    ///     bottom(Point)
+    ///     bottom(dolfin::Point)
     ///         Center at top of cone.
     ///     bottom_radius (double)
     ///         radius at top of cone.
@@ -152,9 +137,9 @@ namespace mshr
     /// and radius respectively.
     ///
     /// *Arguments*
-    ///     top (Point)
+    ///     top (dolfin::Point)
     ///         Center at top of cylinder.
-    ///     bottom(Point)
+    ///     bottom(dolfin::Point)
     ///         Center at top of cylinder.
     ///     r (double)
     ///         radius of cylinder.
@@ -181,10 +166,10 @@ namespace mshr
     ///         Point.
     ///     x3 (Point)
     ///         Point.
-    Tetrahedron(dolfin::Point x0, 
-                dolfin::Point x1, 
-                dolfin::Point x2, 
-                dolfin::Point x3);
+    Tetrahedron(dolfin::Point a,
+                dolfin::Point b,
+                dolfin::Point c,
+                dolfin::Point d);
 
     /// Informal string representation
     std::string str(bool verbose) const;
@@ -192,7 +177,7 @@ namespace mshr
     Type getType() const
     { return CSGGeometry::Tetrahedron; }
 
-    dolfin::Point _x0, _x1, _x2, _x3;
+    dolfin::Point a, b, c, d;
   };
 
   /// This class describes a 3D surface loaded from file.

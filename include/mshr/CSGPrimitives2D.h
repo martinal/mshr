@@ -27,7 +27,6 @@
 #include <vector>
 
 
-
 namespace mshr
 {
 
@@ -38,7 +37,6 @@ namespace mshr
 
     /// Return dimension of geometry
     std::size_t dim() const { return 2; }
-
   };
 
   /// This class describes a 2D circle which can be used to build
@@ -47,25 +45,23 @@ namespace mshr
   {
   public:
 
-    /// Create circle at x = (x0, x1) with radius r.
+    /// Create circle centered at x with radius r.
     ///
     /// *Arguments*
-    ///     x0 (double)
-    ///         x0-coordinate of center.
-    ///     x1 (double)
-    ///         x1-coordinate of center.
+    ///     c (dolfin::Point)
+    ///         center.
     ///     r (double)
     ///         radius.
     ///     fragments (std::size_t)
     ///         number of fragments.
-    Circle(double x0, double x1, double r, std::size_t fragments=32);
+    Circle(dolfin::Point c, double r, std::size_t fragments=32);
 
     /// Informal string representation
     std::string str(bool verbose) const;
     Type getType() const { return CSGGeometry::Circle; }
 
     /// Return center of circle
-    dolfin::Point center() const { return dolfin::Point(_x0, _x1); }
+    dolfin::Point center() const { return c; }
 
     /// Return radius of circle
     double radius() const { return _r; }
@@ -74,10 +70,9 @@ namespace mshr
     std::size_t fragments() const { return _fragments; }
 
   private:
-
-    double _x0, _x1, _r;
+    dolfin::Point c;
+    double _r;
     const std::size_t _fragments;
-
   };
 
   /// This class describes a 2D ellipse which can be used to build
@@ -86,28 +81,26 @@ namespace mshr
   {
   public:
 
-    /// Create ellipse at x = (x0, x1) with horizontal semi-axis a and
+    /// Create ellipse centered at c with horizontal semi-axis a and
     /// vertical semi-axis b.
     ///
     /// *Arguments*
-    ///     x0 (double)
-    ///         x0-coordinate of center.
-    ///     x1 (double)
-    ///         x1-coordinate of center.
+    ///     c (dolfin::Point)
+    ///         center.
     ///     a (double)
     ///         horizontal semi-axis.
     ///     b (double)
     ///         vertical semi-axis.
     ///     fragments (std::size_t)
     ///         number of fragments.
-    Ellipse(double x0, double x1, double a, double b, std::size_t fragments=32);
+    Ellipse(dolfin::Point c, double a, double b, std::size_t fragments=32);
 
     /// Informal string representation
     std::string str(bool verbose) const;
     Type getType() const { return CSGGeometry::Ellipse; }
 
     /// Return center of ellipse
-    dolfin::Point center() const { return dolfin::Point(_x0, _x1); }
+    dolfin::Point center() const { return c; }
 
     /// Return horizontal semi-axis
     double a() const { return _a; }
@@ -120,9 +113,9 @@ namespace mshr
 
   private:
 
-    double _x0, _x1, _a, _b;
+    dolfin::Point c;
+    double _a, _b;
     const std::size_t _fragments;
-
   };
 
   /// This class describes a 2D rectangle which can be used to build
@@ -132,18 +125,14 @@ namespace mshr
   public:
 
     /// Create rectangle defined by two opposite corners
-    /// x = (x0, x1) and y = (y0, y1).
+    /// a and b.
     ///
     /// *Arguments*
-    ///     x0 (double)
-    ///         x0-coordinate of first corner.
-    ///     x1 (double)
-    ///         x1-coordinate of first corner.
-    ///     y0 (double)
-    ///         y0-coordinate of second corner.
-    ///     y1 (double)
-    ///         y1-coordinate of second corner.
-    Rectangle(double x0, double x1, double y0, double y1);
+    ///     a (dolfin::Point)
+    ///         first corner.
+    ///     b (dolfin::Point)
+    ///         second corner.
+    Rectangle(dolfin::Point a, dolfin::Point b);
 
     /// Informal string representation
     std::string str(bool verbose) const;
@@ -151,15 +140,13 @@ namespace mshr
     Type getType() const { return CSGGeometry::Rectangle; }
 
     /// Return first corner
-    dolfin::Point first_corner() const { return dolfin::Point(_x0, _x1); }
+    dolfin::Point first_corner() const { return a; }
 
     /// Return second corner
-    dolfin::Point second_corner() const { return dolfin::Point(_y0, _y1); }
+    dolfin::Point second_corner() const { return b; }
 
   private:
-
-    double _x0, _x1, _y0, _y1;
-
+    dolfin::Point a, b;
   };
 
   /// This class describes a 2D polygon which can be used to build
@@ -189,9 +176,7 @@ namespace mshr
     const std::vector<dolfin::Point>& vertices() const { return _vertices; }
 
   private:
-
     const std::vector<dolfin::Point> _vertices;
-
   };
 }
 

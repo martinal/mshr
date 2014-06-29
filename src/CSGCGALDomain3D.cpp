@@ -200,14 +200,14 @@ class Build_box : public CGAL::Modifier_base<Exact_HalfedgeDS>
 
     builder.begin_surface(8, 12);
 
-    const double x0 = std::min(_box->_x0, _box->_y0);
-    const double y0 = std::max(_box->_x0, _box->_y0);
+    const double x0 = std::min(_box->a.x(), _box->b.x());
+    const double y0 = std::max(_box->a.x(), _box->b.x());
 
-    const double x1 = std::min(_box->_x1, _box->_y1);
-    const double y1 = std::max(_box->_x1, _box->_y1);
+    const double x1 = std::min(_box->a.y(), _box->b.y());
+    const double y1 = std::max(_box->a.y(), _box->b.y());
 
-    const double x2 = std::min(_box->_x2, _box->_y2);
-    const double y2 = std::max(_box->_x2, _box->_y2);
+    const double x2 = std::min(_box->a.z(), _box->b.z());
+    const double y2 = std::max(_box->a.z(), _box->b.z());
 
     add_vertex(builder, Exact_Point_3(y0, x1, x2));
     add_vertex(builder, Exact_Point_3(x0, x1, y2));
@@ -248,10 +248,10 @@ void make_box(const Box* b, Exact_Polyhedron_3& P)
 //-----------------------------------------------------------------------------
 void make_tetrahedron(const Tetrahedron* b, Exact_Polyhedron_3& P)
 {
-  P.make_tetrahedron(Exact_Point_3(b->_x0.x(), b->_x0.y(), b->_x0.z()),
-                     Exact_Point_3(b->_x1.x(), b->_x1.y(), b->_x1.z()),
-                     Exact_Point_3(b->_x2.x(), b->_x2.y(), b->_x2.z()),
-                     Exact_Point_3(b->_x3.x(), b->_x3.y(), b->_x3.z()));
+  P.make_tetrahedron(Exact_Point_3(b->a.x(), b->a.y(), b->a.z()),
+                     Exact_Point_3(b->b.x(), b->b.y(), b->b.z()),
+                     Exact_Point_3(b->c.x(), b->c.y(), b->c.z()),
+                     Exact_Point_3(b->d.x(), b->d.y(), b->d.z()));
 }
 //-----------------------------------------------------------------------------
 // Return some vector orthogonal to a
