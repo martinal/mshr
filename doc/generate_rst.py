@@ -5,11 +5,19 @@ import sys, os
 from xml.etree import ElementTree
 
 input_dir = os.path.abspath(sys.argv[1])
+output_dir = os.path.abspath(sys.argv[2])
+
+if not os.path.exists(os.path.join(output_dir, "API")) :
+    os.mkdir(os.path.join(output_dir, "API"))
+
 
 print("Reading files from %s" % input_dir)
 
 # save all the classes as dictionary with doxygens id as key.
 cls = {}
+primitives2D = {}
+primitives3D = {}
+
 
 for filename in os.listdir(input_dir) :
     if not os.path.isfile(os.path.join(input_dir, filename)) :
@@ -64,13 +72,54 @@ mainpage.append("%s|%s|\n" % ( ":".ljust(longest_class_name, "-"),
                                ":".ljust(longest_description, "-")))
 
 for k,c in cls.iteritems() :
-    classname = c[0].find("compoundname").text
+    theclass = c[0]
+    classname = theclass.find("compoundname").text
+    classid = theclass.attrib["id"]
     print "Processing "+classname
-    mainpage.append("[%s](%s)|%s|\n" % (classname.ljust(longest_class_name), 
-                                        c[1]["filename"],
-                                        c[1]["description"].ljust(longest_description)))
+    mainpage.append("[%s](API/%s)|%s|\n" % (classname.ljust(longest_class_name), 
+                                            c[1]["filename"],
+                                            c[1]["description"].ljust(longest_description)))
 
     classpage = []
+
+    # inheritance
+    inheritance = theclass.find("inheritancegraph")
+    if inheritance is not None :
+        inheritancenodes = {}
+        nodes = inheritance.findall("node")
+        # sup_list = sorted(superclasses, key=lambda x : -int(x.attrib["id"]))
+        myid = False
+        for x in nodes : 
+            inheritancenodes[x.attrib["id"]] = x
+            link = x.find("link")
+            if link is not None and link.attrib["refid"] == classid :
+                myid = x.attrib["id"]
+
+        current = inheritancenodes[myid]
+        current = inheritancenodes[current.find("childnode").attrib["refid"]]
+        inheritance_list = []
+        while current is not None :
+            ref = current.find("link")
+            print ref
+            if ref is not None and cls.has_key(ref.attrib["refid"]) :
+                print "Link"
+                inheritance_list.append("[%s](%s)" % (current.find("label").text.strip(),
+                                                      cls[ref.attrib["refid"]][1]["filename"]))
+            else :
+                inheritance_list.append(x.find("label").text.strip())
+
+            child = current.find("childnode")
+            if child is not None :
+                current = inheritancenodes[child.attrib["refid"]]
+            else :
+                current = None
+
+
+        inheritance_list.reverse()
+        classpage.append("_" + " < ".join(inheritance_list) + "_")
+        classpage.append("\n\n")
+
+
     classpage.append("## %s\n\n" % (classname))
     classpage.append("_%s_\n\n" % c[1]["description"])
 
@@ -85,19 +134,21 @@ for k,c in cls.iteritems() :
             membername = definition.find("name").text
             argsstr    = definition.find("argsstring").text
             description = definition.find("briefdescription").find("para")
-            print "  "+membername
+            # print "  "+membername
             description = description.text.strip() if description is not None else ""
-            print "  "+description
-            print "Appending"
-            classpage.append(" **%s**%s\n\n" % (membername, argsstr))
-            classpage.append("  _%s_\n\n" % description)
 
-    print classpage
-    with open(c[1]["filename"]+".md", "w") as f:
+            # name
+            classpage.append(" **%s**%s\n\n" % (membername, argsstr))
+
+            # description
+            if description :
+                classpage.append("  _%s_\n\n" % description)
+
+    with open(os.path.join(output_dir, "API", c[1]["filename"]+".md"), "w") as f:
         f.write("".join(classpage))
         f.close()
 
-with open("api.md", "w") as f:
+with open(os.path.join(output_dir, "API.md"), "w") as f:
     f.write("".join(mainpage))
     f.close()
 
