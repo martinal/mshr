@@ -13,7 +13,7 @@
 # GNU Lesser General Public License for more details.
 #
 # You should have received a copy of the GNU Lesser General Public License
-# along with DOLFIN. If not, see <http://www.gnu.org/licenses/>.
+# along with mshr. If not, see <http://www.gnu.org/licenses/>.
 #
 
 import dolfin
@@ -27,20 +27,22 @@ cone = Cone(dolfin.Point(0, 0, 0), dolfin.Point(0, 0, -1), .5, .1)
 
 geometry = cone + sphere
 
+# Geometry surfaces can be saved to off files
+# which can be viewed by eg. MeshLab
 meshing_domain = CSGCGALDomain3D(geometry)
 meshing_domain.remove_degenerate_facets(1e-12)
 meshing_domain.save_off("icecream.off")
 
-# # Test printing
-# dolfin.info("\nCompact output of 3D geometry:")
-# dolfin.info(geometry)
-# dolfin.info("\nVerbose output of 3D geometry:")
-# dolfin.info(geometry, True)
+# Test printing
+dolfin.info("\nCompact output of 3D geometry:")
+dolfin.info(geometry)
+dolfin.info("\nVerbose output of 3D geometry:")
+dolfin.info(geometry, True)
 
 # Generate and plot mesh
 m = generate_mesh(geometry, 16, "cgal")
 
-# dolfin.info(m)
-# dolfin.plot(m, "3D mesh")
+dolfin.info(m)
+dolfin.plot(m, "3D mesh")
 
-# dolfin.interactive()
+dolfin.interactive()
