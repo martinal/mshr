@@ -64,22 +64,19 @@ namespace mshr
 
   };
 
-  /// This class describes a 3D box which can be used to build
-  /// geometries using Constructive Solid Geometry (CSG).
+  /// @brief This class describes a 3D box which can be used to build
+  ///        geometries using Constructive Solid Geometry (CSG).
   class Box : public CSGPrimitive3D
   {
   public:
 
-    /// Create box defined by two opposite corners
+    /// @brief Create box defined by two opposite corners
     ///
-    /// *Arguments*
-    ///     a dolfin::Point
-    ///         first corner.
-    ///     b dolfin::Point
-    ///         second corner
+    /// @param a The first corner
+    /// @param b The second corner
     Box(dolfin::Point a, dolfin::Point b);
 
-    /// Informal string representation
+    /// @brief Informal string representation
     std::string str(bool verbose) const;
 
     Type getType() const
