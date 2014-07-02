@@ -55,6 +55,9 @@ find_package(DOLFIN REQUIRED)
 include(${DOLFIN_USE_FILE})
 include_directories(BEFORE ${DOLFIN_PYTHON_INCLUDE_DIRS})
 
+find_package(VTK)
+include(${VTK_USE_FILE})
+
 # Set installation directories
 set(INSTALL_LIB_DIR lib CACHE PATH "Installation directory for libraries")
 set(INSTALL_BIN_DIR bin CACHE PATH "Installation directory for executables")
@@ -92,6 +95,7 @@ target_link_libraries( mshr ${CGAL_LIB_DIR}/libCGAL.a
                             ${MPFR_LIBRARIES}
 			    tet
                             ${DOLFIN_LIBRARIES}
+			    ${VTK_LIBRARIES}
 			    ${DOLFIN_3RD_PARTY_LIBRARIES}
                      )
 
