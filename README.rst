@@ -8,6 +8,14 @@ mshr is the mesh generation component of `FEniCS
 from geometries described by Constructive Solid Geometry (CSG) or from
 surface files, utilizing CGAL and Tetgen as mesh generation backends.
 
+Authors:
+  | Benjamin Kehlet <benjamik@simula.no>
+
+Contributors:
+  | Anders Logg     <logg@chalmers.se>
+  | Johannes Ring   <johannr@simula.no>
+  | Joachim Haga    <jobh@simula.no>
+
 Installation
 ============
 
