@@ -23,7 +23,7 @@ dolfin.set_log_level(dolfin.TRACE)
 
 # Define 2D geometry
 domain = Rectangle(dolfin.Point(0., 0.), dolfin.Point(1., 1.)) - Circle(dolfin.Point(0.0, 0.0), .35)
-domain.set_subdomain(1, Rectangle(dolfin.Point(.0, .0), dolfin.Point(.95, .95)))
+domain.set_subdomain(1, Rectangle(dolfin.Point(.05, .05), dolfin.Point(.95, .95)))
 domain.set_subdomain(2, Circle(dolfin.Point(0, 0), .45))
 domain.set_subdomain(3, Circle(dolfin.Point(0,0), .6))
 
