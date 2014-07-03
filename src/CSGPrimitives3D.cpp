@@ -28,8 +28,8 @@ namespace mshr
 //-----------------------------------------------------------------------------
 // Sphere
 //-----------------------------------------------------------------------------
-Sphere::Sphere(dolfin::Point center, double radius, std::size_t slices)
-  : c(center), r(radius), _slices(slices)
+Sphere::Sphere(dolfin::Point center, double radius, std::size_t segments)
+  : c(center), r(radius), _segments(segments)
 {
   if (r < DOLFIN_EPS)
   {
@@ -38,11 +38,11 @@ Sphere::Sphere(dolfin::Point center, double radius, std::size_t slices)
                          "Sphere with center (%f, %f, %f) has zero or negative radius", c.x(), c.y(), c.z());
   }
 
-  if (slices < 1)
+  if (segments < 1)
   {
     dolfin::dolfin_error("CSGPrimitives3D.cpp",
 		 "Create sphere",
-		 "Can't create sphere with zero slices");
+		 "Can't create sphere with zero segments");
   }
 }
 //-----------------------------------------------------------------------------
@@ -96,41 +96,41 @@ std::string Box::str(bool verbose) const
 //-----------------------------------------------------------------------------
 // Cone
 //-----------------------------------------------------------------------------
-Cone::Cone(dolfin::Point top, 
-           dolfin::Point bottom, 
-           double top_radius, 
-           double bottom_radius,
-           std::size_t slices)
+Cylinder::Cylinder(dolfin::Point top, 
+                   dolfin::Point bottom, 
+                   double top_radius, 
+                   double bottom_radius,
+                   std::size_t segments)
   : _top(top), _bottom(bottom), _top_radius(top_radius),
-    _bottom_radius(bottom_radius), _slices(slices)
+    _bottom_radius(bottom_radius), _segments(segments)
 {
   if (dolfin::near(top_radius, 0.0) && dolfin::near(bottom_radius, 0.0))
   {
     dolfin::dolfin_error("CSGPrimitives3D.cpp",
-		   "Create cone",
-		   "Cone with zero thickness");
+		   "Create cylinder",
+		   "Cylinder with zero thickness");
   }
 
   if (top.distance(bottom) < DOLFIN_EPS)
   {
     dolfin::dolfin_error("CSGPrimitives3D.cpp",
-		 "Create cone",
-		 "Cone with zero length");
+		 "Create cylinder",
+		 "Cylinder with zero length");
   }
 }
 //-----------------------------------------------------------------------------
-std::string Cone::str(bool verbose) const
+std::string Cylinder::str(bool verbose) const
 {
   std::stringstream s;
   if (verbose)
   {
-    s << "<Cone with top at " << _top << ", top radius " << _top_radius
+    s << "<Cylinder with top at " << _top << ", top radius " << _top_radius
       << " and bottom at " << _bottom << ", bottom radius "
-      << _bottom_radius << ", with " << _slices << " slices>";
+      << _bottom_radius << ", with " << _segments << " segments>";
   }
   else
   {
-    s << "Cone( " << _top << ", " << _bottom << ", " << _top_radius
+    s << "Cylinder( " << _top << ", " << _bottom << ", " << _top_radius
       << ", " << _bottom_radius << " )";
   }
 

@@ -21,9 +21,9 @@ from mshr import *
 # Define 3D geometry
 box = Box(dolfin.Point(0, 0, 0), dolfin.Point(1, 1, 1))
 sphere = Sphere(dolfin.Point(0, 0, 0), 0.3)
-cone = Cone(dolfin.Point(0, 0, -1), dolfin.Point(0, 0, 1), 1., .5)
+cylinder = Cylinder(dolfin.Point(0, 0, -1), dolfin.Point(0, 0, 1), 1., .5)
 
-domain = box + cone - sphere
+domain = box + cylinder - sphere
 
 # Test printing
 dolfin.info("\nCompact output of 3D geometry:")

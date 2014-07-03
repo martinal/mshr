@@ -23,7 +23,7 @@ dolfin.set_log_level(dolfin.TRACE)
 
 # Define 3D geometry
 sphere = Sphere(dolfin.Point(0, 0, 0), 0.5)
-cone = Cone(dolfin.Point(0, 0, 0), dolfin.Point(0, 0, -1), .5, .1)
+cone = Cylinder(dolfin.Point(0, 0, 0), dolfin.Point(0, 0, -1), .35, .1)
 
 geometry = cone + sphere
 

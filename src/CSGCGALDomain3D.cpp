@@ -120,15 +120,15 @@ class Build_sphere : public CGAL::Modifier_base<Exact_HalfedgeDS>
 
   void operator()( Exact_HalfedgeDS& hds )
   {
-    const std::size_t num_slices = _sphere._slices;
-    const std::size_t num_sectors = _sphere._slices*2 + 1;
+    const std::size_t num_segments = _sphere._segments;
+    const std::size_t num_sectors = _sphere._segments*2 + 1;
 
     const dolfin::Point top = _sphere.c + dolfin::Point(_sphere.r, 0, 0);
     const dolfin::Point bottom = _sphere.c - dolfin::Point(_sphere.r, 0, 0);
     const dolfin::Point axis = dolfin::Point(1, 0, 0);
 
-    const int num_vertices = num_slices*num_sectors+2;
-    const int num_facets = num_sectors*2*num_slices;
+    const int num_vertices = num_segments*num_sectors+2;
+    const int num_facets = num_sectors*2*num_segments;
 
     CGAL::Polyhedron_incremental_builder_3<Exact_HalfedgeDS> builder( hds, true );
 
@@ -136,9 +136,9 @@ class Build_sphere : public CGAL::Modifier_base<Exact_HalfedgeDS>
 
     const dolfin::Point slice_rotation_axis(0, 1, 0);
 
-    for (std::size_t i = 0; i < num_slices; i++)
+    for (std::size_t i = 0; i < num_segments; i++)
     {
-      const dolfin::Point sliced = axis.rotate(slice_rotation_axis, (i+1)*DOLFIN_PI/(num_slices+1));
+      const dolfin::Point sliced = axis.rotate(slice_rotation_axis, (i+1)*DOLFIN_PI/(num_segments+1));
       for (std::size_t j = 0; j < num_sectors; j++)
       {
         const dolfin::Point direction = sliced.rotate(axis, j*2.0*DOLFIN_PI/num_sectors);
@@ -152,7 +152,7 @@ class Build_sphere : public CGAL::Modifier_base<Exact_HalfedgeDS>
     add_vertex(builder, Exact_Point_3(bottom.x(), bottom.y(), bottom.z()));
 
     // Add the side facets
-    for (std::size_t i = 0; i < num_slices-1; i++)
+    for (std::size_t i = 0; i < num_segments-1; i++)
     {
       for (std::size_t j = 0; j < num_sectors; j++)
       {
@@ -165,7 +165,7 @@ class Build_sphere : public CGAL::Modifier_base<Exact_HalfedgeDS>
     }
 
     // Add the top and bottom facets
-    const std::size_t top_offset = num_sectors*(num_slices-1);
+    const std::size_t top_offset = num_sectors*(num_segments-1);
     for (std::size_t i = 0; i < num_sectors; i++)
     {
       // Bottom facet
@@ -265,21 +265,21 @@ dolfin::Point generate_orthogonal(const dolfin::Point& a)
   return a.cross(d);
 }
 //-----------------------------------------------------------------------------
-class Build_cone : public CGAL::Modifier_base<Exact_HalfedgeDS>
+class Build_cylinder : public CGAL::Modifier_base<Exact_HalfedgeDS>
 {
  public:
-  Build_cone(const Cone* cone) : _cone(cone) {}
+  Build_cylinder(const Cylinder* cylinder) : _cylinder(cylinder) {}
 
   void operator()(Exact_HalfedgeDS& hds)
   {
-    const dolfin::Point axis = (_cone->_top - _cone->_bottom)/(_cone->_top - _cone->_bottom).norm();
+    const dolfin::Point axis = (_cylinder->_top - _cylinder->_bottom)/(_cylinder->_top - _cylinder->_bottom).norm();
     dolfin::Point initial = generate_orthogonal(axis);
 
     CGAL::Polyhedron_incremental_builder_3<Exact_HalfedgeDS> builder(hds, true);
 
-    const int num_sides = _cone->_slices;
-    const bool top_degenerate = dolfin::near(_cone->_top_radius, 0.0);
-    const bool bottom_degenerate = dolfin::near(_cone->_bottom_radius, 0.0);
+    const int num_sides = _cylinder->_segments;
+    const bool top_degenerate = dolfin::near(_cylinder->_top_radius, 0.0);
+    const bool bottom_degenerate = dolfin::near(_cylinder->_bottom_radius, 0.0);
 
     const int num_vertices = (top_degenerate || bottom_degenerate) ? num_sides+2 : num_sides*2+2;
 
@@ -292,23 +292,23 @@ class Build_cone : public CGAL::Modifier_base<Exact_HalfedgeDS>
       const dolfin::Point rotated = initial.rotate(axis, theta);
       if (!bottom_degenerate)
       {
-        const dolfin::Point p = _cone->_bottom + rotated*_cone->_bottom_radius;
+        const dolfin::Point p = _cylinder->_bottom + rotated*_cylinder->_bottom_radius;
         const Exact_Point_3 p_(p.x(), p.y(), p.z());
         add_vertex(builder, p_);
       }
       if (!top_degenerate)
       {
-        const dolfin::Point p = _cone->_top + rotated*_cone->_top_radius;
+        const dolfin::Point p = _cylinder->_top + rotated*_cylinder->_top_radius;
         const Exact_Point_3 p_(p.x(), p.y(), p.z());
         add_vertex(builder, p_);
       }
     }
 
     // The top and bottom vertices
-    add_vertex(builder, Exact_Point_3(_cone->_bottom.x(), _cone->_bottom.y(),
-                                           _cone->_bottom.z()));
-    add_vertex(builder, Exact_Point_3(_cone->_top.x(), _cone->_top.y(),
-                                           _cone->_top.z()));
+    add_vertex(builder, Exact_Point_3(_cylinder->_bottom.x(), _cylinder->_bottom.y(),
+                                           _cylinder->_bottom.z()));
+    add_vertex(builder, Exact_Point_3(_cylinder->_top.x(), _cylinder->_top.y(),
+                                           _cylinder->_top.z()));
 
     // bottom vertex has index num_vertices-2, top vertex has index num_vertices-1
 
@@ -372,12 +372,12 @@ class Build_cone : public CGAL::Modifier_base<Exact_HalfedgeDS>
     builder.end_surface();
   }
 private:
-  const Cone* _cone;
+  const Cylinder* _cylinder;
 };
 //-----------------------------------------------------------------------------
- void make_cone(const Cone* c, Exact_Polyhedron_3& P)
+ void make_cylinder(const Cylinder* c, Exact_Polyhedron_3& P)
 {
-  Build_cone builder(c);
+  Build_cylinder builder(c);
   P.delegate(builder);
   dolfin_assert(P.is_closed());
   dolfin_assert(P.is_valid());
@@ -603,12 +603,12 @@ convertSubTree(const CSGGeometry *geometry)
       return g;
       break;
     }
-    case CSGGeometry::Cone :
+    case CSGGeometry::Cylinder :
     {
-      const Cone* c = dynamic_cast<const Cone*>(geometry);
+      const Cylinder* c = dynamic_cast<const Cylinder*>(geometry);
       dolfin_assert(c);
       Exact_Polyhedron_3 P;
-      make_cone(c, P);
+      make_cylinder(c, P);
       return std::shared_ptr<Nef_polyhedron_3>(new Nef_polyhedron_3(P));
       break;
     }
@@ -669,11 +669,11 @@ void convert(const CSGGeometry& geometry,
     switch (geometry.getType())
     {
 
-    case CSGGeometry::Cone :
+    case CSGGeometry::Cylinder :
     {
-      const Cone* c = dynamic_cast<const Cone*>(&geometry);
+      const Cylinder* c = dynamic_cast<const Cylinder*>(&geometry);
       dolfin_assert(c);
-      make_cone(c, P);
+      make_cylinder(c, P);
       break;
     }
     case CSGGeometry::Sphere :

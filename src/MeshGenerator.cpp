@@ -14,8 +14,6 @@
 // 
 // You should have received a copy of the GNU General Public License
 // along with mshr.  If not, see <http://www.gnu.org/licenses/>.
-//
-// Modified by Joachim B Haga 2012
 
 #include <mshr/MeshGenerator.h>
 #include <mshr/CSGGeometry.h>
@@ -72,31 +70,5 @@ void generate(dolfin::Mesh& mesh,
                          "Unhandled geometry dimension %d", geometry.dim());
   }
 }
-//-----------------------------------------------------------------------------
-void get_boundary_mesh(dolfin::BoundaryMesh& mesh,
-                       const CSGGeometry& geometry)
-{
-  if (geometry.dim() == 2)
-  {
-    // Generate boundary mesh directly from 2D CSGGeometry is not
-    // implemented. Instead, generate the full mesh and extract its boundary.
-    CSGCGALMeshGenerator2D generator(geometry);
-    dolfin::Mesh full_mesh;
-    generator.generate(full_mesh);
 
-    mesh = dolfin::BoundaryMesh(full_mesh, "exterior");
-  }
-  else if (geometry.dim() == 3)
-  {
-    CSGCGALMeshGenerator3D generator(geometry);
-    generator.generate(mesh);
-  }
-  else
-  {
-    dolfin::dolfin_error("MeshGenerator.cpp",
-                         "create boundary mesh from CSG geometry",
-                         "Unhandled geometry dimension %d", geometry.dim());
-  }
-}
-//-----------------------------------------------------------------------------
 }

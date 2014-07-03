@@ -15,7 +15,6 @@
 // You should have received a copy of the GNU General Public License
 // along with mshr. If not, see <http://www.gnu.org/licenses/>.
 //
-// Modified by Joachim B Haga, 2012
 
 
 #ifndef __MSHR_MESH_GENERATOR_H
@@ -38,10 +37,6 @@ namespace mshr
                 const CSGGeometry& geometry,
                 double resolution,
                 std::string backend="cgal");
-
-  /// Extract boundary of CSG geometry as dolfin::BoundaryMesh
-  void get_boundary_mesh(dolfin::BoundaryMesh& mesh,
-                         const CSGGeometry& geometry);
 }
 
 #endif

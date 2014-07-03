@@ -50,7 +50,7 @@ namespace mshr
     ///         center.
     ///     r (double)
     ///         radius.
-    Sphere(dolfin::Point center, double radius, std::size_t slices=16);
+    Sphere(dolfin::Point center, double radius, std::size_t segments=32);
 
     /// Informal string representation
     std::string str(bool verbose) const;
@@ -60,12 +60,11 @@ namespace mshr
 
     const dolfin::Point c;
     const double r;
-    const std::size_t _slices;
+    const std::size_t _segments;
 
   };
 
-  /// @brief This class describes a 3D box which can be used to build
-  ///        geometries using Constructive Solid Geometry (CSG).
+  /// @brief A 3D axis aligned box
   class Box : public CSGPrimitive3D
   {
   public:
@@ -79,19 +78,18 @@ namespace mshr
     /// @brief Informal string representation
     std::string str(bool verbose) const;
 
-    Type getType() const
-    { return CSGGeometry::Box; }
+    Type getType() const { return CSGGeometry::Box; }
 
     dolfin::Point a, b;
   };
 
-  /// This class describes a 3D cone which can be used to build
+  /// This class describes a 3D cylinder which can be used to build
   /// geometries using Constructive Solid Geometry (CSG).
-  class Cone : public CSGPrimitive3D
+  class Cylinder : public CSGPrimitive3D
   {
   public:
 
-    /// Create cone defined by upper and lower center
+    /// Create cylinder defined by upper and lower center
     /// and radius respectively.
     ///
     /// *Arguments*
@@ -103,48 +101,46 @@ namespace mshr
     ///         Center at top of cone.
     ///     bottom_radius (double)
     ///         radius at top of cone.
-    ///     slices (std::size_t)
+    ///     segments (std::size_t)
     ///         number of faces on the side when generating a
     ///         polyhedral approximation.
-    Cone(dolfin::Point top, 
-         dolfin::Point bottom, 
-         double top_radius, 
-         double bottom_radius,
-         std::size_t slices=32);
+    Cylinder(dolfin::Point top, 
+             dolfin::Point bottom, 
+             double top_radius, 
+             double bottom_radius,
+             std::size_t segments=32);
 
     /// Informal string representation
     std::string str(bool verbose) const;
 
     Type getType() const
-    { return CSGGeometry::Cone; }
+    { return CSGGeometry::Cylinder; }
 
     const dolfin::Point _top, _bottom;
     const double _top_radius, _bottom_radius;
-    const std::size_t _slices;
+    const std::size_t _segments;
   };
 
-  /// This class describes a 3D cylinder which can be used to build
-  /// geometries using Constructive Solid Geometry (CSG). A cylinder
-  /// is here just a special case of a cone.
-  class Cylinder : public Cone
+  /// A 3D cone. A cone is here just a special case of a cone.
+  class Cone : public Cylinder
   {
   public:
 
-    /// Create cylinder defined by upper and lower center
-    /// and radius respectively.
+    /// Create cone defined by upper and lower center
+    /// and bottom radius respectively.
     ///
     /// *Arguments*
     ///     top (dolfin::Point)
-    ///         Center at top of cylinder.
+    ///         Center at top of cone.
     ///     bottom(dolfin::Point)
-    ///         Center at top of cylinder.
+    ///         Center at top of cone.
     ///     r (double)
-    ///         radius of cylinder.
-    ///     slices (std::size_t)
+    ///         bottom radius of cone.
+    ///     segments (std::size_t)
     ///         number of faces on the side when generating a
     ///         polyhedral approximation.
-    Cylinder(dolfin::Point top, dolfin::Point bottom, double r, std::size_t slices=32)
-      : Cone(top, bottom, r, r, slices) {}
+    Cone(dolfin::Point top, dolfin::Point bottom, double r, std::size_t segments=32)
+      : Cylinder(top, bottom, r, r, segments) {}
   };
 
   /// This class describes a Tetrahedron which can be used to build
