@@ -4,8 +4,8 @@ import dolfin
 TOLERANCE = 1e-10
 
 # This geometry generates a lot of degenerate facets
-cone = mshr.Cone(dolfin.Point(-1.0, 1.0, 1.0), dolfin.Point(1.0, -1.0, -1.0), .5, .5)
-cyl = mshr.Cylinder(dolfin.Point(1.0, -1.0, 1.0), dolfin.Point(-1.0, 1.0, -1.0), .5)
+cone = mshr.Cylinder(dolfin.Point(-1.0, 1.0, 1.0), dolfin.Point(1.0, -1.0, -1.0), .5, .5)
+cyl = mshr.Cone(dolfin.Point(1.0, -1.0, 1.0), dolfin.Point(-1.0, 1.0, -1.0), .5)
 geometry = cone + cyl;
 
 polyhedral_domain = mshr.CSGCGALDomain3D(geometry)
