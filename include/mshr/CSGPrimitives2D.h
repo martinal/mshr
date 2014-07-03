@@ -30,43 +30,40 @@
 namespace mshr
 {
 
-  /// Base class for 2D primitives
+  /// @brief Base class for 2D primitives
   class CSGPrimitive2D : public CSGPrimitive
   {
   public:
 
-    /// Return dimension of geometry
+    /// @brief get the dimension of the geometry (2)
     std::size_t dim() const { return 2; }
   };
 
-  /// This class describes a 2D circle which can be used to build
-  /// geometries using Constructive Solid Geometry (CSG).
+  /// @brief A 2D circle
   class Circle : public CSGPrimitive2D
   {
   public:
 
-    /// Create circle centered at x with radius r.
+    /// @brief Create circle centered at x with radius r.
     ///
-    /// *Arguments*
-    ///     c (dolfin::Point)
-    ///         center.
-    ///     r (double)
-    ///         radius.
-    ///     fragments (std::size_t)
-    ///         number of fragments.
-    Circle(dolfin::Point c, double r, std::size_t fragments=32);
+    /// @param c center.
+    /// @param r radius.
+    /// @param segments number of fragments when computing the polygonal approximation
+    Circle(dolfin::Point c, double r, std::size_t segments=32);
 
-    /// Informal string representation
+    /// @brief get informal string representation
+    /// @param verbose  Verbosity level
     std::string str(bool verbose) const;
+
     Type getType() const { return CSGGeometry::Circle; }
 
-    /// Return center of circle
+    /// @brief get center of circle
     dolfin::Point center() const { return c; }
 
-    /// Return radius of circle
+    /// @brief get radius of circle
     double radius() const { return _r; }
 
-    /// Return number of fragments around the circle
+    /// @brief get number of segments used when computing polygonal approximation
     std::size_t fragments() const { return _fragments; }
 
   private:
@@ -75,104 +72,91 @@ namespace mshr
     const std::size_t _fragments;
   };
 
-  /// This class describes a 2D ellipse which can be used to build
-  /// geometries using Constructive Solid Geometry (CSG).
+  /// @brief A 2D ellipse
   class Ellipse : public CSGPrimitive2D
   {
   public:
 
-    /// Create ellipse centered at c with horizontal semi-axis a and
+    /// @brief Create ellipse centered at c with horizontal semi-axis a and
     /// vertical semi-axis b.
     ///
-    /// *Arguments*
-    ///     c (dolfin::Point)
-    ///         center.
-    ///     a (double)
-    ///         horizontal semi-axis.
-    ///     b (double)
-    ///         vertical semi-axis.
-    ///     fragments (std::size_t)
-    ///         number of fragments.
+    /// @param c        the center
+    /// @param a        the horizontal semi-axis
+    /// @param b        the vertical semi-axis
+    /// @param segments the resolution when computing polygonal approximation
     Ellipse(dolfin::Point c, double a, double b, std::size_t fragments=32);
 
-    /// Informal string representation
+    /// @brief get informal string representation
+    /// @param verbose  Verbosity level
     std::string str(bool verbose) const;
+
     Type getType() const { return CSGGeometry::Ellipse; }
 
-    /// Return center of ellipse
+    /// @brief get center of ellipse
     dolfin::Point center() const { return c; }
 
-    /// Return horizontal semi-axis
+    /// @brief get horizontal semi-axis
     double a() const { return _a; }
 
-    /// Return vertical semi-axis
+    /// @brief get vertical semi-axis
     double b() const { return _b; }
 
-    /// Return number of fragments around the ellipse
+    /// @brief get resolution when computing polygonal approximation
     std::size_t fragments() const { return _fragments; }
 
   private:
-
     dolfin::Point c;
     double _a, _b;
     const std::size_t _fragments;
   };
 
-  /// This class describes a 2D rectangle which can be used to build
-  /// geometries using Constructive Solid Geometry (CSG).
+  /// @brief A 2D axis aligned rectangle
   class Rectangle : public CSGPrimitive2D
   {
   public:
 
-    /// Create rectangle defined by two opposite corners
-    /// a and b.
+    /// @brief Create rectangle defined by two opposite corners
     ///
-    /// *Arguments*
-    ///     a (dolfin::Point)
-    ///         first corner.
-    ///     b (dolfin::Point)
-    ///         second corner.
+    /// @param a first corner.
+    /// @param b second corner.
     Rectangle(dolfin::Point a, dolfin::Point b);
 
-    /// Informal string representation
+    /// @brief get informal string representation
+    /// @param verbose  Verbosity level
     std::string str(bool verbose) const;
 
     Type getType() const { return CSGGeometry::Rectangle; }
 
-    /// Return first corner
+    /// @brief get first corner
     dolfin::Point first_corner() const { return a; }
 
-    /// Return second corner
+    /// @brief get second corner
     dolfin::Point second_corner() const { return b; }
 
   private:
     dolfin::Point a, b;
   };
 
-  /// This class describes a 2D polygon which can be used to build
-  /// geometries using Constructive Solid Geometry (CSG).
+  /// @brief A 2D polygon
   class Polygon : public CSGPrimitive2D
   {
   public:
 
-    /// Create polygon defined by the given vertices.
+    /// @brief Create polygon defined by the given vertices. Vertices must be in counter-clockwise order and free of self-intersections.
     ///
-    /// *Arguments*
-    ///     vertices (std::vector<_dolfin::Point_>)
-    ///         A vector of _dolfin::Point_ objects.
-    ///         The points must be given in counter-clockwise order
-    ///         (without repeating the first/last vertex) and the polygon
-    //          must not self intersect.
+    /// @param vertices A vector of dolfin::Points. Vertices are copied into the object. 
     Polygon(const std::vector<dolfin::Point>& vertices);
 
-    /// Informal string representation
+    /// @brief get informal string representation
+    /// @param verbose  Verbosity level
     std::string str(bool verbose) const;
+
     Type getType() const { return CSGGeometry::Polygon; }
 
-    // Check if vertices are counter clockwise oriented
+    /// @brief check if vertices are counter clockwise oriented.
     bool ccw() const;
 
-    /// Return vertices in polygon
+    /// @brief get vertices in polygon. Can be modified inplace.
     const std::vector<dolfin::Point>& vertices() const { return _vertices; }
 
   private:
