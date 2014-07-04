@@ -21,6 +21,32 @@ if not os.path.exists(os.path.join(output_dir, "API")) :
     os.mkdir(os.path.join(output_dir, "API"))
 
 
+# searches through the detaileddescription section
+# for parameter documentation with the same name
+# and returns it
+def get_parameter_documentation(functiondefinition, declname) :
+    details = functiondefinition.find("detaileddescription")
+    para = details.find("para")
+    if para is not None :
+        paralist = para.find("parameterlist")
+        if paralist is not None :
+            print "Has parameters"
+            items = paralist.findall("parameteritem")
+            for parameteritem in items :
+                name = parameteritem.find("parameternamelist").find("parametername").text.strip()
+
+                if name == declname.strip() :
+                    # We got the right parameter
+                    print "Hit!"
+                    description = parameteritem.find("parameterdescription")
+                    if description is not None :
+                        para = description.find("para")
+                        if para is not None and para.text is not None:
+                            return para.text.strip()
+                        else :
+                            return ""
+    return ""
+
 print("Reading files from %s" % input_dir)
 
 # save all the classes as dictionary with doxygens id as key.
@@ -96,7 +122,7 @@ for k,c in cls.iteritems() :
             inheritancenodes[x.attrib["id"]] = x
             link = x.find("link")
             
-            # save the refif to self
+            # save the refid to self
             if link is not None and link.attrib["refid"] == classid :
                 myid = x.attrib["id"]
 
@@ -106,7 +132,6 @@ for k,c in cls.iteritems() :
         inheritance_list = []
         while current is not None :
             label = current.find("label").text
-            print "Label: %s" % label
             if label == "mshr::CSGPrimitive2D"   : category = primitives2d
             elif label == "mshr::CSGPrimitive3D" : category = primitives3d
             elif label == "mshr::CSGOperator"    : category = operators
@@ -136,10 +161,10 @@ for k,c in cls.iteritems() :
         classpage.append("\n\n")
 
 
-    classpage.append("## %s\n\n" % (classname))
+    classpage.append("# %s\n\n" % (classname))
     classpage.append("_%s_\n\n" % c[1]["description"])
 
-    classpage.append("#### Public functions\n")
+    classpage.append("#### Public functions\n\n")
     for member in c[0].findall("sectiondef") :
 
         # Only public functions are considered part of the public API for now
@@ -148,17 +173,54 @@ for k,c in cls.iteritems() :
 
         for definition in member.findall("memberdef") :
             membername = definition.find("name").text
+            print membername
             argsstr    = definition.find("argsstring").text
             description = definition.find("briefdescription").find("para")
             # print "  "+membername
             description = description.text.strip() if description is not None else ""
 
             # name
-            classpage.append(" **%s**%s\n\n" % (membername, argsstr))
+            classpage.append("**%s**%s\n" % (membername, argsstr))
 
             # description
             if description :
-                classpage.append("  _%s_\n\n" % description)
+                classpage.append("> _%s_\n" % description)
+
+            classpage.append("\n")
+
+            param_table = []
+
+            # table of parameters
+            for param in definition.findall("param") :
+                declname = param.find("declname").text
+                paramtype = param.find("type").text
+                if paramtype is None :
+                    paramtype = ""
+                    print "NONE!", declname
+                desc = get_parameter_documentation(definition, declname)
+                param_table.append( (declname, paramtype, desc) )
+                
+            if len(param_table) > 0 :
+                longest_param_name = max([len(x[0]) for x in param_table])
+                longest_param_type = max([len(x[1]) for x in param_table])
+                longest_param_desc = max([len(x[2]) for x in param_table])
+
+                longest_param_name = max(longest_param_name, len("Parameters"))
+
+                classpage.append("> %s|%s|%s\n" % ("Parameters".ljust(longest_param_name),
+                                                   " "*longest_param_type,
+                                                   " "*longest_param_desc))
+                classpage.append("> %s|%s|%s\n" % ("-"*longest_param_name,
+                                                   "-"*longest_param_type,
+                                                   "-"*longest_param_desc))
+
+                for p in param_table :
+                    classpage.append("> %s|%s|%s\n" % (p[0].ljust(longest_param_name),
+                                                       p[1].ljust(longest_param_type),
+                                                       p[2].ljust(longest_param_desc)))
+
+                classpage.append("\n")
+                
 
     with open(os.path.join(output_dir, "API", c[1]["filename"]+".md"), "w") as f:
         f.write("".join(classpage))
