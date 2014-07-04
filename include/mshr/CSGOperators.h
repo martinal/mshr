@@ -28,7 +28,8 @@
 namespace mshr
 {
 
-  //--- Operator classes (nodes) ---
+  /// @brief Base class for csg operators
+  /// CSGOperator object are internal (non-leaf) nodes in the CSG tree.
   class CSGOperator : public CSGGeometry
   {
    public:
@@ -39,16 +40,19 @@ namespace mshr
     std::size_t dim_;
   };
 
-  /// Union of CSG geometries
+  /// @brief Union of CSG geometries
   class CSGUnion : public CSGOperator
   {
   public:
 
-    /// Create union of two geometries
+    /// @brief Create union of two geometries
+    /// @param g0 a CSG geometry
+    /// @param g1 a CSG geometry
     CSGUnion(std::shared_ptr<CSGGeometry> g0,
              std::shared_ptr<CSGGeometry> g1);
 
-    /// Informal string representation
+    /// @brief get informal string representation
+    /// @param verbose vervosity level
     std::string str(bool verbose) const;
 
     Type getType() const { return CSGGeometry::Union; }
@@ -57,16 +61,18 @@ namespace mshr
     std::shared_ptr<CSGGeometry> _g1;
   };
 
-  /// Difference of CSG geometries
+  /// @brief Difference of CSG geometries
   class CSGDifference : public CSGOperator
   {
   public:
 
-    /// Create union of two geometries
+    /// @brief Create union of two geometries
+    /// @param g0 a CSG geometry
+    /// @param g1 a CSG CSG geometry
     CSGDifference(std::shared_ptr<CSGGeometry> g0,
-             std::shared_ptr<CSGGeometry> g1);
+                  std::shared_ptr<CSGGeometry> g1);
 
-    /// Informal string representation
+    /// @brief get informal string representation
     std::string str(bool verbose) const;
 
     Type getType() const { return CSGGeometry::Difference; }
@@ -76,16 +82,18 @@ namespace mshr
   };
 
 
-  /// Intersection of CSG geometries
+  /// @brief Intersection of CSG geometries
   class CSGIntersection : public CSGOperator
   {
   public:
 
-    /// Create intersection of two geometries
+    /// @brief Create intersection of two geometries
+    /// @param g0 a CSG geometry
+    /// @param g1 a CSG geometry
     CSGIntersection(std::shared_ptr<CSGGeometry> g0,
                     std::shared_ptr<CSGGeometry> g1);
 
-    /// Informal string representation
+    /// @brief get informal string representation
     std::string str(bool verbose) const;
 
     Type getType() const { return CSGGeometry::Intersection; }
@@ -95,16 +103,18 @@ namespace mshr
 
   };
 
-  /// Translate CSG geometry
+  /// @brief Translate CSG geometry by vector
   class CSGTranslation : public CSGOperator
   {
     public:
 
-    /// Translate geoemtry by the vector represented by point
+    /// @brief create translation 
+    /// @param a CSG geometry
+    /// @param the translation vector
     CSGTranslation(std::shared_ptr<CSGGeometry> g,
                    dolfin::Point t);
 
-    /// Informal string representation
+    /// @brief get informal string representation
     std::string str(bool verbose) const;
 
     Type getType() const { return CSGGeometry::Translation; }
@@ -113,17 +123,25 @@ namespace mshr
     dolfin::Point t;
   };
 
-  /// Scale CSG geometry
+  /// @brief Scale CSG geometry
   class CSGScaling : public CSGOperator
   {
    public:
 
+    /// @brief Create scaling
+    /// @param g a CSG geometry
+    /// @param scale_factor 
+    CSGScaling(std::shared_ptr<CSGGeometry> g,
+               double scale_factor);
+
+    /// @brief Scale (translated) geometry. Geometry will be translated, scaled and translated back
+    /// @param g a CSG geometry
+    /// @param c translation 
+    /// @param scale_factor the scale factor
     CSGScaling(std::shared_ptr<CSGGeometry> g,
                dolfin::Point c,
                double scale_factor);
 
-    CSGScaling(std::shared_ptr<CSGGeometry> g,
-               double scale_factor);
 
 
     std::string str(bool verbose) const;
@@ -136,21 +154,28 @@ namespace mshr
     bool translate;
   };
 
-  /// Rotate CSG geometry
+  /// @brief Rotate CSG geometry
   class CSGRotation : public CSGOperator
   {
    public:
-    // 2D only
+    /// @brief Create 2D rotation (2D only)
+    /// @param g a CSG geometry
+    /// @param rotate by theta
     CSGRotation(std::shared_ptr<CSGGeometry> g,
                              double theta);
 
-    // In 2D: v is the rotation center
-    // In 3D: v is the rotation axis
+    /// @brief Create rotation
+    /// @param g a CSG geometry
+    /// @param v In 2D: the rotation center. In 3D: the rotation axis.
     CSGRotation(std::shared_ptr<CSGGeometry> g,
                 dolfin::Point v,
                 double theta);
 
-    // 3D only
+    /// @brief create 3D rotation 
+    /// @param g a CSG geometry
+    /// @param rot_axis The rotation axis
+    /// @param rot_center The rotation center
+    /// @param Radians to rotate
     CSGRotation(std::shared_ptr<CSGGeometry> g,
                 dolfin::Point rot_axis,
                 dolfin::Point rot_center,
