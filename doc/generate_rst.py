@@ -14,6 +14,9 @@ from xml.etree import ElementTree
 input_dir = os.path.abspath(sys.argv[1])
 output_dir = os.path.abspath(sys.argv[2])
 
+if not os.path.exists(output_dir) :
+    os.mkdir(output_dir)
+
 if not os.path.exists(os.path.join(output_dir, "API")) :
     os.mkdir(os.path.join(output_dir, "API"))
 
