@@ -53,8 +53,12 @@ namespace mshr
       p.add("triangle_shape_bound", 0.125);
       p.add("cell_size", 0.25);
 
+      p.add("pixel_size", 1e-14);
+
       // shorter edges in the domain will be collapsed before meshing
-      p.add("edge_minimum", 10e-5);
+      // if set to negative, the tolerance will be computed based on
+      // the requested cell size.
+      p.add("edge_truncate_tolerance", -1.0);
 
       return p;
     }

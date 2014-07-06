@@ -406,7 +406,9 @@ class PSLGImpl
   std::vector<std::pair<std::size_t, std::size_t> > edges;
 };
 //-----------------------------------------------------------------------------
-static inline void add_simple_polygon(std::vector<Segment_2>& segments, const Polygon_2& p)
+static inline void add_simple_polygon(std::vector<Segment_2>& segments, 
+                                      const Polygon_2& p, 
+                                      const Quotient & truncate_tolerance_squared)
 {
   Polygon_2::Vertex_const_iterator first = p.vertices_begin(); 
   Polygon_2::Vertex_const_iterator prev = first;
@@ -415,10 +417,19 @@ static inline void add_simple_polygon(std::vector<Segment_2>& segments, const Po
 
   while (current != p.vertices_end())
   {
-    segments.push_back(Segment_2(*prev, *current));
+    Segment_2 s(*prev, *current);
 
+    // Don't add segment if shorter than tolerance
+    if (s.squared_length() < truncate_tolerance_squared)
+    {
+      current++;
+      continue;
+    }
+
+    segments.push_back(s);
     prev = current;
     current++;
+
   }
   segments.push_back(Segment_2(*prev, *first));
 }
@@ -443,10 +454,14 @@ static inline std::size_t get_vertex_index(std::map<Point_2, std::size_t>& m,
   return i;
 }
 //-----------------------------------------------------------------------------
-PSLG::PSLG(const std::vector<std::pair<std::size_t, CSGCGALDomain2D> >& domains, double rounding_tolerance)
+PSLG::PSLG(const std::vector<std::pair<std::size_t, CSGCGALDomain2D> >& domains, 
+           double pixel_size, 
+           double edge_truncate_tolerance)
 {
   // Collect all segments from all domains to send to snap rounding
   std::vector<Segment_2> segments;
+  const Quotient truncate_tolerance(edge_truncate_tolerance);
+  const Quotient truncate_tolerance_squared(truncate_tolerance*truncate_tolerance);
 
   for (auto it = domains.begin(); it != domains.end(); it++)
   {
@@ -458,13 +473,13 @@ PSLG::PSLG(const std::vector<std::pair<std::size_t, CSGCGALDomain2D> >& domains,
     for (std::list<Polygon_with_holes_2>::const_iterator pit = polygon_list.begin();
          pit != polygon_list.end(); ++pit)
     {
-      add_simple_polygon(segments, pit->outer_boundary());
+      add_simple_polygon(segments, pit->outer_boundary(), truncate_tolerance_squared);
 
       // Add holes
       Hole_const_iterator hit;
       for (hit = pit->holes_begin(); hit != pit->holes_end(); ++hit)
       {
-        add_simple_polygon(segments, *hit);
+        add_simple_polygon(segments, *hit, truncate_tolerance_squared);
       }
     }
   }
@@ -477,8 +492,8 @@ PSLG::PSLG(const std::vector<std::pair<std::size_t, CSGCGALDomain2D> >& domains,
                         Polyline_list_2>
     (segments.begin(), segments.end(),  // input
      snapped_polylines,                 // output
-     Quotient(1.0, 1e10),               // pixel size
-     false,                              // do iterated snap rounding
+     pixel_size,                        // pixel size
+     false,                             // do iterated snap rounding
      false,                             // output as integers
      1);                                // number of kd-trees
 

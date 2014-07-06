@@ -332,7 +332,25 @@ void CSGCGALMeshGenerator2D::generate(dolfin::Mesh& mesh)
   remaining.difference_inplace(overlaying);
   subdomain_geometries.push_back(std::make_pair(0, remaining));
 
-  PSLG pslg(subdomain_geometries, 1e-10);
+  const double pixel_size = parameters["pixel_size"];
+
+  // Compute cell size
+  double cell_size;
+  const double mesh_resolution = parameters["mesh_resolution"];
+  if (mesh_resolution > 0)
+  {
+    const double min_radius = total_domain.compute_boundingcircle_radius();
+    cell_size = 2.0*min_radius/mesh_resolution;
+  }
+  else
+  {
+    cell_size = parameters["cell_size"];
+  }
+
+  log(dolfin::TRACE, "Request cell size: %f", cell_size);
+  const double truncate_tolerance = parameters["edge_truncate_tolerance"];
+
+  PSLG pslg(subdomain_geometries, pixel_size, truncate_tolerance < 0 ? cell_size/200 : truncate_tolerance);
 
   // Create empty CGAL triangulation and copy data from the PSLG
   CDT cdt;
@@ -355,7 +373,6 @@ void CSGCGALMeshGenerator2D::generate(dolfin::Mesh& mesh)
     }
   }
   
-
 
   // log(dolfin::TRACE, "Exploring subdomains in triangulation");
   // explore_subdomains(cdt, total_domain, subdomain_geometries);
@@ -387,26 +404,8 @@ void CSGCGALMeshGenerator2D::generate(dolfin::Mesh& mesh)
   mesher.set_seeds(list_of_seeds.begin(), list_of_seeds.end(), true);
 
   // Set shape and size criteria
-  const double mesh_resolution = parameters["mesh_resolution"];
-  if (mesh_resolution > 0)
-  {
-    const double min_radius = total_domain.compute_boundingcircle_radius();
-    const double cell_size = 2.0*min_radius/mesh_resolution;
-    log(dolfin::TRACE, "Requested cell size: %f", cell_size);
-    const double shape_bound = parameters["triangle_shape_bound"];
-
-    Mesh_criteria_2 criteria(shape_bound,
-                             cell_size);
-
-    mesher.set_criteria(criteria);
-  }
-  else
-  {
-    // Set shape and size criteria
-    Mesh_criteria_2 criteria(parameters["triangle_shape_bound"],
-                             parameters["cell_size"]);
-    mesher.set_criteria(criteria);
-  }
+  const double shape_bound = parameters["triangle_shape_bound"];
+  mesher.set_criteria(Mesh_criteria_2(shape_bound, cell_size));
 
   // Refine CGAL mesh/triangulation
   mesher.refine_mesh();
