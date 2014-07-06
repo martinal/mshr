@@ -179,8 +179,14 @@ for k,c in cls.iteritems() :
             # print "  "+membername
             description = description.text.strip() if description is not None else ""
 
+            returntype = definition.find("type").text
+            if returntype is not None and len(returntype) > 0 :
+                returntype = returntype+" "
+            if returntype is None :
+                returntype = ""
+
             # name
-            classpage.append("**%s**%s\n" % (membername, argsstr))
+            classpage.append("%s**%s**%s\n" % (returntype, membername, argsstr))
 
             # description
             if description :
@@ -231,7 +237,7 @@ for k,c in cls.iteritems() :
 # Create the main page for 
 mainpage = ["""
 
-## API reference
+# API reference
 
 """]
 
@@ -254,7 +260,7 @@ mainpage.append("".join(primitives2d))
 
 ################ Append 3D primitives
 mainpage.append("%s|%s|\n" % ("**3D primitives**".ljust(longest_class_name),
-                              "**Description**".ljust(longest_description)))
+                              " "*longest_description))
 
 # mainpage.append("%s|%s|\n" % ( ":".ljust(longest_class_name, "-"),
 #                                ":".ljust(longest_description, "-")))
@@ -264,7 +270,7 @@ mainpage.append("".join(primitives3d))
 
 ############### Append operators
 mainpage.append("%s|%s|\n" % ("**Operators**".ljust(longest_class_name),
-                              "**Description**".ljust(longest_description)))
+                              " "*longest_description))
 
 # mainpage.append("%s|%s|\n" % ( ":".ljust(longest_class_name, "-"),
 #                               ":".ljust(longest_description, "-")))
@@ -274,13 +280,15 @@ mainpage.append("".join(operators))
 
 ############### Append other classes
 mainpage.append("%s|%s|\n" % ("**Other classes**".ljust(longest_class_name),
-                              "**Description**".ljust(longest_description)))
+                              " "*longest_description))
 
 # mainpage.append("%s|%s|\n" % ( ":".ljust(longest_class_name, "-"),
 #                               ":".ljust(longest_description, "-")))
 
 mainpage.append("".join(others))
 mainpage.append("\n\n")
+
+mainpage.append("_NOTE: The API reference is generated from mshr header files. Please don't edit these file manually._")
 
 
 
