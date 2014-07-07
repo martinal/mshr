@@ -1,4 +1,8 @@
 project( MSHR )
+set(MSHR_VERSION_MAJOR "1")
+set(MSHR_VERSION_MINOR "4")
+set(MSHR_VERSION_MICRO "0")
+set(MSHR_VERSION "${MSHR_VERSION_MAJOR}.${MSHR_VERSION_MINOR}.${MSHR_VERSION_MICRO}")
 
 ########################## Initialize cmake ############################
 cmake_minimum_required(VERSION 2.6.2)
@@ -11,9 +15,9 @@ if("${CMAKE_MAJOR_VERSION}.${CMAKE_MINOR_VERSION}" VERSION_GREATER 2.6)
 endif()
 
 set( CMAKE_ALLOW_LOOSE_LOOP_CONSTRUCTS true )
- 
+
 if ( COMMAND cmake_policy )
-  cmake_policy( SET CMP0003 NEW )  
+  cmake_policy( SET CMP0003 NEW )
 endif()
 
 # Borrow some cmake modules from cgal
@@ -87,6 +91,19 @@ file( GLOB_RECURSE SOURCES src/*.cpp )
 add_library(mshr SHARED ${SOURCES})
 add_dependencies( mshr CGAL-4.4 )
 
+# Append the library version information to the library target properties
+option(MSHR_WITH_LIBRARY_VERSION "Build with library version information." ON)
+if (MSHR_WITH_LIBRARY_VERSION)
+  string(REPLACE "+" "" MSHR_LIBRARY_VERSION ${MSHR_VERSION})
+  # This setting of SOVERSION assumes that any API change
+  # will increment either the minor or major version number.
+  set(MSHR_LIBRARY_PROPERTIES ${MSHR_LIBRARY_PROPERTIES}
+    VERSION ${MSHR_LIBRARY_VERSION}
+    SOVERSION ${MSHR_VERSION_MAJOR}.${MSHR_VERSION_MINOR}
+  )
+endif()
+set_target_properties(mshr PROPERTIES ${MSHR_LIBRARY_PROPERTIES})
+
 # Link the executable to (static) CGAL libraries
 target_link_libraries( mshr ${CGAL_LIB_DIR}/libCGAL.a
                             ${CGAL_LIB_DIR}/libCGAL_Core.a
@@ -111,7 +128,7 @@ endif()
 export(PACKAGE mshr)
 
 add_executable( mshrable app/mshrable.cpp )
-target_link_libraries( mshrable mshr 
+target_link_libraries( mshrable mshr
                                 ${DOLFIN_LIBRARIES}
                                 ${Boost_LIBRARIES}
 				${DOLFIN_3RD_PARTY_LIBRARIES})
