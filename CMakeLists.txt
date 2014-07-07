@@ -136,13 +136,13 @@ target_link_libraries( mshrable mshr
 
 # install library and app
 install(TARGETS mshr mshrable
-  RUNTIME DESTINATION bin
-  LIBRARY DESTINATION lib
-  ARCHIVE DESTINATION lib
+  RUNTIME DESTINATION ${INSTALL_BIN_DIR}
+  LIBRARY DESTINATION ${INSTALL_LIB_DIR}
+  ARCHIVE DESTINATION ${INSTALL_LIB_DIR}
 )
 
 # install header files
-install(DIRECTORY include/ DESTINATION include)
+install(DIRECTORY include/ DESTINATION ${INSTALL_INCLUDE_DIR})
 
 message(STATUS "INSTALL DIR: ${INSTALL_CMAKE_DIR}")
 message(STATUS "INCLUDE DIR: ${INSTALL_INCLUDE_DIR}")
