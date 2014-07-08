@@ -424,6 +424,15 @@ void make_surface3D(const Surface3D* s, Exact_Polyhedron_3& P)
     std::ifstream infile(s->_filename);
     infile >> P;
     infile.close();
+
+    if (P.size_of_vertices() == 0 || P.size_of_facets() == 0)
+    {
+      std::stringstream ss;
+      ss << "File '" << s->_filename << "' was empty or contained syntactical errors";
+      dolfin::dolfin_error("CSGCGALDomain3D.cpp",
+                           "read surface from off file",
+                           ss.str());
+    }
   }
   else
   {
