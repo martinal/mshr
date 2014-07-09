@@ -156,7 +156,7 @@ namespace mshr
   class Surface3D : public CSGPrimitive3D
   {
   public:
-    Surface3D(std::string filename);
+    Surface3D(std::string filename, double degenerate_tolerance=1e-12);
 
     /// @brief Informal string representation
     /// @return The description string
@@ -166,6 +166,7 @@ namespace mshr
     { return CSGGeometry::Surface3D; }
 
     std::string _filename;
+    double degenerate_tolerance;
   };
 }
 #endif

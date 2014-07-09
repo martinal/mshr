@@ -460,17 +460,31 @@ void make_surface3D(const Surface3D* s, Exact_Polyhedron_3& P)
     P.delegate(builder);
   }
 
+  if (!P.is_valid())
+  {
+    dolfin::dolfin_error("CSGCGALDomain3D.cpp",
+                         "read surface from file",
+                         "Polyhedron is not valid. If you are sure your file is valid, please file a bug report");
+  }
+
   // Triangulate polyhedron
   triangulate_polyhedron(P);
-
   dolfin_assert (P.is_pure_triangle());
-  dolfin_assert (P.is_valid());
 
   if (!P.is_closed())
   {
     dolfin::dolfin_error("CSGCGALDomain3D.cpp",
-                         "Read surface from file",
-                         "Surface is not closed");
+                         "read surface from file",
+                         "Surface is not closed.");
+  }
+
+  if (s->degenerate_tolerance > 0)
+  {
+    std::size_t i = remove_degenerate(P, s->degenerate_tolerance);
+    if (i > 0)
+      log(dolfin::TRACE, "Removed %d degenerate facets from '%s'", 
+          i, 
+          s->_filename.c_str());
   }
 }
 //-----------------------------------------------------------------------------
