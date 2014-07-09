@@ -106,7 +106,6 @@ set_target_properties(mshr PROPERTIES ${MSHR_LIBRARY_PROPERTIES})
 
 # Link the executable to (static) CGAL libraries
 target_link_libraries( mshr ${CGAL_LIB_DIR}/libCGAL.a
-                            ${CGAL_LIB_DIR}/libCGAL_Core.a
 			    ${Boost_LIBRARIES}
                             ${GMP_LIBRARIES}
                             ${MPFR_LIBRARIES}
