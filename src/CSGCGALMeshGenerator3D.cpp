@@ -284,9 +284,10 @@ void CSGCGALMeshGenerator3D::generate(dolfin::Mesh& mesh) const
 
   // Mesh generation
   log(dolfin::TRACE, "Generating mesh");
-  C3t3 c3t3 = CGAL::make_mesh_3<C3t3>(domain, *criteria,
-                                                CGAL::parameters::no_perturb(),
-                                                CGAL::parameters::no_exude());
+  C3t3 c3t3 = CGAL::make_mesh_3<C3t3>(domain, 
+                                      *criteria,
+                                      CGAL::parameters::no_perturb(),
+                                      CGAL::parameters::no_exude());
 
   if (parameters["odt_optimize"])
   {
@@ -296,13 +297,13 @@ void CSGCGALMeshGenerator3D::generate(dolfin::Mesh& mesh) const
 
   if (parameters["lloyd_optimize"])
   {
-    log(dolfin::TRACE,  "Optimizing mesh by lloyd optimization");
+    log(dolfin::TRACE, "Optimizing mesh by lloyd optimization");
     lloyd_optimize_mesh_3(c3t3, domain);
   }
 
   if (parameters["perturb_optimize"])
   {
-    log(dolfin::TRACE,  "Optimizing mesh by perturbation");
+    log(dolfin::TRACE, "Optimizing mesh by perturbation");
     // TODO: Set time limit
     CGAL::perturb_mesh_3(c3t3, domain);
   }
