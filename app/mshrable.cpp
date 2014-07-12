@@ -60,6 +60,7 @@ void handle_commandline(int argc, char** argv, po::variables_map &vm)
     ("polyout", po::value<std::string>(), "Write the polyhedron to .poly which Tetgen can read (and do not create a mesh)")
     ("polystats", "Write statistics of polyhedron (and do not create a mesh")
     ("backend,b", po::value<std::string>()->default_value("cgal"), "Use 3D mesh generation backend [tetgen|cgal]")
+    ("degenerate_tolerance", po::value<double>()->default_value(1e-12), "Tolerance for considering a facet as degenerate. Set to 0 to not remove degenerate facets")
     ("verbose,v", "Output more information about what is going on")
     ("help,h",   "write help message");
 
@@ -115,13 +116,13 @@ int main(int argc, char** argv)
   }
 
 
-  mshr::Surface3D surf(vm["input-file"].as<std::string>());
+  mshr::Surface3D surf(vm["input-file"].as<std::string>(),
+                       vm["degenerate_tolerance"].as<double>());
 
   // Operations that disable mesh generation
   if (vm.count("polyout") || vm.count("polystats"))
   {
     mshr::CSGCGALDomain3D domain(surf);
-    domain.remove_degenerate_facets(1e-12);
 
     if (vm.count("polyout"))
     {
