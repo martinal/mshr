@@ -40,8 +40,8 @@
 #include <CGAL/Mesh_triangulation_3.h>
 #include <CGAL/Mesh_complex_3_in_triangulation_3.h>
 #include <CGAL/Mesh_criteria_3.h>
-#include <CGAL/Polyhedral_mesh_domain_with_features_3.h>
-#include <CGAL/make_mesh_3.h>
+#include "Polyhedral_multicomponent_mesh_domain_with_features_3.h"
+#include "make_multicomponent_mesh_3.h"
 
 // Bounding sphere computation
 #include <CGAL/Min_sphere_of_spheres_d.h>
