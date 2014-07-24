@@ -22,6 +22,7 @@
 #include <dolfin/geometry/Point.h>
 
 #include <memory>
+#include <array>
 
 namespace mshr
 {
