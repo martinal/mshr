@@ -53,7 +53,7 @@ typedef CGAL::Mesh_polyhedron_3<K>::type MeshPolyhedron_3;
 typedef K::Point_3 Point_3;
 typedef K::Vector_3 Vector_3;
 typedef K::Triangle_3 Triangle_3;
-typedef CGAL::Polyhedral_mesh_domain_with_features_3<K> PolyhedralMeshDomain;
+typedef Polyhedral_multicomponent_mesh_domain_with_features_3<K> PolyhedralMeshDomain;
 
 // Triangulation
 typedef CGAL::Mesh_triangulation_3<PolyhedralMeshDomain>::type Tr;

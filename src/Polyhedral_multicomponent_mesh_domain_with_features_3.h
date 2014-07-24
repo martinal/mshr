@@ -21,14 +21,17 @@
 
 #include <CGAL/Polyhedral_mesh_domain_with_features_3.h>
 
+//-----------------------------------------------------------------------------
 template<typename Polyhedron>
-void recursive_remove(std::set<typename Polyhedron::Vertex_const_handle>& s, typename Polyhedron::Vertex_const_handle h)
+void recursive_remove(std::set<typename Polyhedron::Vertex_const_handle>& s,
+                      typename Polyhedron::Vertex_const_handle h)
 {
   typedef typename Polyhedron::Halfedge_around_vertex_const_circulator HV_const_circulator;
   typedef typename Polyhedron::Vertex_const_handle Vertex_const_handle;
   typedef Polyhedron Polyhedron_type;
 
-  const HV_const_circulator start = h->vertex_begin(), current = start;
+  const HV_const_circulator start = h->vertex_begin();
+  HV_const_circulator current = start;
   do
   {
     Vertex_const_handle current_vertex = current->opposite()->vertex();
@@ -41,16 +44,19 @@ void recursive_remove(std::set<typename Polyhedron::Vertex_const_handle>& s, typ
     current++;
   } while (current != start);
 }
-
+//-----------------------------------------------------------------------------
+// Scans the vertices of the polyhedron the polyhedron and returns a
+// Polyhedron::Vertex_const_handle for each disconnected component.
 template <typename Polyhedron, typename OutputIterator>
-void get_connected_components(const Polyhedron& p, OutputIterator it)
+void get_disconnected_components(const Polyhedron& p, OutputIterator it)
 {
   typedef Polyhedron Polyhedron_t;
   typedef typename Polyhedron_t::Vertex_const_handle Vertex_const_handle;
 
   // store all vertices in a set
   std::set<Vertex_const_handle> v;
-  for (typename Polyhedron_t::Vertex_const_iterator vit = p.vertices_begin(); vit != p.vertices_end(); vit++)
+  for (typename Polyhedron_t::Vertex_const_iterator vit = p.vertices_begin();
+       vit != p.vertices_end(); vit++)
     v.insert(vit);
 
   while (!v.empty())
@@ -67,7 +73,10 @@ void get_connected_components(const Polyhedron& p, OutputIterator it)
     recursive_remove<Polyhedron_t>(v, start);
   }
 }
-
+//-----------------------------------------------------------------------------
+// This class reimplements Construct_initial_points (from Polyhedral_mesh_domain)
+// in order to make sure that all disconnected parts of the polyhedron are
+// sufficiently covered. Otherwise the meshing algorithm may miss them entirely.
 template< typename IGT_ >
 class Polyhedral_multicomponent_mesh_domain_with_features_3
   : public CGAL::Polyhedral_mesh_domain_with_features_3< IGT_ >
@@ -76,7 +85,7 @@ class Polyhedral_multicomponent_mesh_domain_with_features_3
   typedef typename CGAL::Polyhedral_mesh_domain_with_features_3< IGT_ > Base;
   typedef typename Base::Polyhedron Polyhedron;
 
-  Polyhedral_multicomponent_mesh_domain_with_features_3(const Polyhedron& p)
+Polyhedral_multicomponent_mesh_domain_with_features_3(const Polyhedron& p)
     : Base(p)
   {}
 
@@ -88,48 +97,9 @@ class Polyhedral_multicomponent_mesh_domain_with_features_3
       : r_domain_(domain) {}
 
     template<class OutputIterator>
-    OutputIterator operator()(OutputIterator pts, const int n = 8) const
-    {
-      std::cout << "Constructing initial points" << std::endl;
+    OutputIterator operator()(OutputIterator pts, const int n = 8) const;
 
-      // Insert points to make sure points from all components are
-      // represented initally
-      typedef typename Polyhedral_multicomponent_mesh_domain_with_features_3::Polyhedron Polyhedron;
-      typedef typename Polyhedron::Point_3 Point_3;
-      typedef typename Polyhedron::Vertex_const_handle Vertex_const_handle;
-
-      const Polyhedron& P  = r_domain_.polyhedron();
-      std::list<Vertex_const_handle> components;
-      get_connected_components(P, std::back_inserter(components));
-      std::cout << "Number of components: " << components.size() << std::endl;
-
-      std::size_t current_index;
-      {
-        // get number of corners
-        std::vector<std::pair<int, Point_3> > corners;
-        r_domain_.get_corners(std::back_inserter(corners));
-        current_index = corners.size();
-        current_index++;
-      }
-
-      for (typename std::list<Vertex_const_handle>::iterator it = components.begin();
-           it != components.end(); it++)
-      {
-        const Vertex_const_handle v = *it;
-
-        typename Polyhedron::Halfedge_around_vertex_const_circulator start = v->vertex_begin(), current = start;
-        do
-        {
-          *pts++ = std::make_pair(current->opposite()->vertex()->point(), current_index);
-          current_index++;
-          std::cout << "Inserting point: " << current->opposite()->vertex()->point() << ", index: " << current_index << std::endl;
-          
-          current++;
-        } while (current != start);
-      }
-    }
-
-  private:
+   private:
     const Polyhedral_multicomponent_mesh_domain_with_features_3& r_domain_;
   };
 
@@ -137,9 +107,52 @@ class Polyhedral_multicomponent_mesh_domain_with_features_3
   {
     return Construct_initial_points(*this);
   }
-
-
 };
+//-----------------------------------------------------------------------------
+template<typename IGT_>
+template<class OutputIterator>
+OutputIterator
+Polyhedral_multicomponent_mesh_domain_with_features_3<IGT_>::
+Construct_initial_points::operator()(OutputIterator pts, const int n) const
+{
+  std::cout << "Constructing initial points" << std::endl;
 
+  typedef typename Polyhedral_multicomponent_mesh_domain_with_features_3::Polyhedron Polyhedron;
+  typedef typename Polyhedron::Point_3 Point_3;
+  typedef typename Polyhedron::Vertex_const_handle Vertex_const_handle;
 
+  const Polyhedron& P  = r_domain_.polyhedron();
+  std::list<Vertex_const_handle> components;
+  get_disconnected_components(P, std::back_inserter(components));
+  std::cout << "Number of components: " << components.size() << std::endl;
+
+  std::size_t current_index;
+  {
+    // get number of corners
+    std::vector<std::pair<int, Point_3> > corners;
+    r_domain_.get_corners(std::back_inserter(corners));
+    current_index = corners.size();
+    current_index++;
+  }
+
+  for (typename std::list<Vertex_const_handle>::iterator it = components.begin();
+       it != components.end(); it++)
+  {
+    const Vertex_const_handle v = *it;
+
+    typename Polyhedron::Halfedge_around_vertex_const_circulator start = v->vertex_begin(), current = start;
+    do
+    {
+      *pts++ = std::make_pair(current->opposite()->vertex()->point(), current_index);
+      current_index++;
+      std::cout << "Inserting point: "
+                << current->opposite()->vertex()->point()
+                << ", index: " << current_index << std::endl;
+      current++;
+    } while (current != start);
+  }
+
+  return pts;
+}
+//-----------------------------------------------------------------------------
 #endif
