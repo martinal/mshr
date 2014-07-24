@@ -37,7 +37,15 @@ CSGGeometry::~CSGGeometry()
 //-----------------------------------------------------------------------------
 void CSGGeometry::set_subdomain(std::size_t i, std::shared_ptr<CSGGeometry> s)
 {
-  dolfin_assert(dim() == s->dim());
+  if (dim() != 2)
+    dolfin::dolfin_error("CSGGeometry.cpp",
+                 "setting subdomain",
+                 "Subdomains are currently supported only in 2D");
+
+  if (s->dim() != dim())
+    dolfin::dolfin_error("CSGGeometry.cpp",
+                 "setting subdomain",
+                 "Subdomain and domain must be of same dimension. Domain was dimension %d and subdomain was %d", dim(), s->dim());
 
   if (i == 0)
   {
