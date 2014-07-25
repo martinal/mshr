@@ -17,6 +17,7 @@
 //
 
 #include <mshr/STLFileReader.h>
+#include "Point3FuzzyStrictlyLess.h"
 
 #include <dolfin/geometry/Point.h>
 #include <dolfin/common/constants.h>
@@ -47,31 +48,6 @@ namespace
     return val;
   }
 
-// A custom compare function class to be used in std::map
-// to avoid duplicated vertices.
-class PointFuzzyStrictlyLess
-{
- public:
-  PointFuzzyStrictlyLess(double tolerance = 1e-10) : tol(tolerance) {}
-  bool operator()(const std::array<double, 3>& left,
-                  const std::array<double, 3>& right) const
-  {
-    if (std::abs(left[0]-right[0]) > tol || std::abs(left[1]-right[1]) > tol || std::abs(left[2]-right[2]) > tol)
-
-    if (std::abs(left[0]-right[0]) > tol)
-      return left[0] < right[0];
-
-    if (std::abs(left[1] - right[1]) > tol)
-      return left[1] < right[1];
-
-    if (std::abs(left[2] - right[2]) > tol)
-      return left[2] < right[2];
-
-    return false;
-  }
- private:
-  double tol;
-};
 
 inline void get_next_line(std::ifstream& file, std::string& line, std::size_t &lineno)
 {
@@ -102,7 +78,7 @@ void STLFileReader::read(const std::string filename,
   }
 
   std::size_t num_vertices = 0;
-  std::map<std::array<double, 3>, std::size_t, PointFuzzyStrictlyLess> vertex_map;
+  std::map<std::array<double, 3>, std::size_t, Point3FuzzyStrictlyLess<std::array<double, 3> > > vertex_map;
   std::string line;
   std::size_t lineno = 0;
   const boost::char_separator<char> sep(" ");

@@ -242,19 +242,11 @@ void CSGCGALMeshGenerator3D::generate(dolfin::Mesh& mesh) const
 
   }
 
-  PolyhedralMeshDomain domain(p);
-
-  if (parameters["detect_sharp_features"])
-  {
-    log(dolfin::TRACE, "Detecting sharp features");
-
-    //const int feature_threshold = parameters["feature_threshold"];
-    domain.detect_features();
-  }
 
   // Workaround, cgal segfaulted when assigning new mesh criterias
   // within the if-else blocks.
   std::unique_ptr<Mesh_criteria> criteria;
+  double edge_size;
 
   const double mesh_resolution = parameters["mesh_resolution"];
   if (mesh_resolution > 0)
@@ -270,6 +262,7 @@ void CSGCGALMeshGenerator3D::generate(dolfin::Mesh& mesh) const
                                           CGAL::parameters::facet_distance = cell_size/10.0, // ???
                                           CGAL::parameters::cell_radius_edge_ratio = 3.0,
                                           CGAL::parameters::cell_size = cell_size));
+    edge_size = cell_size;
   }
   else
   {
@@ -280,14 +273,35 @@ void CSGCGALMeshGenerator3D::generate(dolfin::Mesh& mesh) const
                                      CGAL::parameters::facet_distance = parameters["facet_distance"],
                                      CGAL::parameters::cell_radius_edge_ratio = parameters["cell_radius_edge_ratio"],
                                      CGAL::parameters::cell_size = parameters["cell_size"])); // <--------------
+    edge_size = parameters["edge_size"];
   }
+
+
+  PolyhedralMeshDomain domain(p, edge_size);
+
+  if (parameters["detect_sharp_features"])
+  {
+    log(dolfin::TRACE, "Detecting sharp features");
+
+    //const int feature_threshold = parameters["feature_threshold"];
+    domain.detect_features();
+  }
+
+
 
   // Mesh generation
   log(dolfin::TRACE, "Generating mesh");
-  C3t3 c3t3 = CGAL::make_mesh_3<C3t3>(domain, 
-                                      *criteria,
-                                      CGAL::parameters::no_perturb(),
-                                      CGAL::parameters::no_exude());
+  C3t3 c3t3;
+  make_multicomponent_mesh_3_impl<C3t3>(c3t3,
+                                        domain,
+                                        *criteria,
+                                        CGAL::parameters::no_exude(),
+                                        CGAL::parameters::no_perturb(),
+                                        CGAL::parameters::no_odt(),
+                                        CGAL::parameters::no_lloyd(),
+                                        true);
+
+
 
   if (parameters["odt_optimize"])
   {

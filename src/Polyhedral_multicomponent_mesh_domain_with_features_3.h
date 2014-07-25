@@ -19,6 +19,7 @@
 #ifndef POLYHEDRAL_MULTICOMPONENT_MESH_DOMAIN_WITH_FEATURES_3_H
 #define POLYHEDRAL_MULTICOMPONENT_MESH_DOMAIN_WITH_FEATURES_3_H
 
+#include "Point3FuzzyStrictlyLess.h"
 #include <CGAL/Polyhedral_mesh_domain_with_features_3.h>
 
 //-----------------------------------------------------------------------------
@@ -85,29 +86,58 @@ class Polyhedral_multicomponent_mesh_domain_with_features_3
   typedef typename CGAL::Polyhedral_mesh_domain_with_features_3< IGT_ > Base;
   typedef typename Base::Polyhedron Polyhedron;
 
-Polyhedral_multicomponent_mesh_domain_with_features_3(const Polyhedron& p)
-    : Base(p)
+// Passing the edge size with the constructor is a workaround. Ideally CGAL should pass it
+// when calling construct_initial_points
+Polyhedral_multicomponent_mesh_domain_with_features_3(const Polyhedron& p, double edge_size)
+  : Base(p), edge_size(edge_size)
   {}
 
   ~Polyhedral_multicomponent_mesh_domain_with_features_3(){}
 
   struct Construct_initial_points
   {
-    Construct_initial_points(const Polyhedral_multicomponent_mesh_domain_with_features_3& domain)
-      : r_domain_(domain) {}
+    Construct_initial_points(const Polyhedral_multicomponent_mesh_domain_with_features_3& domain,
+                             double edge_size)
+     : r_domain_(domain), edge_size(edge_size) {}
 
     template<class OutputIterator>
     OutputIterator operator()(OutputIterator pts, const int n = 8) const;
 
    private:
     const Polyhedral_multicomponent_mesh_domain_with_features_3& r_domain_;
+    const double edge_size;
   };
 
   Construct_initial_points construct_initial_points_object() const
   {
-    return Construct_initial_points(*this);
+    return Construct_initial_points(*this, edge_size);
   }
+
+ private :
+  const double edge_size;
 };
+//-----------------------------------------------------------------------------
+template<typename Set, typename Polyhedron>
+int recursive_insert(Set& set, typename Polyhedron::Vertex_const_handle v, int i, int n)
+{
+  std::pair<typename Set::iterator, bool> res = set.insert(v->point());
+  if ( res.second )
+    i++;
+
+  typename Polyhedron::Halfedge_around_vertex_const_circulator start = v->vertex_begin(), current = start;
+  do
+  {
+    if ( i ==n )
+      break;
+
+    i += recursive_insert<Set, Polyhedron>(set, current->opposite()->vertex(), i, n);
+
+    current++;
+  } while (current != start);
+
+  return i;
+}
+
 //-----------------------------------------------------------------------------
 template<typename IGT_>
 template<class OutputIterator>
@@ -126,30 +156,35 @@ Construct_initial_points::operator()(OutputIterator pts, const int n) const
   get_disconnected_components(P, std::back_inserter(components));
   std::cout << "Number of components: " << components.size() << std::endl;
 
+  // Store inserted points in a set with a fuzzy comparison operator
+  // to ensure no points closer than the tolerance are inserted.
+  typedef Point3FuzzyStrictlyLess<Point_3> CompareFunctor;
+  typedef std::set<Point_3, CompareFunctor>  FuzzyPointSet;
+
+  const CompareFunctor cf(edge_size);
+  FuzzyPointSet inserted_points(cf);
+
   std::size_t current_index;
   {
-    // get number of corners
+    // get corners
     std::vector<std::pair<int, Point_3> > corners;
     r_domain_.get_corners(std::back_inserter(corners));
     current_index = corners.size();
     current_index++;
+    for (typename std::vector<std::pair<int, Point_3> >::iterator it = corners.begin();
+         it != corners.end(); it++)
+    {
+      inserted_points.insert(it->second);
+    }
   }
 
   for (typename std::list<Vertex_const_handle>::iterator it = components.begin();
        it != components.end(); it++)
   {
-    const Vertex_const_handle v = *it;
+    Vertex_const_handle current = *it;
 
-    typename Polyhedron::Halfedge_around_vertex_const_circulator start = v->vertex_begin(), current = start;
-    do
-    {
-      *pts++ = std::make_pair(current->opposite()->vertex()->point(), current_index);
-      current_index++;
-      std::cout << "Inserting point: "
-                << current->opposite()->vertex()->point()
-                << ", index: " << current_index << std::endl;
-      current++;
-    } while (current != start);
+    int i = recursive_insert<FuzzyPointSet, Polyhedron>(inserted_points, current, 0, n);
+    std::cout << "Inserted " << i << " points from disconnected part" << std::endl;
   }
 
   return pts;
