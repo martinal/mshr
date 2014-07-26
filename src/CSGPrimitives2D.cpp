@@ -34,8 +34,8 @@ namespace mshr
 //-----------------------------------------------------------------------------
 // Circle
 //-----------------------------------------------------------------------------
-Circle::Circle(dolfin::Point(c), double r, std::size_t fragments)
-  : c(c), _r(r), _fragments(fragments)
+Circle::Circle(dolfin::Point(c), double r, std::size_t segments)
+  : c(c), _r(r), _segments(segments)
 {
   if (_r < DOLFIN_EPS)
   {
@@ -46,11 +46,11 @@ Circle::Circle(dolfin::Point(c), double r, std::size_t fragments)
                          s.str());
   }
 
-  if (_fragments < 3)
+  if (_segments < 3)
   {
     dolfin::dolfin_error("CSGPrimitives2D.cpp",
                          "create circle",
-                         "Unable to create circle with less than 3 fragments");
+                         "Unable to create circle with less than 3 segments");
   }
 }
 //-----------------------------------------------------------------------------
@@ -73,8 +73,8 @@ std::string Circle::str(bool verbose) const
 // Ellipse
 //-----------------------------------------------------------------------------
 Ellipse::Ellipse(dolfin::Point c, double a, double b,
-                 std::size_t fragments)
-  : c(c), _a(a), _b(b), _fragments(fragments)
+                 std::size_t segments)
+  : c(c), _a(a), _b(b), _segments(segments)
 {
   if (_a < DOLFIN_EPS || _b < DOLFIN_EPS)
   {
@@ -85,11 +85,11 @@ Ellipse::Ellipse(dolfin::Point c, double a, double b,
                          s.str());
   }
 
-  if (_fragments < 3)
+  if (_segments < 3)
   {
     dolfin::dolfin_error("CSGPrimitives2D.cpp",
                  "create ellipse",
-                 "Unable to create ellipse with less than 3 fragments");
+                 "Unable to create ellipse with less than 3 segmentss");
   }
 }
 //-----------------------------------------------------------------------------

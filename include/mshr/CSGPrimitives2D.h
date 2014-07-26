@@ -40,6 +40,7 @@ namespace mshr
   };
 
   /// @brief A 2D circle
+  /// @icon circle.png
   class Circle : public CSGPrimitive2D
   {
   public:
@@ -48,7 +49,7 @@ namespace mshr
     ///
     /// @param c center.
     /// @param r radius.
-    /// @param segments number of fragments when computing the polygonal approximation
+    /// @param segments number of segments when computing the polygonal approximation
     Circle(dolfin::Point c, double r, std::size_t segments=32);
 
     /// @brief get informal string representation
@@ -64,12 +65,12 @@ namespace mshr
     double radius() const { return _r; }
 
     /// @brief get number of segments used when computing polygonal approximation
-    std::size_t fragments() const { return _fragments; }
+    std::size_t segments() const { return _segments; }
 
   private:
     dolfin::Point c;
     double _r;
-    const std::size_t _fragments;
+    const std::size_t _segments;
   };
 
   /// @brief A 2D ellipse
@@ -84,7 +85,7 @@ namespace mshr
     /// @param a        the horizontal semi-axis
     /// @param b        the vertical semi-axis
     /// @param segments the resolution when computing polygonal approximation
-    Ellipse(dolfin::Point c, double a, double b, std::size_t fragments=32);
+    Ellipse(dolfin::Point c, double a, double b, std::size_t segments=32);
 
     /// @brief get informal string representation
     /// @param verbose  Verbosity level
@@ -102,12 +103,12 @@ namespace mshr
     double b() const { return _b; }
 
     /// @brief get resolution when computing polygonal approximation
-    std::size_t fragments() const { return _fragments; }
+    std::size_t segments() const { return _segments; }
 
   private:
     dolfin::Point c;
     double _a, _b;
-    const std::size_t _fragments;
+    const std::size_t _segments;
   };
 
   /// @brief A 2D axis aligned rectangle
