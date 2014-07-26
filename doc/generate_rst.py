@@ -47,6 +47,16 @@ def get_parameter_documentation(functiondefinition, declname) :
                             return ""
     return ""
 
+def get_extra_data(classdefinition) :
+    details = classdefinition.find("detaileddescription")
+    paragraphs = details.findall("para")
+    for para in paragraphs :
+        text = para.text.strip()
+        if text.startswith("{") and text.endswith("}") :
+            print "Found extra data"
+            return eval(text)
+    return {}
+
 print("Reading files from %s" % input_dir)
 
 # save all the classes as dictionary with doxygens id as key.
@@ -82,6 +92,9 @@ for filename in os.listdir(input_dir) :
     
     data = {'filename'    : outfilename_base,
             'description' : briefdescription.strip() }
+
+    extra_data = get_extra_data(class_def)
+    data.update(extra_data)
 
     # print data["filename"]
 
@@ -151,9 +164,13 @@ for k,c in cls.iteritems() :
                 current = None
 
 
-        category.append("[%s](API/%s)|%s|\n" % (classname.ljust(longest_class_name), 
-                                                c[1]["filename"],
-                                                c[1]["description"].ljust(longest_description)))
+        icon_txt = ""
+        if c[1].has_key("small-icon") :
+            icon_txt = "![%s icon](%s)" % (classname, c[1]["small-icon"])
+        category.append("%s[%s](API/%s)|%s|\n" % (icon_txt,
+                                                  classname.ljust(longest_class_name), 
+                                                  c[1]["filename"],
+                                                  c[1]["description"].ljust(longest_description)))
 
 
         inheritance_list.reverse()

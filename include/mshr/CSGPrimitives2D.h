@@ -40,7 +40,8 @@ namespace mshr
   };
 
   /// @brief A 2D circle
-  /// @icon circle.png
+  ///
+  /// { "small-icon" : "circle-small.png" }
   class Circle : public CSGPrimitive2D
   {
   public:
@@ -139,6 +140,8 @@ namespace mshr
   };
 
   /// @brief A 2D polygon
+  ///
+  /// { 'large-icon' : 'icons/polygon-large.png', 'small-icon' : 'icons/polygon-small.png' }
   class Polygon : public CSGPrimitive2D
   {
   public:
