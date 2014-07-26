@@ -80,11 +80,11 @@ struct CSGCGALDomain2DImpl
 Polygon_2 make_circle(const Circle* c)
 {
   std::vector<Point_2> pts;
-  pts.reserve(c->fragments());
+  pts.reserve(c->segments());
 
-  for (std::size_t i = 0; i < c->fragments(); i++)
+  for (std::size_t i = 0; i < c->segments(); i++)
   {
-    const double phi = (2*DOLFIN_PI*i) / c->fragments();
+    const double phi = (2*DOLFIN_PI*i) / c->segments();
     const double x = c->center().x() + c->radius()*cos(phi);
     const double y = c->center().y() + c->radius()*sin(phi);
     pts.push_back(Point_2(x, y));
@@ -97,9 +97,9 @@ Polygon_2 make_ellipse(const Ellipse* e)
 {
   std::vector<Point_2> pts;
 
-  for (std::size_t i = 0; i < e->fragments(); i++)
+  for (std::size_t i = 0; i < e->segments(); i++)
   {
-    const double phi = (2*DOLFIN_PI*i) / e->fragments();
+    const double phi = (2*DOLFIN_PI*i) / e->segments();
     const double x = e->center().x() + e->a()*cos(phi);
     const double y = e->center().y() + e->b()*sin(phi);
     pts.push_back(Point_2(x, y));
