@@ -71,10 +71,12 @@ class Polyhedral_mesh_domain_with_features_3
     Polyhedral_mesh_domain_3<
       Polyhedron_, IGT_, TriangleAccessor,
       Use_patch_id_tag, Use_exact_intersection_construction_tag > > Base;
- protected:
-  typedef Polyhedron_ Polyhedron;
+
+
   
 public:
+  typedef Polyhedron_ Polyhedron;
+
   // Index types
   typedef typename Base::Index                Index;
   typedef typename Base::Corner_index         Corner_index;
