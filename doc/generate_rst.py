@@ -164,9 +164,10 @@ for k,c in cls.iteritems() :
                 current = None
 
 
-        icon_txt = ""
+        icon_txt = " |"
         if c[1].has_key("small-icon") :
-            icon_txt = "![%s icon](%s)" % (classname, c[1]["small-icon"])
+            icon_txt = "![%s icon](icons/%s)|" % (classname, c[1]["small-icon"])
+
         category.append("%s[%s](API/%s)|%s|\n" % (icon_txt,
                                                   classname.ljust(longest_class_name), 
                                                   c[1]["filename"],
@@ -258,11 +259,11 @@ mainpage = ["""
 
 """]
 
-mainpage.append("%s|%s|\n" % ("2D primitives".ljust(longest_class_name),
-                              "Description".ljust(longest_description)))
+mainpage.append("- |%s|%s|\n" % ("2D primitives".ljust(longest_class_name),
+                                "Description".ljust(longest_description)))
 
-mainpage.append("%s|%s|\n" % ( ":".ljust(longest_class_name, "-"),
-                               ":".ljust(longest_description, "-")))
+mainpage.append("--|%s|%s|\n" % ( ":".ljust(longest_class_name, "-"),
+                                 ":".ljust(longest_description, "-")))
 
 
 ################# Append 2D primitives
@@ -276,7 +277,7 @@ mainpage.append("".join(primitives2d))
 #mainpage.append("\n\n")
 
 ################ Append 3D primitives
-mainpage.append("%s|%s|\n" % ("**3D primitives**".ljust(longest_class_name),
+mainpage.append("- |%s|%s|\n" % ("**3D primitives**".ljust(longest_class_name),
                               " "*longest_description))
 
 # mainpage.append("%s|%s|\n" % ( ":".ljust(longest_class_name, "-"),
@@ -286,7 +287,7 @@ mainpage.append("".join(primitives3d))
 #mainpage.append("\n\n")
 
 ############### Append operators
-mainpage.append("%s|%s|\n" % ("**Operators**".ljust(longest_class_name),
+mainpage.append("- |%s|%s|\n" % ("**Operators**".ljust(longest_class_name),
                               " "*longest_description))
 
 # mainpage.append("%s|%s|\n" % ( ":".ljust(longest_class_name, "-"),
@@ -296,7 +297,7 @@ mainpage.append("".join(operators))
 # mainpage.append("\n\n")
 
 ############### Append other classes
-mainpage.append("%s|%s|\n" % ("**Other classes**".ljust(longest_class_name),
+mainpage.append("- |%s|%s|\n" % ("**Other classes**".ljust(longest_class_name),
                               " "*longest_description))
 
 # mainpage.append("%s|%s|\n" % ( ":".ljust(longest_class_name, "-"),
