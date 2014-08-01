@@ -156,17 +156,20 @@ Construct_initial_points::operator()(OutputIterator pts, const int n) const
   get_disconnected_components(P, std::back_inserter(components));
   std::cout << "Number of components: " << components.size() << std::endl;
 
-  // Store inserted points in a set with a fuzzy comparison operator
+  // Collect inserted points in a set with a fuzzy comparison operator
   // to ensure no points closer than the tolerance are inserted.
   typedef Point3FuzzyStrictlyLess<Point_3> CompareFunctor;
   typedef std::set<Point_3, CompareFunctor>  FuzzyPointSet;
 
-  const CompareFunctor cf(edge_size);
-  FuzzyPointSet inserted_points(cf);
+  //const CompareFunctor cf(edge_size);
+  // TODO: Tune this parameter
+  const double tolerance = edge_size*3;
+  FuzzyPointSet inserted_points(CompareFunctor(tolerance*tolerance));
 
   std::size_t current_index;
   {
     // get corners
+    std::cout << "Getting corners" << std::endl;
     std::vector<std::pair<int, Point_3> > corners;
     r_domain_.get_corners(std::back_inserter(corners));
     current_index = corners.size();
@@ -182,7 +185,7 @@ Construct_initial_points::operator()(OutputIterator pts, const int n) const
        it != components.end(); it++)
   {
     Vertex_const_handle current = *it;
-
+    std::cout << "Inserting recursively" << std::endl;
     int i = recursive_insert<FuzzyPointSet, Polyhedron>(inserted_points, current, 0, n);
     std::cout << "Inserted " << i << " points from disconnected part" << std::endl;
   }

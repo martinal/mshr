@@ -25,14 +25,14 @@ class Point3FuzzyStrictlyLess
  public:
   typedef Point Point_;
 
-  Point3FuzzyStrictlyLess(double tol=1e-10)
-  : tol_(tol*tol){}
+  Point3FuzzyStrictlyLess(double squared_distance=1e-10)
+  : tol(squared_distance){}
 
   // strictly less
   inline bool operator()(const  Point_ a, const Point_ b) const
   {
     // check distance
-    if ( (a[0]-b[0])*(a[0]-b[0]) + (a[1]-b[1])*(a[1]-b[1]) + (a[2]-b[2])*(a[2]-b[2]) < tol_ )
+    if ( (a[0]-b[0])*(a[0]-b[0]) + (a[1]-b[1])*(a[1]-b[1]) + (a[2]-b[2])*(a[2]-b[2]) < tol )
       return false;
 
     if (a[0] != b[0])
@@ -47,7 +47,7 @@ class Point3FuzzyStrictlyLess
   }
 
   private:
-    const double tol_;
+    const double tol;
 };
 
 #endif
