@@ -22,6 +22,7 @@
 #include "Point3FuzzyStrictlyLess.h"
 #include <CGAL/Polyhedral_mesh_domain_with_features_3.h>
 
+#include <dolfin/log/log.h>
 //-----------------------------------------------------------------------------
 template<typename Polyhedron>
 void recursive_remove(std::set<typename Polyhedron::Vertex_const_handle>& s,
@@ -118,24 +119,33 @@ Polyhedral_multicomponent_mesh_domain_with_features_3(const Polyhedron& p, doubl
 };
 //-----------------------------------------------------------------------------
 template<typename Set, typename Polyhedron>
-int recursive_insert(Set& set, typename Polyhedron::Vertex_const_handle v, int i, int n)
+  void recursive_insert(Set& set,
+                        std::set<typename Polyhedron::Vertex_const_handle>& visited,
+                        typename Polyhedron::Vertex_const_handle v,
+                        int n)
 {
+  std::pair<typename std::set<typename Polyhedron::Vertex_const_handle>::iterator, bool> v_insert = visited.insert(v);
+
+  // If vertex is already visited, then return
+  if (!v_insert.second)
+    return;
+
   std::pair<typename Set::iterator, bool> res = set.insert(v->point());
   if ( res.second )
-    i++;
+  {
+    // std::cout << "Inserted recursively: " << v->point() << std::endl;
+  }
 
   typename Polyhedron::Halfedge_around_vertex_const_circulator start = v->vertex_begin(), current = start;
   do
   {
-    if ( i ==n )
+    if ( set.size() == n )
       break;
 
-    i += recursive_insert<Set, Polyhedron>(set, current->opposite()->vertex(), i, n);
+    recursive_insert<Set, Polyhedron>(set, visited, current->opposite()->vertex(), n);
 
     current++;
   } while (current != start);
-
-  return i;
 }
 
 //-----------------------------------------------------------------------------
@@ -160,10 +170,12 @@ Construct_initial_points::operator()(OutputIterator pts, const int n) const
   // to ensure no points closer than the tolerance are inserted.
   typedef Point3FuzzyStrictlyLess<Point_3> CompareFunctor;
   typedef std::set<Point_3, CompareFunctor>  FuzzyPointSet;
+  std::set<Vertex_const_handle> visited;
 
   //const CompareFunctor cf(edge_size);
   // TODO: Tune this parameter
   const double tolerance = edge_size*3;
+  std::cout << "Tolerance: " << tolerance << std::endl;
   FuzzyPointSet inserted_points(CompareFunctor(tolerance*tolerance));
 
   std::size_t current_index;
@@ -186,8 +198,16 @@ Construct_initial_points::operator()(OutputIterator pts, const int n) const
   {
     Vertex_const_handle current = *it;
     std::cout << "Inserting recursively" << std::endl;
-    int i = recursive_insert<FuzzyPointSet, Polyhedron>(inserted_points, current, 0, n);
-    std::cout << "Inserted " << i << " points from disconnected part" << std::endl;
+    recursive_insert<FuzzyPointSet, Polyhedron>(inserted_points, visited, current, n);
+    std::cout << "Inserted " << inserted_points.size() << " points from disconnected part" << std::endl;
+  }
+
+
+  for (auto it = inserted_points.begin(); it != inserted_points.end(); it++)
+  {
+    *pts = std::make_pair(*it, current_index);
+    pts++;
+    current_index++;
   }
 
   return pts;
