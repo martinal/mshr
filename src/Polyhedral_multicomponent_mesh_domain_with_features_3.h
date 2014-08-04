@@ -122,7 +122,7 @@ template<typename Set, typename Polyhedron>
   void recursive_insert(Set& set,
                         std::set<typename Polyhedron::Vertex_const_handle>& visited,
                         typename Polyhedron::Vertex_const_handle v,
-                        int n)
+                        std::size_t n)
 {
   std::pair<typename std::set<typename Polyhedron::Vertex_const_handle>::iterator, bool> v_insert = visited.insert(v);
 
