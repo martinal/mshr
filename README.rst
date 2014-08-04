@@ -14,7 +14,7 @@ Authors:
 Contributors:
   | Anders Logg     <logg@chalmers.se>
   | Johannes Ring   <johannr@simula.no>
-  | Joachim Haga    <jobh@simula.no>
+  | Garth N. Wells  <gnw20@cam.ac.uk>
 
 Installation
 ============

@@ -14,8 +14,6 @@
 // 
 // You should have received a copy of the GNU General Public License
 // along with mshr.  If not, see <http://www.gnu.org/licenses/>.
-//
-// Modified by Joachim B Haga 2012
 
 #ifndef __MSHR_CGAL_MESH_GENERATOR3D_H
 #define __MSHR_CGAL_MESH_GENERATOR3D_H
