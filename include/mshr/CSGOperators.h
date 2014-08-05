@@ -57,8 +57,8 @@ namespace mshr
 
     Type getType() const { return CSGGeometry::Union; }
 
-    std::shared_ptr<CSGGeometry> _g0;
-    std::shared_ptr<CSGGeometry> _g1;
+    const std::shared_ptr<CSGGeometry> _g0;
+    const std::shared_ptr<CSGGeometry> _g1;
   };
 
   /// @brief Difference of CSG geometries
@@ -77,8 +77,8 @@ namespace mshr
 
     Type getType() const { return CSGGeometry::Difference; }
 
-    std::shared_ptr<CSGGeometry> _g0;
-    std::shared_ptr<CSGGeometry> _g1;
+    const std::shared_ptr<CSGGeometry> _g0;
+    const std::shared_ptr<CSGGeometry> _g1;
   };
 
 
@@ -98,8 +98,8 @@ namespace mshr
 
     Type getType() const { return CSGGeometry::Intersection; }
 
-    std::shared_ptr<CSGGeometry> _g0;
-    std::shared_ptr<CSGGeometry> _g1;
+    const std::shared_ptr<CSGGeometry> _g0;
+    const std::shared_ptr<CSGGeometry> _g1;
 
   };
 
@@ -119,8 +119,8 @@ namespace mshr
 
     Type getType() const { return CSGGeometry::Translation; }
 
-    std::shared_ptr<CSGGeometry> g;
-    dolfin::Point t;
+    const std::shared_ptr<CSGGeometry> g;
+    const dolfin::Point t;
   };
 
   /// @brief Scale CSG geometry
@@ -148,10 +148,10 @@ namespace mshr
 
     Type getType() const { return CSGGeometry::Scaling; }
 
-    std::shared_ptr<CSGGeometry> g;
-    dolfin::Point c;
-    double s;
-    bool translate;
+    const std::shared_ptr<CSGGeometry> g;
+    const dolfin::Point c;
+    const double s;
+    const bool translate;
   };
 
   /// @brief Rotate CSG geometry
@@ -183,11 +183,11 @@ namespace mshr
     Type getType() const { return CSGGeometry::Rotation; }
     std::string str(bool verbose) const;
 
-    std::shared_ptr<CSGGeometry> g;
-    dolfin::Point rot_axis;
-    dolfin::Point c;
-    double theta;
-    bool translate;
+    const std::shared_ptr<CSGGeometry> g;
+    const dolfin::Point rot_axis;
+    const dolfin::Point c;
+    const double theta;
+    const bool translate;
   };
 
   //--- Union operators ---
