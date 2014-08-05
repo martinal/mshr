@@ -254,23 +254,20 @@ void CSGCGALMeshGenerator3D::generate(dolfin::Mesh& mesh) const
   // within the if-else blocks.
   std::unique_ptr<Mesh_criteria> criteria;
 
-  const double mesh_resolution = parameters["mesh_resolution"];
-  if (mesh_resolution > 0)
-  {
-    // Try to compute reasonable parameters
-    const double r = get_bounding_sphere_radius(p);
-    const double cell_size = r/mesh_resolution*2.0;
-    log(dolfin::TRACE, "Chose cell size %f", cell_size);
+  const bool criteria_changed = parameters["edge_size"].change_count() > 0
+    || parameters["facet_angle"].change_count() > 0
+    || parameters["facet_size"].change_count() > 0
+    || parameters["facet_distance"].change_count() > 0
+    || parameters["cell_radius_edge_ratio"].change_count() > 0
+    || parameters["cell_size"].change_count() > 0;
 
-    criteria.reset(new Mesh_criteria(CGAL::parameters::edge_size = cell_size,
-                                          CGAL::parameters::facet_angle = 30.0,
-                                          CGAL::parameters::facet_size = cell_size,
-                                          CGAL::parameters::facet_distance = cell_size/10.0, // ???
-                                          CGAL::parameters::cell_radius_edge_ratio = 3.0,
-                                          CGAL::parameters::cell_size = cell_size));
-  }
-  else
+  if (parameters["mesh_resolution"].change_count() > 0 && criteria_changed)
+    dolfin::warning("Attempt to set both mesh_resolution and other meshing criterias which are mutually exclusive");
+
+  if (criteria_changed)
   {
+    log(dolfin::TRACE, "Using user specified meshing criterias");
+
     // Mesh criteria
     criteria.reset(new Mesh_criteria(CGAL::parameters::edge_size = parameters["edge_size"],
                                      CGAL::parameters::facet_angle = parameters["facet_angle"],
@@ -278,6 +275,21 @@ void CSGCGALMeshGenerator3D::generate(dolfin::Mesh& mesh) const
                                      CGAL::parameters::facet_distance = parameters["facet_distance"],
                                      CGAL::parameters::cell_radius_edge_ratio = parameters["cell_radius_edge_ratio"],
                                      CGAL::parameters::cell_size = parameters["cell_size"])); // <--------------
+  }
+  else
+  {
+    // Try to compute reasonable parameters
+    const double mesh_resolution = parameters["mesh_resolution"];
+    const double r = get_bounding_sphere_radius(p);
+    const double cell_size = r/mesh_resolution*2.0;
+    log(dolfin::TRACE, "Computing meshing criterias. Chose cell size %f", cell_size);
+
+    criteria.reset(new Mesh_criteria(CGAL::parameters::edge_size = cell_size,
+                                     CGAL::parameters::facet_angle = 30.0,
+                                     CGAL::parameters::facet_size = cell_size,
+                                     CGAL::parameters::facet_distance = cell_size/10.0, // ???
+                                     CGAL::parameters::cell_radius_edge_ratio = 3.0,
+                                     CGAL::parameters::cell_size = cell_size));
   }
 
   // Mesh generation
