@@ -136,7 +136,7 @@ namespace mshr
     dolfin::Point second_corner() const { return b; }
 
   private:
-    dolfin::Point a, b;
+    const dolfin::Point a, b;
   };
 
   /// @brief A 2D polygon
