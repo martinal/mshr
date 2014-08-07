@@ -31,14 +31,12 @@ def get_parameter_documentation(functiondefinition, declname) :
     if para is not None :
         paralist = para.find("parameterlist")
         if paralist is not None :
-            print "Has parameters"
             items = paralist.findall("parameteritem")
             for parameteritem in items :
                 name = parameteritem.find("parameternamelist").find("parametername").text.strip()
 
                 if name == declname.strip() :
                     # We got the right parameter
-                    print "Hit!"
                     description = parameteritem.find("parameterdescription")
                     if description is not None :
                         para = description.find("para")
@@ -54,7 +52,6 @@ def get_extra_data(classdefinition) :
     for para in paragraphs :
         text = para.text.strip()
         if text.startswith("{") and text.endswith("}") :
-            print "Found extra data"
             return eval(text)
     return {}
 
@@ -97,11 +94,7 @@ for filename in os.listdir(input_dir) :
     extra_data = get_extra_data(class_def)
     data.update(extra_data)
 
-    # print data["filename"]
-
     cls[class_def.attrib["id"]] = (class_def, data)
-
-print len(cls)
 
 longest_class_name  = max([ len(c[0].find("compoundname").text) for k, c in cls.iteritems()])
 longest_description = max([ len(c[1]["description"]) for k, c in cls.iteritems()])
@@ -192,10 +185,9 @@ for k,c in cls.iteritems() :
 
         for definition in member.findall("memberdef") :
             membername = definition.find("name").text
-            print membername
+
             argsstr    = definition.find("argsstring").text
             description = definition.find("briefdescription").find("para")
-            # print "  "+membername
             description = description.text.strip() if description is not None else ""
 
             returntype = definition.find("type").text
@@ -221,7 +213,7 @@ for k,c in cls.iteritems() :
                 paramtype = param.find("type").text
                 if paramtype is None :
                     paramtype = ""
-                    print "NONE!", declname
+
                 desc = get_parameter_documentation(definition, declname)
                 param_table.append( (declname, paramtype, desc) )
                 
