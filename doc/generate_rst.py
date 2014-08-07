@@ -309,8 +309,7 @@ mainpage.append("\n\n")
 
 # Read the current revision from git
 revision_info = subprocess.check_output(["git", "log", "--pretty=format:'%ad %H'", "-1"]).strip("'")
-mainpage.append("Generated from revision: {}\n\n".format(revision_info))
-mainpage.append("_NOTE: The API reference is generated from mshr header files. Please don't edit these file manually._")
+mainpage.append("_Generated from revision: {}. Please don't edit these files manually._\n".format(revision_info))
 
 
 
