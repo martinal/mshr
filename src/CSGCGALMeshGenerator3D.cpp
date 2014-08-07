@@ -38,8 +38,8 @@
 #include <CGAL/Mesh_triangulation_3.h>
 #include <CGAL/Mesh_complex_3_in_triangulation_3.h>
 #include <CGAL/Mesh_criteria_3.h>
-#include <CGAL/Polyhedral_mesh_domain_with_features_3.h>
-#include <CGAL/make_mesh_3.h>
+#include "Polyhedral_multicomponent_mesh_domain_with_features_3.h"
+#include "make_multicomponent_mesh_3.h"
 
 // Bounding sphere computation
 #include <CGAL/Min_sphere_of_spheres_d.h>
@@ -51,7 +51,7 @@ typedef CGAL::Mesh_polyhedron_3<K>::type MeshPolyhedron_3;
 typedef K::Point_3 Point_3;
 typedef K::Vector_3 Vector_3;
 typedef K::Triangle_3 Triangle_3;
-typedef CGAL::Polyhedral_mesh_domain_with_features_3<K> PolyhedralMeshDomain;
+typedef Polyhedral_multicomponent_mesh_domain_with_features_3<K> PolyhedralMeshDomain;
 
 // Triangulation
 typedef CGAL::Mesh_triangulation_3<PolyhedralMeshDomain>::type Tr;
@@ -240,19 +240,11 @@ void CSGCGALMeshGenerator3D::generate(dolfin::Mesh& mesh) const
 
   }
 
-  PolyhedralMeshDomain domain(p);
-
-  if (parameters["detect_sharp_features"])
-  {
-    log(dolfin::TRACE, "Detecting sharp features");
-
-    //const int feature_threshold = parameters["feature_threshold"];
-    domain.detect_features();
-  }
 
   // Workaround, cgal segfaulted when assigning new mesh criterias
   // within the if-else blocks.
   std::unique_ptr<Mesh_criteria> criteria;
+  double edge_size;
 
   const bool criteria_changed = parameters["edge_size"].change_count() > 0
     || parameters["facet_angle"].change_count() > 0
@@ -275,6 +267,28 @@ void CSGCGALMeshGenerator3D::generate(dolfin::Mesh& mesh) const
                                      CGAL::parameters::facet_distance = parameters["facet_distance"],
                                      CGAL::parameters::cell_radius_edge_ratio = parameters["cell_radius_edge_ratio"],
                                      CGAL::parameters::cell_size = parameters["cell_size"])); // <--------------
+    edge_size = parameters["edge_size"];
+  }
+  else
+  {
+    criteria.reset(new Mesh_criteria(CGAL::parameters::edge_size = cell_size,
+                                     CGAL::parameters::facet_angle = 30.0,
+                                     CGAL::parameters::facet_size = cell_size,
+                                     CGAL::parameters::facet_distance = cell_size/10.0, // ???
+                                     CGAL::parameters::cell_radius_edge_ratio = 3.0,
+                                     CGAL::parameters::cell_size = cell_size));
+    edge_size = cell_size;
+  }
+
+
+  PolyhedralMeshDomain domain(p, edge_size);
+
+  if (parameters["detect_sharp_features"])
+  {
+    log(dolfin::TRACE, "Detecting sharp features");
+
+    //const int feature_threshold = parameters["feature_threshold"];
+    domain.detect_features();
   }
   else
   {
@@ -292,12 +306,21 @@ void CSGCGALMeshGenerator3D::generate(dolfin::Mesh& mesh) const
                                      CGAL::parameters::cell_size = cell_size));
   }
 
+
+
   // Mesh generation
   log(dolfin::TRACE, "Generating mesh");
-  C3t3 c3t3 = CGAL::make_mesh_3<C3t3>(domain, 
-                                      *criteria,
-                                      CGAL::parameters::no_perturb(),
-                                      CGAL::parameters::no_exude());
+  C3t3 c3t3;
+  make_multicomponent_mesh_3_impl<C3t3>(c3t3,
+                                        domain,
+                                        *criteria,
+                                        CGAL::parameters::no_exude(),
+                                        CGAL::parameters::no_perturb(),
+                                        CGAL::parameters::no_odt(),
+                                        CGAL::parameters::no_lloyd(),
+                                        true);
+
+
 
   if (parameters["odt_optimize"])
   {
