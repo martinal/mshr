@@ -81,7 +81,7 @@ namespace mshr
 
     Type getType() const { return CSGGeometry::Box; }
 
-    dolfin::Point a, b;
+    const dolfin::Point a, b;
   };
 
   /// @brief A 3D cylinder
@@ -159,7 +159,7 @@ namespace mshr
     Type getType() const
     { return CSGGeometry::Tetrahedron; }
 
-    dolfin::Point a, b, c, d;
+    const dolfin::Point a, b, c, d;
   };
 
   /// @brief A triangular 3D surface read from file.
@@ -177,8 +177,8 @@ namespace mshr
     Type getType() const
     { return CSGGeometry::Surface3D; }
 
-    std::string _filename;
-    double degenerate_tolerance;
+    const std::string _filename;
+    const double degenerate_tolerance;
   };
 }
 #endif

@@ -25,15 +25,21 @@
 set(PYTHON_ENVIR "${CMAKE_BINARY_DIR}/swig:$ENV{PYTHONPATH};DOLFIN_NOPLOT=True")
 
 
-############# A python program that just imports dolfin and mshr ################
+############# A python program that just imports dolfin and mshr ##############################
 add_test("Python-DummyImport" "python" "${CMAKE_SOURCE_DIR}/test/dummy.py")
 set_property(TEST "Python-DummyImport" PROPERTY
     ENVIRONMENT "PYTHONPATH=${PYTHON_ENVIR}"
 )
 
+############# A union which is particularly prone to roundoff errors ##########################
+add_test("Python-DegenerateRemoval" "python" "${CMAKE_SOURCE_DIR}/test/degenerate_removal.py")
+set_property(TEST "Python-DegenerateRemoval" PROPERTY
+    ENVIRONMENT "PYTHONPATH=${PYTHON_ENVIR}"
+)
 
 
-############# Try meshing some surface files found in the cgal source ###########
+
+############# Try meshing some surface files found in the cgal source ########################
 # TODO: Print mesh quality measure from program and check the value
 set(CGAL_DATA_DIR "${CMAKE_SOURCE_DIR}/3rdparty/CGAL-4.4/demo/Polyhedron/data")
 
@@ -49,9 +55,7 @@ foreach(CURRENT_DATA_FILE IN LISTS TESTFILES_VALID)
 endforeach(CURRENT_DATA_FILE)
 
 
-############ Run the demos as regression test  #################################
-
-
+############ Run the demos as regression test ################################################
 file(GLOB PYTHONDEMOS "${CMAKE_SOURCE_DIR}/demo/python/*.py")
 foreach(CURRENT_DEMO IN LISTS PYTHONDEMOS)
   add_test("PythonDemo-${CURRENT_DEMO}" "python" "${CURRENT_DEMO}")

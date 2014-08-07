@@ -480,10 +480,8 @@ void make_surface3D(const Surface3D* s, Exact_Polyhedron_3& P)
 
   if (s->degenerate_tolerance > 0)
   {
-    std::size_t i = remove_degenerate(P, s->degenerate_tolerance);
-    if (i > 0)
-      log(dolfin::TRACE, "Removed %d degenerate facets from '%s'", 
-          i, 
+    if (remove_degenerate(P, s->degenerate_tolerance))
+      log(dolfin::TRACE, "Removed degenerate facets from '%s'",
           s->_filename.c_str());
   }
 }

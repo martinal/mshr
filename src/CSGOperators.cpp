@@ -263,16 +263,16 @@ CSGRotation::CSGRotation(std::shared_ptr<CSGGeometry> g,
     rot_axis(v),
     c(v),
     theta(theta),
-    translate(false)
+    translate(dim_ == 2 ? true : false)
 {
   assert(g);
 
   dim_ = g->dim();
 
-  if (dim_ == 2)
-    translate = true;
-  else
-    translate = false;
+  // if (dim_ == 2)
+  //   translate = true;
+  // else
+  //   translate = false;
 }
 //-----------------------------------------------------------------------------
 CSGRotation::CSGRotation(std::shared_ptr<CSGGeometry> g,

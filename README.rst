@@ -14,7 +14,13 @@ Authors:
 Contributors:
   | Anders Logg     <logg@chalmers.se>
   | Johannes Ring   <johannr@simula.no>
-  | Joachim Haga    <jobh@simula.no>
+  | Garth N. Wells  <gnw20@cam.ac.uk>
+
+Documentation
+=============
+
+The documentation is currently being prepared here: 
+`https://bitbucket.org/benjamik/mshr/wiki <https://bitbucket.org/benjamik/mshr/wiki>`_
 
 Installation
 ============
