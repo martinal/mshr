@@ -10,6 +10,7 @@
 
 import sys, os
 from xml.etree import ElementTree
+import subprocess
 
 input_dir = os.path.abspath(sys.argv[1])
 output_dir = os.path.abspath(sys.argv[2])
@@ -306,6 +307,9 @@ mainpage.append("- |%s|%s|\n" % ("**Other classes**".ljust(longest_class_name),
 mainpage.append("".join(others))
 mainpage.append("\n\n")
 
+# Read the current revision from git
+revision_info = subprocess.check_output(["git", "log", "--pretty=format:'%ad %H'", "-1"]).strip("'")
+mainpage.append("Generated from revision: {}\n\n".format(revision_info))
 mainpage.append("_NOTE: The API reference is generated from mshr header files. Please don't edit these file manually._")
 
 
