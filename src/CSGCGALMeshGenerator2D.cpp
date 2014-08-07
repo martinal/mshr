@@ -305,10 +305,10 @@ void CSGCGALMeshGenerator2D::generate(dolfin::Mesh& mesh)
   // added subdomain on top
   std::list<std::pair<std::size_t, std::shared_ptr<const CSGGeometry> > >::const_reverse_iterator it;
 
-  if (!geometry.subdomains.empty())
+  if (!geometry.get_subdomains().empty())
     log(dolfin::TRACE, "Processing subdomains");
 
-  for (it = geometry.subdomains.rbegin(); it != geometry.subdomains.rend();
+  for (it = geometry.get_subdomains().rbegin(); it != geometry.get_subdomains().rend();
        ++it)
   {
     const std::size_t current_index = it->first;

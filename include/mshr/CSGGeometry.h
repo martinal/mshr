@@ -34,14 +34,14 @@ namespace mshr
   /// Geometry described by Constructive Solid Geometry (CSG)
   class CSGGeometry : public dolfin::Variable
   {
-  public:
-
+   protected:
     /// Constructor
     CSGGeometry();
 
     /// Destructor
     virtual ~CSGGeometry();
 
+   public:
     /// Return dimension of geometry
     virtual std::size_t dim() const = 0;
 
@@ -53,13 +53,24 @@ namespace mshr
     /// cells in the resulting will be marked with i
     /// If subdomains overlap, the latest added will take precedence.
     void set_subdomain(std::size_t i, std::shared_ptr<CSGGeometry> s);
+
+    /// Define subdomain. This feature is 2D only.
+    /// The subdomain is itself a CSGGeometry and the corresponding
+    /// cells in the resulting will be marked with i
+    /// If subdomains overlap, the latest added will take precedence.
     void set_subdomain(std::size_t i, CSGGeometry& s);
+
+    /// Has subdomains been set
     bool has_subdomains() const;
 
+    const std::list<std::pair<std::size_t, std::shared_ptr<const CSGGeometry> > >& get_subdomains() const { return subdomains; }
+
     enum Type { Box, Sphere, Cylinder, Tetrahedron, Surface3D, Circle, Ellipse, Rectangle, Polygon, Union, Intersection, Difference, Translation, Scaling, Rotation };
+
     virtual Type getType() const = 0;
     virtual bool is_operator() const = 0;
 
+   private :
     std::list<std::pair<std::size_t, std::shared_ptr<const CSGGeometry> > > subdomains;
   };
 }
