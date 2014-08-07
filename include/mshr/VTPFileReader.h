@@ -29,6 +29,10 @@ namespace mshr
 class VTPFileReader
 {
 public:
+  /// @brief Read and parse a triangular 3d surface VTP file
+  /// @param filename The file to read
+  /// @param vertices A vector of points to be read into
+  /// @param facets A vector of facets given as indices to the vertex array.
   static void read(const std::string filename, 
                    std::vector<std::array<double, 3> > vertices,
                    std::vector<std::vector<std::size_t> > facets);
