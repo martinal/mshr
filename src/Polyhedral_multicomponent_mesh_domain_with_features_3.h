@@ -128,18 +128,17 @@ template<typename Set, typename Polyhedron>
 
   // If vertex is already visited, then return
   if (!v_insert.second)
-    return;
-
-  std::pair<typename Set::iterator, bool> res = set.insert(v->point());
-  if ( res.second )
   {
-    // std::cout << "Inserted recursively: " << v->point() << std::endl;
+    return;
   }
+
+  // Add point to set.
+  set.insert(v->point());
 
   typename Polyhedron::Halfedge_around_vertex_const_circulator start = v->vertex_begin(), current = start;
   do
   {
-    if ( set.size() == n )
+    if ( set.size() >= n )
       break;
 
     recursive_insert<Set, Polyhedron>(set, visited, current->opposite()->vertex(), n);
@@ -155,8 +154,6 @@ OutputIterator
 Polyhedral_multicomponent_mesh_domain_with_features_3<IGT_>::
 Construct_initial_points::operator()(OutputIterator pts, const int n) const
 {
-  std::cout << "Constructing initial points" << std::endl;
-
   typedef typename Polyhedral_multicomponent_mesh_domain_with_features_3::Polyhedron Polyhedron;
   typedef typename Polyhedron::Point_3 Point_3;
   typedef typename Polyhedron::Vertex_const_handle Vertex_const_handle;
@@ -164,7 +161,6 @@ Construct_initial_points::operator()(OutputIterator pts, const int n) const
   const Polyhedron& P  = r_domain_.polyhedron();
   std::list<Vertex_const_handle> components;
   get_disconnected_components(P, std::back_inserter(components));
-  std::cout << "Number of components: " << components.size() << std::endl;
 
   // Collect inserted points in a set with a fuzzy comparison operator
   // to ensure no points closer than the tolerance are inserted.
@@ -175,13 +171,11 @@ Construct_initial_points::operator()(OutputIterator pts, const int n) const
   //const CompareFunctor cf(edge_size);
   // TODO: Tune this parameter
   const double tolerance = edge_size*3;
-  std::cout << "Tolerance: " << tolerance << std::endl;
   FuzzyPointSet inserted_points(CompareFunctor(tolerance*tolerance));
 
   std::size_t current_index;
   {
     // get corners
-    std::cout << "Getting corners" << std::endl;
     std::vector<std::pair<int, Point_3> > corners;
     r_domain_.get_corners(std::back_inserter(corners));
     current_index = corners.size();
@@ -193,15 +187,13 @@ Construct_initial_points::operator()(OutputIterator pts, const int n) const
     }
   }
 
+  // Insert n suraface points from each disconnected component
   for (typename std::list<Vertex_const_handle>::iterator it = components.begin();
        it != components.end(); it++)
   {
     Vertex_const_handle current = *it;
-    std::cout << "Inserting recursively" << std::endl;
-    recursive_insert<FuzzyPointSet, Polyhedron>(inserted_points, visited, current, n);
-    std::cout << "Inserted " << inserted_points.size() << " points from disconnected part" << std::endl;
+    recursive_insert<FuzzyPointSet, Polyhedron>(inserted_points, visited, current, n+inserted_points.size());
   }
-
 
   for (auto it = inserted_points.begin(); it != inserted_points.end(); it++)
   {
