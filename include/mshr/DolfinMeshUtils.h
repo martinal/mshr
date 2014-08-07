@@ -24,6 +24,8 @@
 class DolfinMeshUtils
 {
  public:
+  /// Compute the smallest and largest cell wrt. volume.
+  /// @param m The mesh
   static std::pair<double, double> cell_volume_min_max(const dolfin::Mesh& m);
 };
 
