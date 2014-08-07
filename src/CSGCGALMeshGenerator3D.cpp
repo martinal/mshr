@@ -271,6 +271,12 @@ void CSGCGALMeshGenerator3D::generate(dolfin::Mesh& mesh) const
   }
   else
   {
+    // Try to compute reasonable parameters
+    const double mesh_resolution = parameters["mesh_resolution"];
+    const double r = get_bounding_sphere_radius(p);
+    const double cell_size = r/mesh_resolution*2.0;
+    log(dolfin::TRACE, "Computing meshing criterias. Chose cell size %f", cell_size);
+
     criteria.reset(new Mesh_criteria(CGAL::parameters::edge_size = cell_size,
                                      CGAL::parameters::facet_angle = 30.0,
                                      CGAL::parameters::facet_size = cell_size,
