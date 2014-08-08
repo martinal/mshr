@@ -47,28 +47,48 @@ class CSGCGALDomain3D : public dolfin::Variable
   /// @brief Destructor
   ~CSGCGALDomain3D();
 
+  /// @brief Number of vertices in polyhedron
   std::size_t num_vertices() const;
+
+  /// @brief Number of facets in polyhedron
   std::size_t num_facets() const;
+
+  /// @brief Number of halfedges in polyhedron
   std::size_t num_halfedges() const;
 
+  /// @brief Volume of polyhedron (experimental, use with care)
   double volume() const;
+
+  /// @brief Is polyhedron  (experimental, use with care)
   bool is_insideout() const;
+
+  /// @brief Count the number of degenerate facets wrt. the given tolerance
   std::size_t num_degenerate_facets(double threshold) const;
+
+  /// @brief get length of shortest edge
   double shortest_edge() const;
+
+  /// @brief Test if any facets intersects
   bool is_selfintersecting() const;
 
+  /// @brief Save polyhedron to off file
+  /// @param filename Filename to write to
   void save_off(std::string filename) const;
 
-  /// @brief Output in double precision
   // TODO: Define iterators to be more memory friendly
+
+  /// @brief Output vertices in double precision
   void get_vertices(std::vector<dolfin::Point> &v) const;
+
+  /// @brief Output facets as indices to the vertices array
   void get_facets(std::vector<std::array<std::size_t, 3> > &f) const;
 
+
+  /// @brief Attempt to remove degenerate facets.
   void remove_degenerate_facets(double tolerance);
 
-  // This functions attempts to ensure that the preconditions
-  // for successfull meshing are fullfilled.
-  // Checks can be skipped with the parameter system
+  /// @brief Attempts to ensure that the preconditions
+  /// for successfull meshing generation are fullfilled.
   void ensure_meshing_preconditions();
 
   /// Default parameter values
@@ -81,7 +101,8 @@ class CSGCGALDomain3D : public dolfin::Variable
     return p;
   }
 
-  /// Informal string representation
+  /// @brief Informal string representation
+  /// @param verbose The verbosity level
   std::string str(bool verbose) const;
 
  private :

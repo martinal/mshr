@@ -32,17 +32,21 @@ namespace mshr
 
   class CSGGeometry;
 
-  /// Mesh generator for Constructive Solid Geometry (CSG)
+  /// @brief Mesh generator for Constructive Solid Geometry (CSG)
   /// utilizing CGALs 2D Regularized Boolean Set-Operations
   class CSGCGALMeshGenerator2D : public dolfin::Variable
   {
   public :
 
+    /// @brief Create mesh generator from CSG geometry
     CSGCGALMeshGenerator2D(const CSGGeometry& geometry);
     //CSGCGALMeshGenerator2D(const std::vector<std::shared_ptr<const CSGGeometry> >& subdomains);
 
+    /// @brief Destructor
     ~CSGCGALMeshGenerator2D();
 
+    /// @brief Generate mesh
+    /// @param mesh The Dolfin mesh object to be returned. Will ble cleared.
     void generate(dolfin::Mesh& mesh);
 
     /// Default parameter values

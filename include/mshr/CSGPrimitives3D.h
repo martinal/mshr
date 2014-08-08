@@ -55,8 +55,7 @@ namespace mshr
     /// @param verbose  Verbosity level
     std::string str(bool verbose) const;
 
-    Type getType() const
-    { return CSGGeometry::Sphere; }
+    Type getType() const { return CSGGeometry::Sphere; }
 
     const dolfin::Point c;
     const double r;

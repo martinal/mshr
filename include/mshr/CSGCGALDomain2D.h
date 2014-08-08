@@ -29,30 +29,46 @@ namespace mshr
 // Forward declaration
 struct CSGCGALDomain2DImpl;
 
+/// @brief Polygonal meshing domain
+///
+/// Represents the polygonal meshing domain to be sent to the mesh
+/// generator. It uses CGAL's Polygon_2 as backend and utilizied CGAL's 
+/// 2D Regularized Boolean Set-Operations package.
 class CSGCGALDomain2D : public dolfin::Variable
 {
  public:
-  // Create empty polygon
+  /// @brief Create empty polygon
   CSGCGALDomain2D();
 
-  // Construct polygon from Dolfin CSG geometry
+  /// @brief Construct polygon from Dolfin CSG geometry
   CSGCGALDomain2D(const mshr::CSGGeometry *csg);
 
-  // Destructor
+  /// @brief Destructor
   ~CSGCGALDomain2D();
 
-  // Copy constructor
+  /// @brief Copy constructor
   CSGCGALDomain2D(const CSGCGALDomain2D &other);
+
+  /// @brief Assignment operator
   CSGCGALDomain2D &operator=(const CSGCGALDomain2D &other);
 
-  // Boolean operators
+  /// @brief Boolean join
   void join_inplace(const CSGCGALDomain2D& other);
+
+  /// @brief Boolean intersection
   void intersect_inplace(const CSGCGALDomain2D& other);
+
+  /// @brief Boolean difference
   void difference_inplace(const CSGCGALDomain2D& other);
 
+  /// @brief Determine if point is inside the polygon.
   bool point_in_domain(dolfin::Point p) const;
+
+  /// @brief Compute the radius of the minimum bounding circle.
   double compute_boundingcircle_radius() const ;
-  
+
+  /// @brief Informal string representation
+  /// @param verbose Verbosity level
   std::string str(bool verbose) const;
 
  private:

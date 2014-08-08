@@ -37,15 +37,21 @@ namespace mshr
   class CSGCGALMeshGenerator3D : public dolfin::Variable
   {
   public :
+
+    /// @brief Create mesh generator with a CSG geometry
     CSGCGALMeshGenerator3D(const CSGGeometry& geometry);
 
+    /// @brief Create mesh generator with a CSG geometry
     CSGCGALMeshGenerator3D(std::shared_ptr<const CSGGeometry> geometry);
 
+    /// @brief Destructor
     ~CSGCGALMeshGenerator3D();
 
+    /// @brief Generate Dolfin mesh
+    /// @param mesh The mesh object to be filled. Will be cleared.
     void generate(dolfin::Mesh& mesh) const;
 
-    /// Default parameter values
+    /// @brief Default parameter values
     static dolfin::Parameters default_parameters()
     {
       dolfin::Parameters p("csg_cgal_meshgenerator");
