@@ -24,6 +24,7 @@ class GlobalInitializer
   GlobalInitializer();
   ~GlobalInitializer();
 
+  /// The singleton instance of the GlobalInitializer.
   static GlobalInitializer& instance();
 };
 

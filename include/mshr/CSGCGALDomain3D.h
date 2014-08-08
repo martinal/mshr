@@ -30,19 +30,21 @@ namespace mshr
   // Forward declaration
   struct CSGCGALDomain3DImpl;
 
-
-// This class represents the polyhedral domain which implements boolean
-// operations. It uses CGAL as backend
+/// @brief A polyhedron meshing domain.
+///
+/// This class represents a polyhedral meshing domain which implements boolean
+/// operations. It uses CGAL Polyhedron_3 as backend and utilizes CGAL
+//  Nef_polyhedron for boolean operations.
 class CSGCGALDomain3D : public dolfin::Variable
 {
  public:
-  // Create empty polyhedron
+  /// @brief Create empty polyhedron
   CSGCGALDomain3D();
 
-  // Construct polyhedron from CSG geometry
+  /// @brief Construct polyhedron from CSG geometry
   CSGCGALDomain3D(const mshr::CSGGeometry &csg);
 
-  // Destructor
+  /// @brief Destructor
   ~CSGCGALDomain3D();
 
   std::size_t num_vertices() const;
@@ -57,7 +59,7 @@ class CSGCGALDomain3D : public dolfin::Variable
 
   void save_off(std::string filename) const;
 
-  // Output in double precision
+  /// @brief Output in double precision
   // TODO: Define iterators to be more memory friendly
   void get_vertices(std::vector<dolfin::Point> &v) const;
   void get_facets(std::vector<std::array<std::size_t, 3> > &f) const;

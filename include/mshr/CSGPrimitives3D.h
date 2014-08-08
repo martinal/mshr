@@ -38,6 +38,8 @@ namespace mshr
   };
 
   /// @brief A 3D sphere
+  ///
+  /// { "small-icon" : "sphere-small.png" }
   class Sphere : public CSGPrimitive3D
   {
   public:
@@ -62,6 +64,8 @@ namespace mshr
   };
 
   /// @brief A 3D axis aligned box
+  ///
+  /// { "small-icon" : "box-small.png" }
   class Box : public CSGPrimitive3D
   {
   public:
@@ -81,6 +85,8 @@ namespace mshr
   };
 
   /// @brief A 3D cylinder
+  ///
+  /// { "small-icon" : "cylinder-small.png" }
   class Cylinder : public CSGPrimitive3D
   {
   public:
@@ -114,6 +120,8 @@ namespace mshr
 
   /// @brief A 3D cone. 
   /// A cone is here just a special case of a cylinder.
+  ///
+  /// { "small-icon" : "cone-small.png" }
   class Cone : public Cylinder
   {
   public:
@@ -128,6 +136,8 @@ namespace mshr
   };
 
   /// @brief A 3D tetrahedron
+  ///
+  /// { "small-icon" : "tetrahedron-small.png" }
   class Tetrahedron : public CSGPrimitive3D
   {
   public:
@@ -152,7 +162,9 @@ namespace mshr
     const dolfin::Point a, b, c, d;
   };
 
-  /// @brief A triangular 3D surface file
+  /// @brief A triangular 3D surface read from file.
+  ///
+  /// { "small-icon" : "disk-small.png" }
   class Surface3D : public CSGPrimitive3D
   {
   public:

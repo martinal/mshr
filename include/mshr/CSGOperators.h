@@ -109,8 +109,8 @@ namespace mshr
     public:
 
     /// @brief create translation 
-    /// @param a CSG geometry
-    /// @param the translation vector
+    /// @param g a CSG geometry
+    /// @param t the translation vector
     CSGTranslation(std::shared_ptr<CSGGeometry> g,
                    dolfin::Point t);
 
@@ -159,23 +159,24 @@ namespace mshr
   {
    public:
     /// @brief Create 2D rotation (2D only)
-    /// @param g a CSG geometry
-    /// @param rotate by theta
+    /// @param g A CSG geometry
+    /// @param theta Rotate by theta
     CSGRotation(std::shared_ptr<CSGGeometry> g,
                              double theta);
 
     /// @brief Create rotation
-    /// @param g a CSG geometry
+    /// @param g A CSG geometry
     /// @param v In 2D: the rotation center. In 3D: the rotation axis.
+    /// @param theta Radians to rotate.
     CSGRotation(std::shared_ptr<CSGGeometry> g,
                 dolfin::Point v,
                 double theta);
 
     /// @brief create 3D rotation 
-    /// @param g a CSG geometry
+    /// @param g A CSG geometry
     /// @param rot_axis The rotation axis
     /// @param rot_center The rotation center
-    /// @param Radians to rotate
+    /// @param theta Radians to rotate
     CSGRotation(std::shared_ptr<CSGGeometry> g,
                 dolfin::Point rot_axis,
                 dolfin::Point rot_center,

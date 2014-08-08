@@ -75,6 +75,8 @@ namespace mshr
   };
 
   /// @brief A 2D ellipse
+  ///
+  /// { "small-icon" : "ellipse-small.png" }
   class Ellipse : public CSGPrimitive2D
   {
   public:
@@ -113,6 +115,8 @@ namespace mshr
   };
 
   /// @brief A 2D axis aligned rectangle
+  ///
+  /// { "small-icon" : "rectangle-small.png" }
   class Rectangle : public CSGPrimitive2D
   {
   public:
@@ -141,7 +145,7 @@ namespace mshr
 
   /// @brief A 2D polygon
   ///
-  /// { 'large-icon' : 'icons/polygon-large.png', 'small-icon' : 'icons/polygon-small.png' }
+  /// { 'large-icon' : 'polygon-large.png', 'small-icon' : 'polygon-small.png' }
   class Polygon : public CSGPrimitive2D
   {
   public:

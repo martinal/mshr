@@ -10,6 +10,7 @@
 
 import sys, os
 from xml.etree import ElementTree
+import subprocess
 
 input_dir = os.path.abspath(sys.argv[1])
 output_dir = os.path.abspath(sys.argv[2])
@@ -30,14 +31,12 @@ def get_parameter_documentation(functiondefinition, declname) :
     if para is not None :
         paralist = para.find("parameterlist")
         if paralist is not None :
-            print "Has parameters"
             items = paralist.findall("parameteritem")
             for parameteritem in items :
                 name = parameteritem.find("parameternamelist").find("parametername").text.strip()
 
                 if name == declname.strip() :
                     # We got the right parameter
-                    print "Hit!"
                     description = parameteritem.find("parameterdescription")
                     if description is not None :
                         para = description.find("para")
@@ -53,7 +52,6 @@ def get_extra_data(classdefinition) :
     for para in paragraphs :
         text = para.text.strip()
         if text.startswith("{") and text.endswith("}") :
-            print "Found extra data"
             return eval(text)
     return {}
 
@@ -96,11 +94,7 @@ for filename in os.listdir(input_dir) :
     extra_data = get_extra_data(class_def)
     data.update(extra_data)
 
-    # print data["filename"]
-
     cls[class_def.attrib["id"]] = (class_def, data)
-
-print len(cls)
 
 longest_class_name  = max([ len(c[0].find("compoundname").text) for k, c in cls.iteritems()])
 longest_description = max([ len(c[1]["description"]) for k, c in cls.iteritems()])
@@ -164,9 +158,10 @@ for k,c in cls.iteritems() :
                 current = None
 
 
-        icon_txt = ""
+        icon_txt = " |"
         if c[1].has_key("small-icon") :
-            icon_txt = "![%s icon](%s)" % (classname, c[1]["small-icon"])
+            icon_txt = "![%s icon](icons/%s)|" % (classname, c[1]["small-icon"])
+
         category.append("%s[%s](API/%s)|%s|\n" % (icon_txt,
                                                   classname.ljust(longest_class_name), 
                                                   c[1]["filename"],
@@ -190,10 +185,9 @@ for k,c in cls.iteritems() :
 
         for definition in member.findall("memberdef") :
             membername = definition.find("name").text
-            print membername
+
             argsstr    = definition.find("argsstring").text
             description = definition.find("briefdescription").find("para")
-            # print "  "+membername
             description = description.text.strip() if description is not None else ""
 
             returntype = definition.find("type").text
@@ -219,7 +213,7 @@ for k,c in cls.iteritems() :
                 paramtype = param.find("type").text
                 if paramtype is None :
                     paramtype = ""
-                    print "NONE!", declname
+
                 desc = get_parameter_documentation(definition, declname)
                 param_table.append( (declname, paramtype, desc) )
                 
@@ -258,11 +252,11 @@ mainpage = ["""
 
 """]
 
-mainpage.append("%s|%s|\n" % ("2D primitives".ljust(longest_class_name),
-                              "Description".ljust(longest_description)))
+mainpage.append("- |%s|%s|\n" % ("2D primitives".ljust(longest_class_name),
+                                "Description".ljust(longest_description)))
 
-mainpage.append("%s|%s|\n" % ( ":".ljust(longest_class_name, "-"),
-                               ":".ljust(longest_description, "-")))
+mainpage.append("--|%s|%s|\n" % ( ":".ljust(longest_class_name, "-"),
+                                 ":".ljust(longest_description, "-")))
 
 
 ################# Append 2D primitives
@@ -276,7 +270,7 @@ mainpage.append("".join(primitives2d))
 #mainpage.append("\n\n")
 
 ################ Append 3D primitives
-mainpage.append("%s|%s|\n" % ("**3D primitives**".ljust(longest_class_name),
+mainpage.append("- |%s|%s|\n" % ("**3D primitives**".ljust(longest_class_name),
                               " "*longest_description))
 
 # mainpage.append("%s|%s|\n" % ( ":".ljust(longest_class_name, "-"),
@@ -286,7 +280,7 @@ mainpage.append("".join(primitives3d))
 #mainpage.append("\n\n")
 
 ############### Append operators
-mainpage.append("%s|%s|\n" % ("**Operators**".ljust(longest_class_name),
+mainpage.append("- |%s|%s|\n" % ("**Operators**".ljust(longest_class_name),
                               " "*longest_description))
 
 # mainpage.append("%s|%s|\n" % ( ":".ljust(longest_class_name, "-"),
@@ -296,7 +290,7 @@ mainpage.append("".join(operators))
 # mainpage.append("\n\n")
 
 ############### Append other classes
-mainpage.append("%s|%s|\n" % ("**Other classes**".ljust(longest_class_name),
+mainpage.append("- |%s|%s|\n" % ("**Other classes**".ljust(longest_class_name),
                               " "*longest_description))
 
 # mainpage.append("%s|%s|\n" % ( ":".ljust(longest_class_name, "-"),
@@ -305,7 +299,9 @@ mainpage.append("%s|%s|\n" % ("**Other classes**".ljust(longest_class_name),
 mainpage.append("".join(others))
 mainpage.append("\n\n")
 
-mainpage.append("_NOTE: The API reference is generated from mshr header files. Please don't edit these file manually._")
+# Read the current revision from git
+revision_info = subprocess.check_output(["git", "log", "--pretty=format:'%ad %H'", "-1"]).strip("'")
+mainpage.append("_Generated from revision: {}. Please don't edit these files manually._\n".format(revision_info))
 
 
 

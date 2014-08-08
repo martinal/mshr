@@ -29,9 +29,11 @@ namespace mshr
   // Forward declaration
   class CSGGeometry;
 
-  /// Mesh generator for Constructive Solid Geometry (CSG)
-  /// utilizing CGALs boolean operation on Nef_polyhedrons.
-
+  /// @brief Mesh generator for Constructive Solid Geometry (CSG)
+  /// utilizing CGALs 3D Mesh generation package.
+  ///
+  /// This class gives access to the backend specific meshing
+  /// criterias throught the parameter system.
   class CSGCGALMeshGenerator3D : public dolfin::Variable
   {
   public :
