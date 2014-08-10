@@ -44,9 +44,9 @@ void generate(dolfin::Mesh& mesh,
   {
     if (backend == "cgal")
     {
-      CSGCGALMeshGenerator3D generator(geometry);
+      CSGCGALMeshGenerator3D generator;
       generator.parameters["mesh_resolution"] = resolution;
-      generator.generate(mesh);
+      generator.generate(geometry, mesh);
     }
     else if (backend == "tetgen")
     {

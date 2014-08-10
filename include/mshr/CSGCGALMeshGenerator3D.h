@@ -37,13 +37,11 @@ namespace mshr
   class CSGCGALMeshGenerator3D : public dolfin::Variable
   {
   public :
-    CSGCGALMeshGenerator3D(const CSGGeometry& geometry);
-
-    CSGCGALMeshGenerator3D(std::shared_ptr<const CSGGeometry> geometry);
+    CSGCGALMeshGenerator3D();
 
     ~CSGCGALMeshGenerator3D();
 
-    void generate(dolfin::Mesh& mesh) const;
+    void generate(const CSGGeometry& geometry, dolfin::Mesh& mesh) const;
 
     /// Default parameter values
     static dolfin::Parameters default_parameters()
@@ -64,9 +62,6 @@ namespace mshr
 
       return p;
     }
-
-  private:
-    std::shared_ptr<const CSGGeometry> _geometry;
   };
 
 }

@@ -33,13 +33,13 @@ dolfin.info(domain, True)
 
 # Creating a mesh generator object gives access to parameters of the
 # meshing backend
-generator = CSGCGALMeshGenerator3D(domain)
+generator = CSGCGALMeshGenerator3D()
 generator.parameters["edge_size"] = 0.025
 generator.parameters["facet_angle"] = 25.0
 generator.parameters["facet_size"] = 0.05
 
 m = dolfin.Mesh()
-generator.generate(m)
+generator.generate(domain, m)
 
 dolfin.plot(m, "3D mesh")
 

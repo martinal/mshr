@@ -210,22 +210,15 @@ double get_bounding_sphere_radius(const MeshPolyhedron_3& polyhedron)
 //-----------------------------------------------------------------------------
 namespace mshr
 {
-CSGCGALMeshGenerator3D::CSGCGALMeshGenerator3D(const CSGGeometry& geometry)
-{
-  std::shared_ptr<const CSGGeometry> tmp = dolfin::reference_to_no_delete_pointer<const CSGGeometry>(geometry);
-  _geometry = tmp;
-  parameters = default_parameters();
-}
-//-----------------------------------------------------------------------------
-CSGCGALMeshGenerator3D::CSGCGALMeshGenerator3D(std::shared_ptr<const CSGGeometry> geometry)
-  : _geometry(geometry)
+CSGCGALMeshGenerator3D::CSGCGALMeshGenerator3D()
 {
   parameters = default_parameters();
 }
 //-----------------------------------------------------------------------------
 CSGCGALMeshGenerator3D::~CSGCGALMeshGenerator3D() {}
 //-----------------------------------------------------------------------------
-void CSGCGALMeshGenerator3D::generate(dolfin::Mesh& mesh) const
+void CSGCGALMeshGenerator3D::generate(const CSGGeometry& geometry,
+                                      dolfin::Mesh& mesh) const
 {
   // Create CGAL mesh domain
   MeshPolyhedron_3 p;
@@ -233,11 +226,10 @@ void CSGCGALMeshGenerator3D::generate(dolfin::Mesh& mesh) const
   {
     // Put inside brackets to delete the exact polyhedron
     // before the meshing starts.
-    CSGCGALDomain3D exact_domain(*_geometry);
+    CSGCGALDomain3D exact_domain(geometry);
     exact_domain.ensure_meshing_preconditions();
 
     convert_to_inexact(exact_domain, p, !exact_domain.is_insideout());
-
   }
 
 
