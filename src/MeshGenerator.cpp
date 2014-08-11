@@ -36,9 +36,9 @@ void generate(dolfin::Mesh& mesh,
 {
   if (geometry.dim() == 2)
   {
-    CSGCGALMeshGenerator2D generator(geometry);
+    CSGCGALMeshGenerator2D generator;
     generator.parameters["mesh_resolution"] = resolution;
-    generator.generate(mesh);
+    generator.generate(geometry, mesh);
   }
   else if (geometry.dim() == 3)
   {
