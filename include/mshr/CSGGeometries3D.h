@@ -36,11 +36,9 @@ namespace mshr
     // knobs and height n2. The height should be 1 for a thin brick or 3
     // for a regular brick.
     static std::shared_ptr<CSGGeometry> lego(std::size_t n0, 
-                                               std::size_t n1,
-                                               std::size_t n2, 
-                                               double x0,
-                                               double x1, 
-                                               double x2);
+                                             std::size_t n1,
+                                             std::size_t n2,
+                                             dolfin::Point x = dolfin::Point(0,0,0));
 
     // A simple propeller with parameters r - radius of center body, R - length of blades,
     // w - width of blades and h - thicknes of blades
