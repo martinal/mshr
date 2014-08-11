@@ -104,6 +104,8 @@ namespace mshr
   };
 
   /// @brief Translate CSG geometry by vector
+  ///
+  /// { 'small-icon' : 'translation-small.png' }
   class CSGTranslation : public CSGOperator
   {
     public:
@@ -124,6 +126,8 @@ namespace mshr
   };
 
   /// @brief Scale CSG geometry
+  ///
+  /// { 'small-icon' : 'scaling-small.png' }
   class CSGScaling : public CSGOperator
   {
    public:
@@ -155,6 +159,8 @@ namespace mshr
   };
 
   /// @brief Rotate CSG geometry
+  ///
+  /// { 'small-icon' : 'rotation-small.png' }
   class CSGRotation : public CSGOperator
   {
    public:
