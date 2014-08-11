@@ -35,11 +35,10 @@ namespace mshr
   class TetgenMeshGenerator3D : public dolfin::Variable
   {
   public :
-    TetgenMeshGenerator3D(const CSGGeometry& geometry);
-    TetgenMeshGenerator3D(std::shared_ptr<const CSGGeometry> geometry);
+    TetgenMeshGenerator3D();
     ~TetgenMeshGenerator3D();
 
-    void generate(dolfin::Mesh& mesh) const;
+    void generate(const CSGGeometry& geometry, dolfin::Mesh& mesh) const;
 
     /// Default parameter values
     static dolfin::Parameters default_parameters()

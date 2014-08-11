@@ -102,25 +102,16 @@ double bounding_sphere_radius(const std::vector<dolfin::Point>& vertices)
 namespace mshr
 {
 
-TetgenMeshGenerator3D::TetgenMeshGenerator3D(const CSGGeometry& geometry)
-{
-  std::shared_ptr<const CSGGeometry> tmp = dolfin::reference_to_no_delete_pointer<const CSGGeometry>(geometry);
-  _geometry = tmp;
-  parameters = default_parameters();
-}
-//-----------------------------------------------------------------------------
-TetgenMeshGenerator3D::TetgenMeshGenerator3D(std::shared_ptr<const CSGGeometry> geometry)
-: _geometry(geometry)
+TetgenMeshGenerator3D::TetgenMeshGenerator3D()
 {
   parameters = default_parameters();
 }
 //-----------------------------------------------------------------------------
 TetgenMeshGenerator3D::~TetgenMeshGenerator3D()
 {
-
 }
 //-----------------------------------------------------------------------------
-void TetgenMeshGenerator3D::generate(dolfin::Mesh& mesh) const
+void TetgenMeshGenerator3D::generate(const CSGGeometry& geometry, dolfin::Mesh& mesh) const
 {
   tetgenio in;
 

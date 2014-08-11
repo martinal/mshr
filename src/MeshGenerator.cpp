@@ -50,9 +50,9 @@ void generate(dolfin::Mesh& mesh,
     }
     else if (backend == "tetgen")
     {
-      TetgenMeshGenerator3D generator(geometry);
+      TetgenMeshGenerator3D generator;
       generator.parameters["mesh_resolution"] = resolution;
-      generator.generate(mesh);
+      generator.generate(geometry, mesh);
 
     }
     else
