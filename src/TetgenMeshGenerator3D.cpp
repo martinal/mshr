@@ -17,7 +17,6 @@
 //
 
 #include <mshr/TetgenMeshGenerator3D.h>
-#include <mshr/CSGCGALDomain3D.h>
 
 #include <dolfin/mesh/Mesh.h>
 #include <dolfin/mesh/MeshEditor.h>
@@ -102,38 +101,36 @@ double bounding_sphere_radius(const std::vector<dolfin::Point>& vertices)
 namespace mshr
 {
 
-TetgenMeshGenerator3D::TetgenMeshGenerator3D(const CSGGeometry& geometry)
-{
-  std::shared_ptr<const CSGGeometry> tmp = dolfin::reference_to_no_delete_pointer<const CSGGeometry>(geometry);
-  _geometry = tmp;
-  parameters = default_parameters();
-}
-//-----------------------------------------------------------------------------
-TetgenMeshGenerator3D::TetgenMeshGenerator3D(std::shared_ptr<const CSGGeometry> geometry)
-: _geometry(geometry)
+TetgenMeshGenerator3D::TetgenMeshGenerator3D()
 {
   parameters = default_parameters();
 }
 //-----------------------------------------------------------------------------
 TetgenMeshGenerator3D::~TetgenMeshGenerator3D()
 {
-
 }
 //-----------------------------------------------------------------------------
-void TetgenMeshGenerator3D::generate(dolfin::Mesh& mesh) const
+void TetgenMeshGenerator3D::generate(const CSGGeometry& geometry, dolfin::Mesh& mesh) const
 {
-  tetgenio in;
+  std::shared_ptr<CSGCGALDomain3D> exact_domain( new CSGCGALDomain3D(geometry) );
+  exact_domain->ensure_meshing_preconditions();
 
+  generate(std::move(exact_domain), mesh);
+}
+
+//-----------------------------------------------------------------------------
+void TetgenMeshGenerator3D::generate(std::shared_ptr<const CSGCGALDomain3D> domain, dolfin::Mesh& mesh) const
+{
   std::vector<dolfin::Point> vertices;
   std::vector<std::array<std::size_t, 3> > facets;
-  
-  {
-    CSGCGALDomain3D exact_domain(*_geometry);
-    exact_domain.ensure_meshing_preconditions();
-    exact_domain.get_vertices(vertices);
-    exact_domain.get_facets(facets);
-  }
 
+  domain->get_vertices(vertices);
+  domain->get_facets(facets);
+
+  // Release domain object, possibly deleting it
+  domain.reset();
+
+  tetgenio in;
 
   // Copy the vertices to the tetgen structure
   in.numberofpoints = vertices.size();

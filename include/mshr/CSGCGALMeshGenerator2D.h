@@ -38,16 +38,16 @@ namespace mshr
   {
   public :
 
-    /// @brief Create mesh generator from CSG geometry
-    CSGCGALMeshGenerator2D(const CSGGeometry& geometry);
-    //CSGCGALMeshGenerator2D(const std::vector<std::shared_ptr<const CSGGeometry> >& subdomains);
+    /// @brief Create mesh generator
+    CSGCGALMeshGenerator2D();
 
     /// @brief Destructor
     ~CSGCGALMeshGenerator2D();
 
     /// @brief Generate mesh
+    /// @param geometry The geometry to be meshed
     /// @param mesh The Dolfin mesh object to be returned. Will ble cleared.
-    void generate(dolfin::Mesh& mesh);
+    void generate(const CSGGeometry& geometry, dolfin::Mesh& mesh);
 
     /// Default parameter values
     static dolfin::Parameters default_parameters()
@@ -66,10 +66,6 @@ namespace mshr
 
       return p;
     }
-
-  private:
-    const CSGGeometry& geometry;
-
   };
 
 }

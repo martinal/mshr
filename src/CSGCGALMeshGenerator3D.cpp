@@ -210,36 +210,23 @@ double get_bounding_sphere_radius(const MeshPolyhedron_3& polyhedron)
 //-----------------------------------------------------------------------------
 namespace mshr
 {
-CSGCGALMeshGenerator3D::CSGCGALMeshGenerator3D(const CSGGeometry& geometry)
-{
-  std::shared_ptr<const CSGGeometry> tmp = dolfin::reference_to_no_delete_pointer<const CSGGeometry>(geometry);
-  _geometry = tmp;
-  parameters = default_parameters();
-}
-//-----------------------------------------------------------------------------
-CSGCGALMeshGenerator3D::CSGCGALMeshGenerator3D(std::shared_ptr<const CSGGeometry> geometry)
-  : _geometry(geometry)
+CSGCGALMeshGenerator3D::CSGCGALMeshGenerator3D()
 {
   parameters = default_parameters();
 }
 //-----------------------------------------------------------------------------
 CSGCGALMeshGenerator3D::~CSGCGALMeshGenerator3D() {}
 //-----------------------------------------------------------------------------
-void CSGCGALMeshGenerator3D::generate(dolfin::Mesh& mesh) const
+void CSGCGALMeshGenerator3D::generate(std::shared_ptr<const CSGCGALDomain3D> csgdomain,
+                                      dolfin::Mesh& mesh) const
 {
   // Create CGAL mesh domain
   MeshPolyhedron_3 p;
+  convert_to_inexact(*csgdomain, p, !csgdomain->is_insideout());
 
-  {
-    // Put inside brackets to delete the exact polyhedron
-    // before the meshing starts.
-    CSGCGALDomain3D exact_domain(*_geometry);
-    exact_domain.ensure_meshing_preconditions();
-
-    convert_to_inexact(exact_domain, p, !exact_domain.is_insideout());
-
-  }
-
+  // Reset the (memory consuming exact arithmetic) domain object
+  // will be deleted if the pointer has been moved to the function
+  csgdomain.reset();
 
   // Workaround, cgal segfaulted when assigning new mesh criterias
   // within the if-else blocks.
@@ -356,4 +343,29 @@ void CSGCGALMeshGenerator3D::generate(dolfin::Mesh& mesh) const
   build_dolfin_mesh(c3t3, mesh);
 }
 //-----------------------------------------------------------------------------
+void CSGCGALMeshGenerator3D::generate(const CSGGeometry& geometry,
+                                      dolfin::Mesh& mesh) const
+{
+  generate(reference_to_no_delete_pointer(geometry), mesh);
+
+  std::shared_ptr<CSGCGALDomain3D> exact_domain( new CSGCGALDomain3D(geometry) );
+  exact_domain->ensure_meshing_preconditions();
+
+  // Use move semantics, so the callee can delete the object as early as possible
+  generate(std::move(exact_domain), mesh);
+}
+//-----------------------------------------------------------------------------
+void CSGCGALMeshGenerator3D::generate(std::shared_ptr<const CSGGeometry> geometry,
+                                      dolfin::Mesh& mesh) const
+{
+  std::shared_ptr<CSGCGALDomain3D> exact_domain( new CSGCGALDomain3D(*geometry) );
+  geometry.reset();
+  exact_domain->ensure_meshing_preconditions();
+
+  // Use move semantics, so the callee can delete the object as early as possible
+  generate(std::move(exact_domain), mesh);
+}
+//-----------------------------------------------------------------------------
+
+
 }
