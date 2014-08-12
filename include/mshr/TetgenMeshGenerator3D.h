@@ -18,6 +18,8 @@
 #ifndef __MSHR_TETGEN_MESH_GENERATOR3D_H
 #define __MSHR_TETGEN_MESH_GENERATOR3D_H
 
+#include <mshr/CSGCGALDomain3D.h>
+
 #include <dolfin/common/Variable.h>
 #include <memory>
 
@@ -38,6 +40,7 @@ namespace mshr
     TetgenMeshGenerator3D();
     ~TetgenMeshGenerator3D();
 
+    void generate(std::shared_ptr<const CSGCGALDomain3D> domain, dolfin::Mesh& mesh) const;
     void generate(const CSGGeometry& geometry, dolfin::Mesh& mesh) const;
 
     /// Default parameter values
@@ -55,11 +58,7 @@ namespace mshr
 
       return p;
     }
-
-  private:
-    std::shared_ptr<const CSGGeometry> _geometry;
   };
-
 }
 
 #endif
