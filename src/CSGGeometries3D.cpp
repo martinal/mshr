@@ -49,11 +49,16 @@ std::shared_ptr<CSGGeometry> CSGGeometries::lego(std::size_t n0,
   {
     for (std::size_t j = 0; j < n1; j++)
     {
-      const dolfin::Point knop_bottom = x + dolfin::Point( (i + 0.5)*P, (j + 0.5)*P, 0);
+      const dolfin::Point knop_bottom = x + dolfin::Point( (i + 0.5)*P,
+                                                           (j + 0.5)*P,
+                                                           0);
 
       std::shared_ptr<CSGGeometry>
-        knob(new Cone(knop_bottom,
-                      knop_bottom + dolfin::Point(0, 0, n2*h + b), 0.5*D, 0.5*D));
+        knob(new Cylinder(knop_bottom,
+                          knop_bottom + dolfin::Point(0, 0, n2*h + b),
+                          0.5*D,
+                          0.5*D));
+
       lego = lego + knob;
     }
   }
