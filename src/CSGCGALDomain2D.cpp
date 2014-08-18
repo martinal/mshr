@@ -399,7 +399,7 @@ std::string CSGCGALDomain2D::str(bool verbose) const
   return ss.str();
 }
 //-----------------------------------------------------------------------------
-class PSLGImpl
+struct PSLGImpl
 {
  public:
   std::vector<Point_2> vertices;

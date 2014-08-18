@@ -443,8 +443,6 @@ bool flip_edges(Polyhedron& p,
         typename Polyhedron::Halfedge_handle longest 
           = get_longest_edge<Polyhedron>(facet);
 
-        Halfedge_handle h = longest->next();
-        
         Line_3 l(longest->vertex()->point(),
                  longest->opposite()->vertex()->point());
         Point_3 newpoint = l.projection(longest->next()->vertex()->point());
