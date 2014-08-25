@@ -33,6 +33,9 @@ namespace mshr
   /// @brief Base class for 2D primitives
   class CSGPrimitive2D : public CSGPrimitive
   {
+  protected:
+    CSGPrimitive2D();
+
   public:
 
     /// @brief get the dimension of the geometry (2)

@@ -30,8 +30,10 @@ namespace mshr
   /// @brief Base class for 3D primitives
   class CSGPrimitive3D : public CSGPrimitive
   {
-  public:
+  protected:
+    CSGPrimitive3D();
 
+  public:
     /// @return get dimension of geometry
     std::size_t dim() const { return 3; }
 

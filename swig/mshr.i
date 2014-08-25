@@ -65,6 +65,7 @@
 %ignore mshr::CSGUnion::_g0;
 %ignore mshr::CSGUnion::_g1;
 %ignore mshr::CSGUnion::getType;
+%ignore mshr::CSGOperator::CSGOperator;
 
 /* %ignore mshr::operator+(mshr::CSGGeometry& g0, mshr::CSGGeometry& g1); */
 /* %ignore mshr::operator+(std::shared_ptr<mshr::CSGGeometry>, std::shared_ptr<mshr::CSGGeometry>); */
@@ -72,9 +73,12 @@
 /* %ignore mshr::operator+(std::shared_ptr<mshr::CSGGeometry>, mshr::CSGGeometry&); */
 
 %ignore mshr::operator+;
-%ignore getType;
+%ignore mshr::operator-;
+%ignore mshr::operator*;
 
-%ignore CSGCGALDomain2D::impl;
+
+%ignore mshr::CSGCGALDomain2D::operator=;
+%ignore mshr::CSGCGALDomain2D::impl;
 %ignore mshr::PSLG;
 
 %shared_ptr(mshr::CSGGeometry)

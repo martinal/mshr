@@ -32,6 +32,8 @@ namespace mshr
   /// CSGOperator object are internal (non-leaf) nodes in the CSG tree.
   class CSGOperator : public CSGGeometry
   {
+   protected:
+    CSGOperator();
    public:
     virtual bool is_operator() const { return true; }
     std::size_t dim() const { return dim_;}
