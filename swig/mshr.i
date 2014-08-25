@@ -19,6 +19,7 @@
     #include <mshr/MeshGenerator.h>
     #include <mshr/CSGCGALMeshGenerator2D.h>
     #include <mshr/CSGCGALMeshGenerator3D.h>
+    #include <mshr/DolfinMeshUtils.h>
 
  %}
 
@@ -119,6 +120,7 @@
 %include <mshr/CSGCGALMeshGenerator2D.h>
 %include <mshr/CSGCGALMeshGenerator3D.h>
 %include <mshr/CSGGeometries3D.h>
+%include <mshr/DolfinMeshUtils.h>
 
 %extend mshr::CSGGeometry {
   %pythoncode %{
