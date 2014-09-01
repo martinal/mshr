@@ -41,7 +41,7 @@ set_property(TEST "Python-DegenerateRemoval" PROPERTY
 
 ############# Try meshing some surface files found in the cgal source ########################
 # TODO: Print mesh quality measure from program and check the value
-set(CGAL_DATA_DIR "${CMAKE_SOURCE_DIR}/3rdparty/CGAL-4.4/demo/Polyhedron/data")
+set(CGAL_DATA_DIR "${CMAKE_SOURCE_DIR}/3rdparty/CGAL-4.5-beta1/demo/Polyhedron/data")
 
 # Files that should pass
 set(TESTFILES_VALID "anchor.off;couplingdown.off;cross.off;cube.off;dragknob.off;elephant.off;ellipsoid.off;handle.off;icosahedron.off;joint.off;knot1.off;knot2.off;pinion.off;pipe.off;pyramid.off;rotor.off;sphere.off;spool.off;star.off;translated-cube.off;tripod.off")
