@@ -35,6 +35,9 @@ class DolfinMeshUtils
   /// @param m The mesh
   static bool has_isolated_vertices(const dolfin::Mesh& m);
 
+  /// Run all implemented checks mesh consistency
+  /// @param m The mesh
+  static bool check_mesh(const dolfin::Mesh& m);
 };
 
 }

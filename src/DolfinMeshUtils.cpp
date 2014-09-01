@@ -63,4 +63,9 @@ bool DolfinMeshUtils::has_isolated_vertices(const dolfin::Mesh& m)
 
   return isolated_vertices;
 }
+//-----------------------------------------------------------------------------
+bool DolfinMeshUtils::check_mesh(const dolfin::Mesh& m)
+{
+  return !has_isolated_vertices(m);
+}
 }

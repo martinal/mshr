@@ -61,6 +61,7 @@ void handle_commandline(int argc, char** argv, po::variables_map &vm)
     ("polystats", "Write statistics of polyhedron (and do not create a mesh")
     ("backend,b", po::value<std::string>()->default_value("cgal"), "Use 3D mesh generation backend [tetgen|cgal]")
     ("degenerate_tolerance", po::value<double>()->default_value(1e-12), "Tolerance for considering a facet as degenerate. Set to 0 to not remove degenerate facets")
+    ("check-mesh", "Check consistency of output mesh (most for debugging/testing")
     ("verbose,v", "Output more information about what is going on")
     ("help,h",   "write help message");
 
@@ -169,6 +170,14 @@ int main(int argc, char** argv)
   if (vm.count("stats"))
     print_mesh_statistics(m);
 
+  if (vm.count("check-mesh"))
+  {
+    if (!mshr::DolfinMeshUtils::check_mesh(m))
+    {
+      std::cout << "  Error: Mesh check failed" << std::endl;
+      return EXIT_FAILURE;
+    }
+  }
 
   return EXIT_SUCCESS;
 }
