@@ -335,8 +335,6 @@ void CSGCGALMeshGenerator3D::generate(std::shared_ptr<const CSGCGALDomain3D> csg
 void CSGCGALMeshGenerator3D::generate(const CSGGeometry& geometry,
                                       dolfin::Mesh& mesh) const
 {
-  generate(reference_to_no_delete_pointer(geometry), mesh);
-
   std::shared_ptr<CSGCGALDomain3D> exact_domain( new CSGCGALDomain3D(geometry) );
   exact_domain->ensure_meshing_preconditions();
 
