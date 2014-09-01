@@ -26,7 +26,6 @@
 
 #include <memory>
 
-
 #define CGAL_NO_DEPRECATED_CODE
 #define CGAL_MESH_3_VERBOSE
 //#define PROTECTION_DEBUG
@@ -51,7 +50,11 @@ typedef CGAL::Mesh_polyhedron_3<K>::type MeshPolyhedron_3;
 typedef K::Point_3 Point_3;
 typedef K::Vector_3 Vector_3;
 typedef K::Triangle_3 Triangle_3;
+#if 1
+typedef CGAL::Polyhedral_mesh_domain_with_features_3<K> PolyhedralMeshDomain;
+#else
 typedef Polyhedral_multicomponent_mesh_domain_with_features_3<K> PolyhedralMeshDomain;
+#endif
 
 // Triangulation
 typedef CGAL::Mesh_triangulation_3<PolyhedralMeshDomain>::type Tr;
@@ -273,8 +276,11 @@ void CSGCGALMeshGenerator3D::generate(std::shared_ptr<const CSGCGALDomain3D> csg
     edge_size = cell_size;
   }
 
-
+  #if 1
+  PolyhedralMeshDomain domain(p);
+  #else
   PolyhedralMeshDomain domain(p, edge_size);
+  #endif
 
   if (parameters["detect_sharp_features"])
   {
