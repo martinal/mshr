@@ -23,48 +23,56 @@ r = 0.125
 R = 0.5
 w = 0.3
 h = 0.025
+rotate_blades = True
 include_tip = False
+extra_rotation = True # only applied to inner mesh
 
-# Define geometry
-geometry = CSGGeometries.propeller(r, R, w, h, include_tip)
+# Define geometries
+sphere = Sphere(Point(0, 0, 0), 2*R)
+geometry_inside = CSGGeometries.propeller(r, R, w, h, rotate_blades, include_tip)
+geometry_outside = sphere - geometry_inside
 
-# Generate mesh
-mesh = generate_mesh(geometry, 16)
+# Generate meshes
+mesh_inside = generate_mesh(geometry_inside, 16)
+mesh_outside = generate_mesh(geometry_outside, 16)
 
 # Rotate blades
-print "Rotating blades..."
-c = mesh.coordinates()
-for i, (x, y, z) in enumerate(c):
+if extra_rotation:
+    print "Rotating blades..."
+    c = mesh_inside.coordinates()
+    for i, (x, y, z) in enumerate(c):
 
-    # Compute distance to axis
-    _r = sqrt(x**2 + y**2)
+        # Compute distance to axis
+        _r = sqrt(x**2 + y**2)
 
-    # Compute rotation angle
-    v = -2*max(0, _r - r)
+        # Compute rotation angle
+        v = -2*max(0, _r - r)
 
-    # Rotate blades
-    xx = x; yy = y; zz = z;
-    if x > 0 and abs(y) < 2*h:
-        yy = cos(v)*y - sin(v)*z
-        zz = sin(v)*y + cos(v)*z
-    elif x < 0 and abs(y) < 2*h:
-        yy = cos(v)*y + sin(v)*z
-        zz = -sin(v)*y + cos(v)*z
-    elif y > 0 and abs(x) < 2*h:
-        xx = cos(v)*x + sin(v)*z
-        zz = -sin(v)*x + cos(v)*z
-    elif y < 0 and abs(x) < 2*h:
-        xx = cos(v)*x - sin(v)*z
-        zz = sin(v)*x + cos(v)*z
+        # Rotate blades
+        xx = x; yy = y; zz = z;
+        if x > 0 and abs(y) < 5*h:
+            yy = cos(v)*y - sin(v)*z
+            zz = sin(v)*y + cos(v)*z
+        elif x < 0 and abs(y) < 5*h:
+            yy = cos(v)*y + sin(v)*z
+            zz = -sin(v)*y + cos(v)*z
+        elif y > 0 and abs(x) < 5*h:
+            xx = cos(v)*x + sin(v)*z
+            zz = -sin(v)*x + cos(v)*z
+        elif y < 0 and abs(x) < 5*h:
+            xx = cos(v)*x - sin(v)*z
+            zz = sin(v)*x + cos(v)*z
 
-    # Store coordinates
-    c[i][0] = xx
-    c[i][1] = yy
-    c[i][2] = zz
+        # Store coordinates
+        c[i][0] = xx
+        c[i][1] = yy
+        c[i][2] = zz
+
+# Save meshes to file
+File("propeller_inside.xml.gz") << mesh_inside
+File("propeller_outside.xml.gz") << mesh_outside
 
 # Plot mesh
-plot(mesh, interactive=True)
-
-# Save mesh to file
-file = File("propeller.xml.gz")
-file << mesh
+plot(mesh_inside)
+plot(mesh_outside)
+interactive()

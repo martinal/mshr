@@ -44,6 +44,7 @@ namespace mshr
                                                   double R=0.5,
                                                   double w=0.3,
                                                   double h=0.025,
+                                                  bool rotate_blades=true,
                                                   bool include_tip=false);
   };
 }

@@ -28,6 +28,20 @@
 namespace mshr
 {
 
+// FIXME: Move somewhere else
+// Convenience function for rotation
+std::shared_ptr<CSGGeometry> rotate(std::shared_ptr<CSGGeometry> geometry,
+                                     dolfin::Point rot_axis,
+                                     dolfin::Point rot_center,
+                                     double theta)
+{
+  return std::shared_ptr<CSGGeometry>(new CSGRotation(geometry,
+                                                      rot_axis,
+                                                      rot_center,
+                                                      theta));
+}
+
+//-----------------------------------------------------------------------------
 std::shared_ptr<CSGGeometry> CSGGeometries::lego(std::size_t n0,
                                                  std::size_t n1,
                                                  std::size_t n2,
@@ -71,10 +85,11 @@ std::shared_ptr<CSGGeometry> CSGGeometries::propeller(double r,
                                                       double R,
                                                       double w,
                                                       double h,
+                                                      bool rotate_blades,
                                                       bool include_tip)
 {
   // Parameters
-  //const double v = 30;     // rotation of blades
+  const double v = 0.3;     // rotation of blades
   const double l = 0.8*w;  // length of cone
 
   // // Create blades
@@ -91,16 +106,14 @@ std::shared_ptr<CSGGeometry> CSGGeometries::propeller(double r,
     blade_3(new Box(dolfin::Point(-0.5*h,     -R, -0.5*w),
                     dolfin::Point( 0.5*h, -0.8*r,  0.5*w)));
 
-  /*
   // Rotate blades
   if (rotate_blades)
   {
-    blade_0.rotate(-v, 0);
-    blade_1.rotate(v, 0);
-    blade_2.rotate(v, 1);
-    blade_3.rotate(-v, 1);
+    blade_0 = rotate(blade_0, dolfin::Point(1, 0, 0), dolfin::Point(0, 0, 0), v);
+    blade_1 = rotate(blade_1, dolfin::Point(1, 0, 0), dolfin::Point(0, 0, 0), -v);
+    blade_2 = rotate(blade_2, dolfin::Point(0, 1, 0), dolfin::Point(0, 0, 0), v);
+    blade_3 = rotate(blade_3, dolfin::Point(0, 1, 0), dolfin::Point(0, 0, 0), -v);
   }
-  */
 
   // Create blade tips
   std::shared_ptr<CSGGeometry>
@@ -116,16 +129,14 @@ std::shared_ptr<CSGGeometry> CSGGeometries::propeller(double r,
     blade_tip_3(new Cylinder(dolfin::Point(-0.5*h, -R, 0),
                              dolfin::Point( 0.5*h, -R, 0), 0.5*w, 0.5*w));
 
-  /*
-  // Rotate blade tips
+  // Rotate blades
   if (rotate_blades)
   {
-    blade_tip_0.rotate(-v, 0);
-    blade_tip_1.rotate(v, 0);
-    blade_tip_2.rotate(v, 1);
-    blade_tip_3.rotate(-v, 1);
+    blade_tip_0 = rotate(blade_tip_0, dolfin::Point(1, 0, 0), dolfin::Point(0, 0, 0), v);
+    blade_tip_1 = rotate(blade_tip_1, dolfin::Point(1, 0, 0), dolfin::Point(0, 0, 0), -v);
+    blade_tip_2 = rotate(blade_tip_2, dolfin::Point(0, 1, 0), dolfin::Point(0, 0, 0), v);
+    blade_tip_3 = rotate(blade_tip_3, dolfin::Point(0, 1, 0), dolfin::Point(0, 0, 0), -v);
   }
-  */
 
   // Add blade tips
   blade_0 = blade_0 + blade_tip_0;
