@@ -60,9 +60,10 @@ namespace mshr
     /// If subdomains overlap, the latest added will take precedence.
     void set_subdomain(std::size_t i, CSGGeometry& s);
 
-    /// Has subdomains been set
+    /// @brief Has subdomains been set
     bool has_subdomains() const;
 
+    /// @brief Return const list of subdomain geometries
     const std::list<std::pair<std::size_t, std::shared_ptr<const CSGGeometry> > >& get_subdomains() const { return subdomains; }
 
     enum Type { Box, Sphere, Cylinder, Tetrahedron, Surface3D, Circle, Ellipse, Rectangle, Polygon, Union, Intersection, Difference, Translation, Scaling, Rotation };

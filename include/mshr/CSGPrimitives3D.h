@@ -30,8 +30,10 @@ namespace mshr
   /// @brief Base class for 3D primitives
   class CSGPrimitive3D : public CSGPrimitive
   {
-  public:
+  protected:
+    CSGPrimitive3D();
 
+  public:
     /// @return get dimension of geometry
     std::size_t dim() const { return 3; }
 
@@ -55,8 +57,7 @@ namespace mshr
     /// @param verbose  Verbosity level
     std::string str(bool verbose) const;
 
-    Type getType() const
-    { return CSGGeometry::Sphere; }
+    Type getType() const { return CSGGeometry::Sphere; }
 
     const dolfin::Point c;
     const double r;

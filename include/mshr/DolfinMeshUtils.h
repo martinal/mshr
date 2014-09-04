@@ -21,12 +21,24 @@
 
 #include <dolfin/mesh/Mesh.h>
 
+namespace mshr
+{
+
 class DolfinMeshUtils
 {
  public:
   /// Compute the smallest and largest cell wrt. volume.
   /// @param m The mesh
   static std::pair<double, double> cell_volume_min_max(const dolfin::Mesh& m);
+
+  /// Check that all vertices has at least one incident cell
+  /// @param m The mesh
+  static bool has_isolated_vertices(const dolfin::Mesh& m);
+
+  /// Run all implemented checks mesh consistency
+  /// @param m The mesh
+  static bool check_mesh(const dolfin::Mesh& m);
 };
 
+}
 #endif

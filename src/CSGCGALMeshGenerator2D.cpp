@@ -110,11 +110,9 @@ namespace mshr
 {
 
 //-----------------------------------------------------------------------------
-CSGCGALMeshGenerator2D::CSGCGALMeshGenerator2D(const CSGGeometry& geometry)
-: geometry(geometry)
+CSGCGALMeshGenerator2D::CSGCGALMeshGenerator2D()
 {
   parameters = default_parameters();
-  //subdomains.push_back(reference_to_no_delete_pointer(geometry));
 }
 //-----------------------------------------------------------------------------
 CSGCGALMeshGenerator2D::~CSGCGALMeshGenerator2D() {}
@@ -290,7 +288,7 @@ double shortest_constrained_edge(const CDT &cdt)
 
 
 //-----------------------------------------------------------------------------
-void CSGCGALMeshGenerator2D::generate(dolfin::Mesh& mesh)
+void CSGCGALMeshGenerator2D::generate(const CSGGeometry& geometry, dolfin::Mesh& mesh)
 {
   std::vector<std::pair<std::size_t, CSGCGALDomain2D> >
     subdomain_geometries;

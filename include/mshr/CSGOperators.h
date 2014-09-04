@@ -11,7 +11,7 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
 // along with mshr.  If not, see <http://www.gnu.org/licenses/>.
 //
@@ -32,6 +32,8 @@ namespace mshr
   /// CSGOperator object are internal (non-leaf) nodes in the CSG tree.
   class CSGOperator : public CSGGeometry
   {
+   protected:
+    CSGOperator();
    public:
     virtual bool is_operator() const { return true; }
     std::size_t dim() const { return dim_;}
@@ -104,6 +106,8 @@ namespace mshr
   };
 
   /// @brief Translate CSG geometry by vector
+  ///
+  /// { 'small-icon' : 'translation-small.png' }
   class CSGTranslation : public CSGOperator
   {
     public:
@@ -124,6 +128,8 @@ namespace mshr
   };
 
   /// @brief Scale CSG geometry
+  ///
+  /// { 'small-icon' : 'scaling-small.png' }
   class CSGScaling : public CSGOperator
   {
    public:
@@ -155,6 +161,8 @@ namespace mshr
   };
 
   /// @brief Rotate CSG geometry
+  ///
+  /// { 'small-icon' : 'rotation-small.png' }
   class CSGRotation : public CSGOperator
   {
    public:

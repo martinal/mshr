@@ -122,7 +122,7 @@ for k,c in cls.iteritems() :
         inheritancenodes = {}
         nodes = inheritance.findall("node")
 
-        # collect all in a dictionary with the refid (which is not the same
+        # collect all inheritance nodes in a dictionary with the refid (which is not the same
         # as the class id as key
         myid = False
         for x in nodes : 
@@ -158,19 +158,20 @@ for k,c in cls.iteritems() :
                 current = None
 
 
-        icon_txt = " |"
-        if c[1].has_key("small-icon") :
-            icon_txt = "![%s icon](icons/%s)|" % (classname, c[1]["small-icon"])
-
-        category.append("%s[%s](API/%s)|%s|\n" % (icon_txt,
-                                                  classname.ljust(longest_class_name), 
-                                                  c[1]["filename"],
-                                                  c[1]["description"].ljust(longest_description)))
-
-
         inheritance_list.reverse()
-        classpage.append("_" + " < ".join(inheritance_list) + "_")
+        classpage.append("_" + " > ".join(inheritance_list) + "_")
         classpage.append("\n\n")
+
+    icon_txt = " |"
+    if c[1].has_key("small-icon") :
+        icon_txt = "![%s icon](icons/%s)|" % (classname, c[1]["small-icon"])
+
+    print "Appending to category"
+    category.append("%s[%s](API/%s)|%s|\n" % (icon_txt,
+                                              classname.ljust(longest_class_name),
+                                              c[1]["filename"],
+                                              c[1]["description"].ljust(longest_description)))
+
 
 
     classpage.append("# %s\n\n" % (classname))

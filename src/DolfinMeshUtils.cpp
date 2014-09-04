@@ -17,8 +17,13 @@
 //
 
 #include <mshr/DolfinMeshUtils.h>
-#include <limits>
+
 #include <dolfin/mesh/Cell.h>
+
+#include <limits>
+
+namespace mshr
+{
 
 std::pair<double, double> DolfinMeshUtils::cell_volume_min_max(const dolfin::Mesh& m)
 {
@@ -32,4 +37,35 @@ std::pair<double, double> DolfinMeshUtils::cell_volume_min_max(const dolfin::Mes
   }
 
   return res;
+}
+//-----------------------------------------------------------------------------
+bool DolfinMeshUtils::has_isolated_vertices(const dolfin::Mesh& m)
+{
+  std::set<std::size_t> vertices;
+  for (dolfin::CellIterator cit(m); !cit.end(); ++cit)
+  {
+    const unsigned int* v = cit->entities(0);
+    for (std::size_t i = 0; i < cit->num_global_entities(0); i++)
+    {
+      vertices.insert(v[i]);
+    }
+  }
+
+  bool isolated_vertices = false;
+  for (std::size_t i = 0; i < m.num_vertices(); i++)
+  {
+    if (vertices.count(i) < 1)
+    {
+      log(dolfin::DBG, "Vertex %u has no incident cells", i);
+      isolated_vertices = true;
+    }
+  }
+
+  return isolated_vertices;
+}
+//-----------------------------------------------------------------------------
+bool DolfinMeshUtils::check_mesh(const dolfin::Mesh& m)
+{
+  return !has_isolated_vertices(m);
+}
 }

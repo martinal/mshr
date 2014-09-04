@@ -40,7 +40,7 @@ void print_mesh_statistics(const dolfin::Mesh& m)
   std::cout << "  " << m.num_vertices() << " vertices" << std::endl;
   std::cout << "  " << m.num_cells() << " cells" << std::endl;
 
-  const std::pair<double, double> volume_min_max = DolfinMeshUtils::cell_volume_min_max(m);
+  const std::pair<double, double> volume_min_max = mshr::DolfinMeshUtils::cell_volume_min_max(m);
   std::cout << "Min cell volume: " << volume_min_max.first << std::endl;
   std::cout << "Max cell volume: " << volume_min_max.second << std::endl;
   const std::pair<double, double> radii_ratio = dolfin::MeshQuality::radius_ratio_min_max(m);
@@ -61,6 +61,7 @@ void handle_commandline(int argc, char** argv, po::variables_map &vm)
     ("polystats", "Write statistics of polyhedron (and do not create a mesh")
     ("backend,b", po::value<std::string>()->default_value("cgal"), "Use 3D mesh generation backend [tetgen|cgal]")
     ("degenerate_tolerance", po::value<double>()->default_value(1e-12), "Tolerance for considering a facet as degenerate. Set to 0 to not remove degenerate facets")
+    ("check-mesh", "Check consistency of output mesh (most for debugging/testing")
     ("verbose,v", "Output more information about what is going on")
     ("help,h",   "write help message");
 
@@ -169,6 +170,14 @@ int main(int argc, char** argv)
   if (vm.count("stats"))
     print_mesh_statistics(m);
 
+  if (vm.count("check-mesh"))
+  {
+    if (!mshr::DolfinMeshUtils::check_mesh(m))
+    {
+      std::cout << "  Error: Mesh check failed" << std::endl;
+      return EXIT_FAILURE;
+    }
+  }
 
   return EXIT_SUCCESS;
 }

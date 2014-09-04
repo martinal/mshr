@@ -11,7 +11,7 @@
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-//
+// 
 // You should have received a copy of the GNU General Public License
 // along with mshr.  If not, see <http://www.gnu.org/licenses/>.
 //
@@ -33,12 +33,10 @@ namespace mshr
     // A standard LEGO brick starting at the point x with (n0, n1)
     // knobs and height n2. The height should be 1 for a thin brick or 3
     // for a regular brick.
-    static std::shared_ptr<CSGGeometry> lego(std::size_t n0,
+    static std::shared_ptr<CSGGeometry> lego(std::size_t n0, 
                                              std::size_t n1,
                                              std::size_t n2,
-                                             double x0,
-                                             double x1,
-                                             double x2);
+                                             dolfin::Point x = dolfin::Point(0,0,0));
 
     // A simple propeller with parameters r - radius of center body, R - length of blades,
     // w - width of blades and h - thicknes of blades

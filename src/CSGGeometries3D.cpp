@@ -30,9 +30,7 @@ namespace mshr
 std::shared_ptr<CSGGeometry> CSGGeometries::lego(std::size_t n0,
                                                  std::size_t n1,
                                                  std::size_t n2,
-                                                 double x0,
-                                                 double x1,
-                                                 double x2 )
+                                                 dolfin::Point x)
 {
   // Standard dimensions for LEGO bricks / m
   const double P = 8.0 * 0.001;
@@ -43,21 +41,24 @@ std::shared_ptr<CSGGeometry> CSGGeometries::lego(std::size_t n0,
 
   // Create brick
   std::shared_ptr<CSGGeometry>
-    lego(new Box(dolfin::Point(x0 + 0.5*d, x1 + 0.5*d, x2),
-                 dolfin::Point(x0 + n0*P - 0.5*d, x1 + n1*P - 0.5*d, x2 + n2*h)));
+    lego(new Box(x + dolfin::Point(0.5*d, 0.5*d, 0),
+                 x + dolfin::Point(n0*P - 0.5*d, n1*P - 0.5*d, n2*h)));
 
   // Add knobs
   for (std::size_t i = 0; i < n0; i++)
   {
     for (std::size_t j = 0; j < n1; j++)
     {
-      const double x = x0 + (i + 0.5)*P;
-      const double y = x1 + (j + 0.5)*P;
-      const double z = x2;
+      const dolfin::Point knop_bottom = x + dolfin::Point( (i + 0.5)*P,
+                                                           (j + 0.5)*P,
+                                                           0);
 
       std::shared_ptr<CSGGeometry>
-        knob(new Cone(dolfin::Point(x, y, z),
-                      dolfin::Point(x, y, z + n2*h + b), 0.5*D, 0.5*D));
+        knob(new Cylinder(knop_bottom,
+                          knop_bottom + dolfin::Point(0, 0, n2*h + b),
+                          0.5*D,
+                          0.5*D));
+
       lego = lego + knob;
     }
   }
@@ -110,11 +111,11 @@ std::shared_ptr<CSGGeometry> CSGGeometries::propeller(double r,
     blade_tip_3(new Cylinder(dolfin::Point(-0.5*h, -R, 0),
                              dolfin::Point( 0.5*h, -R, 0), 0.5*w, 0.5*w));
 
-  // // Rotate blade tips
-  // // blade_tip_0.rotate(-v, 0);
-  // // blade_tip_1.rotate(v, 0);
-  // // blade_tip_2.rotate(v, 1);
-  // // blade_tip_3.rotate(-v, 1);
+  // Rotate blade tips
+  // blade_tip_0.rotate(-v, 0);
+  // blade_tip_1.rotate(v, 0);
+  // blade_tip_2.rotate(v, 1);
+  // blade_tip_3.rotate(-v, 1);
 
   // Add blade tips
   blade_0 = blade_0 + blade_tip_0;
