@@ -15,7 +15,8 @@
 // You should have received a copy of the GNU General Public License
 // along with mshr.  If not, see <http://www.gnu.org/licenses/>.
 //
-// Modified by Johannes Ring, 2012
+// Modified by Johannes Ring 2014
+// Modified by Anders Logg 2014
 
 #include <mshr/CSGGeometries3D.h>
 #include <mshr/CSGGeometry.h>
@@ -69,41 +70,45 @@ std::shared_ptr<CSGGeometry> CSGGeometries::lego(std::size_t n0,
 std::shared_ptr<CSGGeometry> CSGGeometries::propeller(double r,
                                                       double R,
                                                       double w,
-                                                      double h)
+                                                      double h,
+                                                      bool include_tip)
 {
   // Parameters
-  //const double v = 30;     // initial rotation of blades
-  //const double u = 20;     // additional rotation of blades
+  //const double v = 30;     // rotation of blades
   const double l = 0.8*w;  // length of cone
-  const double a = h;      // radius of tip of cone
 
   // // Create blades
   std::shared_ptr<CSGGeometry>
     blade_0(new Box(dolfin::Point(0.8*r, -0.5*h, -0.5*w),
-                    dolfin::Point(R, 0.5*h, 0.5*w)));
+                    dolfin::Point(    R,  0.5*h,  0.5*w)));
   std::shared_ptr<CSGGeometry>
-    blade_1(new Box(dolfin::Point(-R, -0.5*h, -0.5*w),
-                    dolfin::Point(-0.8*r, 0.5*h, 0.5*w)));
+    blade_1(new Box(dolfin::Point(    -R, -0.5*h, -0.5*w),
+                    dolfin::Point(-0.8*r,  0.5*h,  0.5*w)));
   std::shared_ptr<CSGGeometry>
     blade_2(new Box(dolfin::Point(-0.5*h, 0.8*r, -0.5*w),
-                    dolfin::Point(0.5*h, R, 0.5*w)));
+                    dolfin::Point( 0.5*h,     R,  0.5*w)));
   std::shared_ptr<CSGGeometry>
-    blade_3(new Box(dolfin::Point(-0.5*h, -R, -0.5*w),
-                    dolfin::Point(0.5*h, -0.8*r, 0.5*w)));
+    blade_3(new Box(dolfin::Point(-0.5*h,     -R, -0.5*w),
+                    dolfin::Point( 0.5*h, -0.8*r,  0.5*w)));
 
-  // // Rotate blades
-  // // blade_0.rotate(-v, 0);
-  // // blade_1.rotate(v, 0);
-  // // blade_2.rotate(v, 1);
-  // // blade_3.rotate(-v, 1);
+  /*
+  // Rotate blades
+  if (rotate_blades)
+  {
+    blade_0.rotate(-v, 0);
+    blade_1.rotate(v, 0);
+    blade_2.rotate(v, 1);
+    blade_3.rotate(-v, 1);
+  }
+  */
 
   // Create blade tips
   std::shared_ptr<CSGGeometry>
     blade_tip_0(new Cylinder(dolfin::Point( R, -0.5*h, 0),
-                             dolfin::Point( R, 0.5*h, 0), 0.5*w, 0.5*w));
+                             dolfin::Point( R,  0.5*h, 0), 0.5*w, 0.5*w));
   std::shared_ptr<CSGGeometry>
     blade_tip_1(new Cylinder(dolfin::Point(-R, -0.5*h, 0),
-                             dolfin::Point(-R,0.5*h, 0), 0.5*w, 0.5*w));
+                             dolfin::Point(-R,  0.5*h, 0), 0.5*w, 0.5*w));
   std::shared_ptr<CSGGeometry>
     blade_tip_2(new Cylinder(dolfin::Point(-0.5*h,  R, 0),
                              dolfin::Point( 0.5*h,  R, 0), 0.5*w, 0.5*w));
@@ -111,11 +116,16 @@ std::shared_ptr<CSGGeometry> CSGGeometries::propeller(double r,
     blade_tip_3(new Cylinder(dolfin::Point(-0.5*h, -R, 0),
                              dolfin::Point( 0.5*h, -R, 0), 0.5*w, 0.5*w));
 
+  /*
   // Rotate blade tips
-  // blade_tip_0.rotate(-v, 0);
-  // blade_tip_1.rotate(v, 0);
-  // blade_tip_2.rotate(v, 1);
-  // blade_tip_3.rotate(-v, 1);
+  if (rotate_blades)
+  {
+    blade_tip_0.rotate(-v, 0);
+    blade_tip_1.rotate(v, 0);
+    blade_tip_2.rotate(v, 1);
+    blade_tip_3.rotate(-v, 1);
+  }
+  */
 
   // Add blade tips
   blade_0 = blade_0 + blade_tip_0;
@@ -129,24 +139,34 @@ std::shared_ptr<CSGGeometry> CSGGeometries::propeller(double r,
 
   // Create outer cylinder
   std::shared_ptr<CSGGeometry>
-    cylinder_outer(new Cylinder(dolfin::Point(0, 0, -0.5*w), dolfin::Point(0, 0, 0.5*w), r, r));
+    cylinder_outer(new Cylinder(dolfin::Point(0, 0, -0.5*w),
+                                dolfin::Point(0, 0, 0.5*w),
+                                r, r));
 
   // Create inner cylinder
   std::shared_ptr<CSGGeometry>
-    cylinder_inner(new Cylinder(dolfin::Point(0, 0, -0.5*w), dolfin::Point(0, 0, 0.5*w),
+    cylinder_inner(new Cylinder(dolfin::Point(0, 0, -0.5*w),
+                                dolfin::Point(0, 0, 0.5*w),
                                 0.5*r, 0.5*r));
 
   // Create center cone
   std::shared_ptr<CSGGeometry>
-    cone( new Cone(dolfin::Point(0, 0, -0.5*w), dolfin::Point(0, 0, -0.5*w - l), r));
+    cone(new Cylinder(dolfin::Point(0, 0, -0.5*w),
+                      dolfin::Point(0, 0, -0.5*w - l), r, h));
 
   // Create sphere for tip of cone
-  const double d = a*(r - a) / l;
+  const double k = (r - h) / l;
+  const double rc = h*sqrt(1 + k*k);
+  const double xc = k*h;
   std::shared_ptr<CSGGeometry>
-    tip(new Sphere(dolfin::Point(0, 0, -0.5*w - l + d), sqrt(a*a + d*d)));
+    tip(new Sphere(dolfin::Point(0, 0, -0.5*w - l + xc), rc));
 
   // Build propeller from parts
-  return cylinder_outer - cylinder_inner + cone + tip + blades;
+  if (include_tip)
+    return cylinder_outer - cylinder_inner + blades + cone + tip;
+  else
+    return cylinder_outer - cylinder_inner + blades + cone;
 }
 //-----------------------------------------------------------------------------
+
 }
