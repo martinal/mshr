@@ -6,12 +6,12 @@
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
-// 
+//
 // mshr is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
 // along with mshr.  If not, see <http://www.gnu.org/licenses/>.
 //
@@ -97,11 +97,11 @@ namespace mshr
     /// @param top           Center at top of cylinder.
     /// @param bottom        Center at bottom of cylinder.
     /// @param top_radius    Radius top of cylinder.
-    /// @param bottom_radius Radius at botoom of cylinder.  
+    /// @param bottom_radius Radius at botoom of cylinder.
     /// @param segments      number of faces on the side when generating a polyhedral approximation.
-    Cylinder(dolfin::Point top, 
-             dolfin::Point bottom, 
-             double top_radius, 
+    Cylinder(dolfin::Point top,
+             dolfin::Point bottom,
+             double top_radius,
              double bottom_radius,
              std::size_t segments=32);
 
@@ -118,7 +118,7 @@ namespace mshr
     const std::size_t _segments;
   };
 
-  /// @brief A 3D cone. 
+  /// @brief A 3D cone.
   /// A cone is here just a special case of a cylinder.
   ///
   /// { "small-icon" : "cone-small.png" }
@@ -180,5 +180,7 @@ namespace mshr
     const std::string _filename;
     const double degenerate_tolerance;
   };
+
 }
+
 #endif

@@ -1,4 +1,3 @@
-
  %module mshr
  %{
     #include <numpy/arrayobject.h>
@@ -12,7 +11,7 @@
     #include <mshr/CSGPrimitives3D.h>
     #include <mshr/CSGCGALDomain2D.h>
     #include <mshr/CSGCGALDomain3D.h>
- 
+
     #include <mshr/CSGGeometry.h>
     #include <mshr/CSGGeometries3D.h>
 
@@ -50,7 +49,6 @@
 %import(module="dolfin") "dolfin/common/Variable.h"
 %import(module="dolfin") "dolfin/common/Hierarchical.h"
 
-
 %shared_ptr(dolfin::Mesh)
 
 %ignore dolfin::Mesh::type;
@@ -58,7 +56,6 @@
 
 %import "dolfin/swig/mesh/pre.i"
 %import(module="dolfin") "dolfin/mesh/Mesh.h"
-
 
 %ignore mshr::CSGGeometry::getType;
 %ignore mshr::CSGUnion::_g0;
@@ -102,9 +99,6 @@
 %shared_ptr(mshr::CSGCGALDomain2D)
 %shared_ptr(mshr::CSGCGALDomain3D)
 
-
-
-
 %rename(_generate) mshr::generate;
 %ignore mshr::get_boundary_mesh;
 
@@ -127,7 +121,7 @@
              return CSGTranslation(self, other)
          else :
              return CSGUnion(self, other)
-  
+
      def __mul__(self, other) :
          from numbers import Number
          if isinstance(other, Number) :

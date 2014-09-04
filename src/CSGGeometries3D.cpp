@@ -6,12 +6,12 @@
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
-// 
+//
 // mshr is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
 // along with mshr.  If not, see <http://www.gnu.org/licenses/>.
 //
@@ -28,11 +28,11 @@ namespace mshr
 {
 
 std::shared_ptr<CSGGeometry> CSGGeometries::lego(std::size_t n0,
-                                                   std::size_t n1,
-                                                   std::size_t n2,
-                                                   double x0,
-                                                   double x1,
-                                                   double x2 )
+                                                 std::size_t n1,
+                                                 std::size_t n2,
+                                                 double x0,
+                                                 double x1,
+                                                 double x2 )
 {
   // Standard dimensions for LEGO bricks / m
   const double P = 8.0 * 0.001;
@@ -56,7 +56,7 @@ std::shared_ptr<CSGGeometry> CSGGeometries::lego(std::size_t n0,
       const double z = x2;
 
       std::shared_ptr<CSGGeometry>
-        knob(new Cone(dolfin::Point(x, y, z), 
+        knob(new Cone(dolfin::Point(x, y, z),
                       dolfin::Point(x, y, z + n2*h + b), 0.5*D, 0.5*D));
       lego = lego + knob;
     }
@@ -65,8 +65,10 @@ std::shared_ptr<CSGGeometry> CSGGeometries::lego(std::size_t n0,
   return lego;
 }
 //-----------------------------------------------------------------------------
-std::shared_ptr<CSGGeometry> CSGGeometries::propeller(double r, double R,
-                                                        double w, double h)
+std::shared_ptr<CSGGeometry> CSGGeometries::propeller(double r,
+                                                      double R,
+                                                      double w,
+                                                      double h)
 {
   // Parameters
   //const double v = 30;     // initial rotation of blades
@@ -76,13 +78,17 @@ std::shared_ptr<CSGGeometry> CSGGeometries::propeller(double r, double R,
 
   // // Create blades
   std::shared_ptr<CSGGeometry>
-    blade_0(new Box(dolfin::Point(0.8*r, -0.5*h, -0.5*w), dolfin::Point(R, 0.5*h, 0.5*w)));
+    blade_0(new Box(dolfin::Point(0.8*r, -0.5*h, -0.5*w),
+                    dolfin::Point(R, 0.5*h, 0.5*w)));
   std::shared_ptr<CSGGeometry>
-    blade_1(new Box(dolfin::Point(-R, -0.5*h, -0.5*w), dolfin::Point(-0.8*r, 0.5*h, 0.5*w)));
+    blade_1(new Box(dolfin::Point(-R, -0.5*h, -0.5*w),
+                    dolfin::Point(-0.8*r, 0.5*h, 0.5*w)));
   std::shared_ptr<CSGGeometry>
-    blade_2(new Box(dolfin::Point(-0.5*h, 0.8*r, -0.5*w), dolfin::Point(0.5*h, R, 0.5*w)));
+    blade_2(new Box(dolfin::Point(-0.5*h, 0.8*r, -0.5*w),
+                    dolfin::Point(0.5*h, R, 0.5*w)));
   std::shared_ptr<CSGGeometry>
-    blade_3(new Box(dolfin::Point(-0.5*h, -R, -0.5*w), dolfin::Point(0.5*h, -0.8*r, 0.5*w)));
+    blade_3(new Box(dolfin::Point(-0.5*h, -R, -0.5*w),
+                    dolfin::Point(0.5*h, -0.8*r, 0.5*w)));
 
   // // Rotate blades
   // // blade_0.rotate(-v, 0);
