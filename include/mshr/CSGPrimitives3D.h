@@ -15,7 +15,7 @@
 // You should have received a copy of the GNU General Public License
 // along with mshr.  If not, see <http://www.gnu.org/licenses/>.
 //
-// Modified by Johannes Ring, 2012
+// Modified by Johannes Ring 2012
 
 #ifndef __MSHR_PRIMITIVES_3D_H
 #define __MSHR_PRIMITIVES_3D_H
@@ -133,7 +133,7 @@ namespace mshr
     /// @param r        bottom radius of cone.
     /// @param segments number of faces on the side when generating a polyhedral approximation.
     Cone(dolfin::Point top, dolfin::Point bottom, double r, std::size_t segments=32)
-      : Cylinder(top, bottom, r, r, segments) {}
+      : Cylinder(top, bottom, r, 0, segments) {}
   };
 
   /// @brief A 3D tetrahedron
