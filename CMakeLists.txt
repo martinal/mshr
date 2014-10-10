@@ -21,7 +21,7 @@ if ( COMMAND cmake_policy )
 endif()
 
 # Borrow some cmake modules from cgal
-set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/3rdparty/CGAL-4.5-beta1/cmake/modules")
+set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/3rdparty/CGAL-4.5/cmake/modules")
 
 
 # Use C++11
@@ -89,7 +89,7 @@ include_directories( BEFORE include )
 file( GLOB_RECURSE SOURCES src/*.cpp )
 
 add_library(mshr SHARED ${SOURCES})
-add_dependencies( mshr CGAL-4.5-beta1 )
+add_dependencies( mshr CGAL-4.5 )
 
 # Append the library version information to the library target properties
 option(MSHR_WITH_LIBRARY_VERSION "Build with library version information." ON)
