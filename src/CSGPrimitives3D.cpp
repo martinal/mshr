@@ -58,7 +58,7 @@ std::string Sphere::str(bool verbose) const
   if (verbose)
   {
     s << "<Sphere with center at " << c << " "
-      << "withand radius " << r << ">";
+      << "and radius " << r << ">";
   }
   else
     s << "Sphere(" << c << ", " << r << ")";
