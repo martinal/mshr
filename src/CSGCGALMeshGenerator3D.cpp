@@ -44,13 +44,15 @@
 #include <CGAL/Min_sphere_of_spheres_d.h>
 #include <CGAL/Min_sphere_of_spheres_d_traits_3.h>
 
+#define NO_MULTICOMPONENT_DOMAIN
+
 // Domain
 typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
 typedef CGAL::Mesh_polyhedron_3<K>::type MeshPolyhedron_3;
 typedef K::Point_3 Point_3;
 typedef K::Vector_3 Vector_3;
 typedef K::Triangle_3 Triangle_3;
-#if 1
+#ifdef NO_MULTICOMPONENT_DOMAIN
 typedef CGAL::Polyhedral_mesh_domain_with_features_3<K> PolyhedralMeshDomain;
 #else
 typedef Polyhedral_multicomponent_mesh_domain_with_features_3<K> PolyhedralMeshDomain;
@@ -76,33 +78,36 @@ void build_dolfin_mesh(const C3t3& c3t3, dolfin::Mesh& mesh)
   typedef C3t3::Triangulation Triangulation;
   typedef Triangulation::Vertex_handle Vertex_handle;
 
-  // CGAL triangulation
-  const Triangulation& triangulation = c3t3.triangulation();
-
-  // Clear mesh
-  mesh.clear();
+  // Collect the vertices that are part of the complex
+  std::map<Vertex_handle, std::size_t> vertex_id_map;
+  for(C3t3::Cells_in_complex_iterator cit = c3t3.cells_in_complex_begin();
+      cit != c3t3.cells_in_complex_end();
+      ++cit)
+  {
+    for (std::size_t i = 0; i < 4; i++)
+    {
+      if (!vertex_id_map.count(cit->vertex(i)))
+      {
+        const std::size_t vertex_index = vertex_id_map.size();
+        vertex_id_map[cit->vertex(i)] = vertex_index;
+      }
+    }
+  }
 
   // Create and initialize mesh editor
+  mesh.clear();
   dolfin::MeshEditor mesh_editor;
   mesh_editor.open(mesh, 3, 3);
-  mesh_editor.init_vertices(triangulation.number_of_vertices());
+  mesh_editor.init_vertices(vertex_id_map.size());
   mesh_editor.init_cells(c3t3.number_of_cells_in_complex());
 
   // Add vertices to mesh
-  std::size_t vertex_index = 0;
-  std::map<Vertex_handle, std::size_t> vertex_id_map;
-
-  for (Triangulation::Finite_vertices_iterator
-         cgal_vertex = triangulation.finite_vertices_begin();
-       cgal_vertex != triangulation.finite_vertices_end(); ++cgal_vertex)
+  for (std::map<Vertex_handle, std::size_t>::const_iterator it = vertex_id_map.cbegin();
+       it != vertex_id_map.cend(); it++)
   {
-    vertex_id_map[cgal_vertex] = vertex_index;
-
-      // Get vertex coordinates and add vertex to the mesh
-    dolfin::Point p(cgal_vertex->point()[0], cgal_vertex->point()[1], cgal_vertex->point()[2]);
-    mesh_editor.add_vertex(vertex_index, p);
-
-    ++vertex_index;
+    // Get vertex coordinates and add vertex to the mesh
+    dolfin::Point p(it->first->point()[0], it->first->point()[1], it->first->point()[2]);
+    mesh_editor.add_vertex(it->second, p);
   }
 
   // Add cells to mesh
@@ -276,7 +281,7 @@ void CSGCGALMeshGenerator3D::generate(std::shared_ptr<const CSGCGALDomain3D> csg
     edge_size = cell_size;
   }
 
-  #if 1
+  #ifdef NO_MULTICOMPONENT_DOMAIN
   PolyhedralMeshDomain domain(p);
   #else
   PolyhedralMeshDomain domain(p, edge_size);
