@@ -87,10 +87,10 @@ class Polyhedral_multicomponent_mesh_domain_with_features_3
   typedef typename CGAL::Polyhedral_mesh_domain_with_features_3< IGT_ > Base;
   typedef typename Base::Polyhedron Polyhedron;
 
-// Passing the edge size with the constructor is a workaround. Ideally CGAL should pass it
-// when calling construct_initial_points
-Polyhedral_multicomponent_mesh_domain_with_features_3(const Polyhedron& p, double edge_size)
-  : Base(p), edge_size(edge_size)
+  // Passing the edge size with the constructor is a workaround. Ideally CGAL should pass it
+  // when calling construct_initial_points
+  Polyhedral_multicomponent_mesh_domain_with_features_3(const Polyhedron& p, double edge_size)
+   : Base(p), edge_size(edge_size)
   {}
 
   ~Polyhedral_multicomponent_mesh_domain_with_features_3(){}

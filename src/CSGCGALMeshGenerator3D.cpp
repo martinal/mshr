@@ -44,7 +44,7 @@
 #include <CGAL/Min_sphere_of_spheres_d.h>
 #include <CGAL/Min_sphere_of_spheres_d_traits_3.h>
 
-#define NO_MULTICOMPONENT_DOMAIN
+//#define NO_MULTICOMPONENT_DOMAIN
 
 // Domain
 typedef CGAL::Exact_predicates_inexact_constructions_kernel K;
@@ -52,6 +52,7 @@ typedef CGAL::Mesh_polyhedron_3<K>::type MeshPolyhedron_3;
 typedef K::Point_3 Point_3;
 typedef K::Vector_3 Vector_3;
 typedef K::Triangle_3 Triangle_3;
+
 #ifdef NO_MULTICOMPONENT_DOMAIN
 typedef CGAL::Polyhedral_mesh_domain_with_features_3<K> PolyhedralMeshDomain;
 #else
