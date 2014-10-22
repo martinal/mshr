@@ -61,7 +61,7 @@ include_directories(BEFORE ${DOLFIN_PYTHON_INCLUDE_DIRS})
 
 find_package(VTK)
 if (VTK_FOUND)
-  add_definitions("MSHR_HAS_VTK")
+  add_definitions("-DMSHR_HAS_VTK")
   include(${VTK_USE_FILE})
 endif()
 
