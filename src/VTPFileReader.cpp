@@ -19,7 +19,7 @@
 #include <mshr/VTPFileReader.h>
 #include <dolfin/log/log.h>
 
-#ifdef MSHR_VTK_VTK
+#ifdef MSHR_HAS_VTK
 #include <vtkXMLPolyDataReader.h>
 #include <vtkPolyData.h>
 #include <vtkCellArray.h>

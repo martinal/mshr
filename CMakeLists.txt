@@ -59,9 +59,13 @@ find_package(DOLFIN REQUIRED)
 include(${DOLFIN_USE_FILE})
 include_directories(BEFORE ${DOLFIN_PYTHON_INCLUDE_DIRS})
 
+message(STATUS "Dolfin libs:      ${DOLFIN_LIBRARIES}")
+message(STATUS "Dolfin 3rd party: ${DOLFIN_3RD_PARTY_LIBRARIES}")
+
+# TODO: This should be inherited from Dolfin
 find_package(VTK)
 if (VTK_FOUND)
-  add_definitions("-DMSHR_HAS_VTK")
+  add_definitions( -DMSHR_HAS_VTK )
   include(${VTK_USE_FILE})
 endif()
 
