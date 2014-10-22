@@ -119,7 +119,6 @@ target_link_libraries( mshr ${CGAL_LIB_DIR}/libCGAL.a
 			    tet
                             ${DOLFIN_LIBRARIES}
 			    ${VTK_LIBRARIES}
-			    ${DOLFIN_3RD_PARTY_LIBRARIES}
                      )
 
 # Build the python bindings
@@ -137,7 +136,7 @@ add_executable( mshrable app/mshrable.cpp )
 target_link_libraries( mshrable mshr
                                 ${DOLFIN_LIBRARIES}
                                 ${Boost_LIBRARIES}
-				${DOLFIN_3RD_PARTY_LIBRARIES})
+                     )
 
 
 # install library and app
