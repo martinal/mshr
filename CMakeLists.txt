@@ -60,7 +60,10 @@ include(${DOLFIN_USE_FILE})
 include_directories(BEFORE ${DOLFIN_PYTHON_INCLUDE_DIRS})
 
 find_package(VTK)
-include(${VTK_USE_FILE})
+if (VTK_FOUND)
+  add_definitions("MSHR_HAS_VTK")
+  include(${VTK_USE_FILE})
+endif()
 
 # Set installation directories
 set(INSTALL_LIB_DIR lib CACHE PATH "Installation directory for libraries")

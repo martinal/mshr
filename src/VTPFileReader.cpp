@@ -19,9 +19,11 @@
 #include <mshr/VTPFileReader.h>
 #include <dolfin/log/log.h>
 
+#ifdef MSHR_VTK_VTK
 #include <vtkXMLPolyDataReader.h>
 #include <vtkPolyData.h>
 #include <vtkCellArray.h>
+#endif
 
 
 namespace mshr
@@ -30,6 +32,8 @@ void VTPFileReader::read(const std::string filename,
                          std::vector<std::array<double, 3> > vertices,
                          std::vector<std::vector<std::size_t> > facets)
 {
+
+#ifdef MSHR_HAS_VTK
   //get all data from the file
   vtkXMLPolyDataReader* reader = vtkXMLPolyDataReader::New();
   reader->SetFileName(filename.c_str());
@@ -66,6 +70,14 @@ void VTPFileReader::read(const std::string filename,
 
   log(dolfin::TRACE, "Read %d triangles from vtp file", facet_counter);
   dolfin_assert(facet_counter == num_polys);
-}
 
+#else
+
+dolfin::dolfin_error("VTPFileReader.cpp",
+                     "reading VTP file",
+                     "mshr is not built with VTK support");
+
+#endif
+
+}
 }
