@@ -33,8 +33,8 @@ set_source_files_properties(mshr.i PROPERTIES CPLUSPLUS ON)
 swig_add_module(mshr python mshr.i)
 swig_link_libraries(mshr ${PYTHON_LIBRARIES} mshr )
 
-get_target_property(SWIG_MODULE_LOCATION
-${SWIG_MODULE_mshr_REAL_NAME} LOCATION)
+#get_target_property(SWIG_MODULE_LOCATION
+#${SWIG_MODULE_mshr_REAL_NAME} LOCATION)
 
 message(STATUS "Location: ${SWIG_MODULE_LOCATION}")
 

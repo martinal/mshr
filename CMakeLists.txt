@@ -59,8 +59,15 @@ find_package(DOLFIN REQUIRED)
 include(${DOLFIN_USE_FILE})
 include_directories(BEFORE ${DOLFIN_PYTHON_INCLUDE_DIRS})
 
+message(STATUS "Dolfin libs:      ${DOLFIN_LIBRARIES}")
+message(STATUS "Dolfin 3rd party: ${DOLFIN_3RD_PARTY_LIBRARIES}")
+
+# TODO: This should be inherited from Dolfin
 find_package(VTK)
-include(${VTK_USE_FILE})
+if (VTK_FOUND)
+  add_definitions( -DMSHR_HAS_VTK )
+  include(${VTK_USE_FILE})
+endif()
 
 # Set installation directories
 set(INSTALL_LIB_DIR lib CACHE PATH "Installation directory for libraries")
@@ -112,7 +119,6 @@ target_link_libraries( mshr ${CGAL_LIB_DIR}/libCGAL.a
 			    tet
                             ${DOLFIN_LIBRARIES}
 			    ${VTK_LIBRARIES}
-			    ${DOLFIN_3RD_PARTY_LIBRARIES}
                      )
 
 # Build the python bindings
@@ -130,7 +136,7 @@ add_executable( mshrable app/mshrable.cpp )
 target_link_libraries( mshrable mshr
                                 ${DOLFIN_LIBRARIES}
                                 ${Boost_LIBRARIES}
-				${DOLFIN_3RD_PARTY_LIBRARIES})
+                     )
 
 
 # install library and app
