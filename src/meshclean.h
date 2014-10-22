@@ -237,7 +237,7 @@ inline bool has_degree3_neighbors(const Polyhedron& p)
   dolfin_assert(p.is_valid());              \
   dolfin_assert(p.is_pure_triangle());      \
   dolfin_assert(!has_slivers(p));           \
-  dolfin_assert(!has_degree3_neighbors(p)); \
+  dolfin_assert(p.size_of_vertices() < 5 || !has_degree3_neighbors(p)); \
 } while(false);
 //-----------------------------------------------------------------------------
 template <typename Polyhedron>
