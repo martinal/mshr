@@ -458,14 +458,81 @@ PSLG::PSLG(const std::vector<std::pair<std::size_t, CSGCGALDomain2D> >& domains,
            double pixel_size, 
            double edge_truncate_tolerance)
 {
-  // Collect all segments from all domains to send to snap rounding
-  std::vector<Segment_2> segments;
   const Quotient truncate_tolerance(edge_truncate_tolerance);
   const Quotient truncate_tolerance_squared(truncate_tolerance*truncate_tolerance);
 
-  for (auto it = domains.begin(); it != domains.end(); it++)
+
+  if (domains.size() > 1 && pixel_size > 0)
   {
-    const Polygon_set_2& p = it->second.impl->polygon_set;
+    // Collect all segments from all domains to send to snap rounding
+    std::vector<Segment_2> segments;
+
+    for (auto it = domains.begin(); it != domains.end(); it++)
+    {
+      const Polygon_set_2& p = it->second.impl->polygon_set;
+
+      std::list<Polygon_with_holes_2> polygon_list;
+      p.polygons_with_holes(std::back_inserter(polygon_list));
+
+      for (std::list<Polygon_with_holes_2>::const_iterator pit = polygon_list.begin();
+           pit != polygon_list.end(); ++pit)
+      {
+        add_simple_polygon(segments, pit->outer_boundary(), truncate_tolerance_squared);
+
+        // Add holes
+        Hole_const_iterator hit;
+        for (hit = pit->holes_begin(); hit != pit->holes_end(); ++hit)
+        {
+          add_simple_polygon(segments, *hit, truncate_tolerance_squared);
+        }
+      }
+    }
+
+    log(dolfin::TRACE, "Snap rounding PSLG");
+    Polyline_list_2 snapped_polylines;
+
+    CGAL::snap_rounding_2<snap_rounding_traits,
+                          std::vector<Segment_2>::const_iterator,
+                          Polyline_list_2>
+      (segments.begin(), segments.end(),  // input
+       snapped_polylines,                 // output
+       pixel_size,                        // pixel size
+       false,                             // do iterated snap rounding
+       false,                             // output as integers
+       1);                                // number of kd-trees
+
+    std::map<Point_2, std::size_t> point_to_index;
+
+    for (Polyline_list_2::const_iterator iter1 = snapped_polylines.begin();
+         iter1 != snapped_polylines.end(); ++iter1)
+    {
+      Polyline_2::const_iterator iter2 = iter1->begin();
+      const std::size_t first = get_vertex_index(point_to_index,
+                                                 vertices,
+                                                 *iter2);
+      std::size_t prev = first;
+      iter2++;
+
+      while(iter2 != iter1->end())
+      {
+        std::size_t current = get_vertex_index(point_to_index,
+                                               vertices,
+                                               *iter2);
+
+        edges.push_back(std::make_pair(prev, current));
+        prev = current;
+        ++iter2;
+      }
+    }
+  }
+  else
+  {
+    log(dolfin::TRACE, "Skipping snap rounding");
+
+    // There is only one domain, so the segment list is just a set of disjoint
+    // simple polygons possibly with holes
+
+    const Polygon_set_2& p = domains.front().second.impl->polygon_set;
 
     std::list<Polygon_with_holes_2> polygon_list;
     p.polygons_with_holes(std::back_inserter(polygon_list));
@@ -473,51 +540,83 @@ PSLG::PSLG(const std::vector<std::pair<std::size_t, CSGCGALDomain2D> >& domains,
     for (std::list<Polygon_with_holes_2>::const_iterator pit = polygon_list.begin();
          pit != polygon_list.end(); ++pit)
     {
-      add_simple_polygon(segments, pit->outer_boundary(), truncate_tolerance_squared);
+      {
+        // Add the outer boundary
+        const Polygon_2& p = pit->outer_boundary();
+        Polygon_2::Vertex_const_iterator current = p.vertices_begin();
+        Polygon_2::Vertex_const_iterator prev = current;
+
+        const std::size_t vertex_index_start = vertices.size();
+        vertices.push_back(dolfin::Point(CGAL::to_double(current->x()),
+                                         CGAL::to_double(current->y())));
+
+        std::cout << "Pushing vertex: " << *current << std::endl;
+        std::size_t vertex_index = vertex_index_start;
+
+        current++;
+
+        while (current != p.vertices_end())
+        {
+          Segment_2 s(*prev, *current);
+
+          // Don't add segment if shorter than tolerance
+          if (s.squared_length() < truncate_tolerance_squared)
+          {
+            current++;
+            continue;
+          }
+
+          vertices.push_back(dolfin::Point(CGAL::to_double(current->x()),
+                                           CGAL::to_double(current->y())));
+
+          edges.push_back(std::make_pair(vertex_index, vertex_index+1));
+
+          prev = current;
+          current++;
+          vertex_index++;
+        }
+
+        edges.push_back(std::make_pair(vertex_index, vertex_index_start));
+      }
 
       // Add holes
       Hole_const_iterator hit;
       for (hit = pit->holes_begin(); hit != pit->holes_end(); ++hit)
       {
-        add_simple_polygon(segments, *hit, truncate_tolerance_squared);
+        const Polygon_2& p = *hit;
+        Polygon_2::Vertex_const_iterator current = p.vertices_begin();
+        Polygon_2::Vertex_const_iterator prev = current;
+
+        const std::size_t vertex_index_start = vertices.size();
+        vertices.push_back(dolfin::Point(CGAL::to_double(current->x()),
+                                         CGAL::to_double(current->y())));
+        std::size_t vertex_index = vertex_index_start;
+
+        current++;
+
+        while (current != p.vertices_end())
+        {
+          Segment_2 s(*prev, *current);
+
+          // Don't add segment if shorter than tolerance
+          if (s.squared_length() < truncate_tolerance_squared)
+          {
+            current++;
+            continue;
+          }
+
+          vertices.push_back(dolfin::Point(CGAL::to_double(current->x()),
+                                           CGAL::to_double(current->y())));
+
+          edges.push_back(std::make_pair(vertex_index, vertex_index+1));
+
+          prev = current;
+          current++;
+          vertex_index++;
+        }
+
+        edges.push_back(std::make_pair(vertex_index, vertex_index_start));
       }
-    }
-  }
-
-  log(dolfin::TRACE, "Snap rounding PSLG");
-  Polyline_list_2 snapped_polylines;
-
-  CGAL::snap_rounding_2<snap_rounding_traits,
-                        std::vector<Segment_2>::const_iterator,
-                        Polyline_list_2>
-    (segments.begin(), segments.end(),  // input
-     snapped_polylines,                 // output
-     pixel_size,                        // pixel size
-     false,                             // do iterated snap rounding
-     false,                             // output as integers
-     1);                                // number of kd-trees
-
-  std::map<Point_2, std::size_t> point_to_index;
-
-  for (Polyline_list_2::const_iterator iter1 = snapped_polylines.begin();
-       iter1 != snapped_polylines.end(); ++iter1)
-  {
-    Polyline_2::const_iterator iter2 = iter1->begin();
-    const std::size_t first = get_vertex_index(point_to_index,
-                                               vertices,
-                                               *iter2);
-    std::size_t prev = first;
-    iter2++;
-
-    while(iter2 != iter1->end())
-    {
-      std::size_t current = get_vertex_index(point_to_index,
-                                             vertices,
-                                             *iter2);
-
-      edges.push_back(std::make_pair(prev, current));
-      prev = current;
-      ++iter2;
     }
   }
 }
