@@ -20,9 +20,11 @@
 #include <mshr/CSGGeometry.h>
 #include <mshr/CSGCGALDomain3D.h>
 
+#include <dolfin/common/MPI.h>
 #include <dolfin/log/LogStream.h>
 #include <dolfin/mesh/BoundaryMesh.h>
 #include <dolfin/mesh/MeshEditor.h>
+#include <dolfin/mesh/MeshPartitioning.h>
 
 #include <memory>
 
@@ -229,113 +231,122 @@ CSGCGALMeshGenerator3D::~CSGCGALMeshGenerator3D() {}
 void CSGCGALMeshGenerator3D::generate(std::shared_ptr<const CSGCGALDomain3D> csgdomain,
                                       dolfin::Mesh& mesh) const
 {
-  // Create CGAL mesh domain
-  MeshPolyhedron_3 p;
-  convert_to_inexact(*csgdomain, p, !csgdomain->is_insideout());
 
-  // Reset the (memory consuming exact arithmetic) domain object
-  // will be deleted if the pointer has been moved to the function
-  csgdomain.reset();
-
-  // Workaround, cgal segfaulted when assigning new mesh criterias
-  // within the if-else blocks.
-  std::unique_ptr<Mesh_criteria> criteria;
-  double edge_size;
-
-  const bool criteria_changed = parameters["edge_size"].change_count() > 0
-    || parameters["facet_angle"].change_count() > 0
-    || parameters["facet_size"].change_count() > 0
-    || parameters["facet_distance"].change_count() > 0
-    || parameters["cell_radius_edge_ratio"].change_count() > 0
-    || parameters["cell_size"].change_count() > 0;
-
-  if (parameters["mesh_resolution"].change_count() > 0 && criteria_changed)
-    dolfin::warning("Attempt to set both mesh_resolution and other meshing criterias which are mutually exclusive");
-
-  if (criteria_changed)
+  // Note that if not in parallel (ie. size() == 0)
+  // then both receiver and broadcaster will return false
+  if (!dolfin::MPI::is_receiver(mesh.mpi_comm()))
   {
-    log(dolfin::TRACE, "Using user specified meshing criterias");
+    // Create CGAL mesh domain
+    MeshPolyhedron_3 p;
+    convert_to_inexact(*csgdomain, p, !csgdomain->is_insideout());
 
-    // Mesh criteria
-    criteria.reset(new Mesh_criteria(CGAL::parameters::edge_size = parameters["edge_size"],
-                                     CGAL::parameters::facet_angle = parameters["facet_angle"],
-                                     CGAL::parameters::facet_size = parameters["facet_size"], //  <-----------
-                                     CGAL::parameters::facet_distance = parameters["facet_distance"],
-                                     CGAL::parameters::cell_radius_edge_ratio = parameters["cell_radius_edge_ratio"],
-                                     CGAL::parameters::cell_size = parameters["cell_size"])); // <--------------
-    edge_size = parameters["edge_size"];
+    // Reset the (memory consuming exact arithmetic) domain object
+    // will be deleted if the pointer has been moved to the function
+    csgdomain.reset();
+
+    // Workaround, cgal segfaulted when assigning new mesh criterias
+    // within the if-else blocks.
+    std::unique_ptr<Mesh_criteria> criteria;
+    double edge_size;
+
+    const bool criteria_changed = parameters["edge_size"].change_count() > 0
+      || parameters["facet_angle"].change_count() > 0
+      || parameters["facet_size"].change_count() > 0
+      || parameters["facet_distance"].change_count() > 0
+      || parameters["cell_radius_edge_ratio"].change_count() > 0
+      || parameters["cell_size"].change_count() > 0;
+
+    if (parameters["mesh_resolution"].change_count() > 0 && criteria_changed)
+      dolfin::warning("Attempt to set both mesh_resolution and other meshing criterias which are mutually exclusive");
+
+    if (criteria_changed)
+    {
+      log(dolfin::TRACE, "Using user specified meshing criterias");
+
+      // Mesh criteria
+      criteria.reset(new Mesh_criteria(CGAL::parameters::edge_size = parameters["edge_size"],
+                                       CGAL::parameters::facet_angle = parameters["facet_angle"],
+                                       CGAL::parameters::facet_size = parameters["facet_size"], //  <-----------
+                                       CGAL::parameters::facet_distance = parameters["facet_distance"],
+                                       CGAL::parameters::cell_radius_edge_ratio = parameters["cell_radius_edge_ratio"],
+                                       CGAL::parameters::cell_size = parameters["cell_size"])); // <--------------
+      edge_size = parameters["edge_size"];
+    }
+    else
+    {
+      // Try to compute reasonable parameters
+      const double mesh_resolution = parameters["mesh_resolution"];
+      const double r = get_bounding_sphere_radius(p);
+      const double cell_size = r/mesh_resolution*2.0;
+      log(dolfin::TRACE, "Computing meshing criterias. Chose cell size %f", cell_size);
+
+      criteria.reset(new Mesh_criteria(CGAL::parameters::edge_size = cell_size,
+                                       CGAL::parameters::facet_angle = 30.0,
+                                       CGAL::parameters::facet_size = cell_size,
+                                       CGAL::parameters::facet_distance = cell_size/10.0, // ???
+                                       CGAL::parameters::cell_radius_edge_ratio = 3.0,
+                                       CGAL::parameters::cell_size = cell_size));
+      edge_size = cell_size;
+    }
+
+    #ifdef NO_MULTICOMPONENT_DOMAIN
+    PolyhedralMeshDomain domain(p);
+    #else
+    PolyhedralMeshDomain domain(p, edge_size);
+    #endif
+
+    if (parameters["detect_sharp_features"])
+    {
+      log(dolfin::TRACE, "Detecting sharp features");
+
+      //const int feature_threshold = parameters["feature_threshold"];
+      domain.detect_features();
+    }
+
+    // Mesh generation
+    log(dolfin::TRACE, "Generating mesh");
+    C3t3 c3t3;
+    make_multicomponent_mesh_3_impl<C3t3>(c3t3,
+                                          domain,
+                                          *criteria,
+                                          CGAL::parameters::no_exude(),
+                                          CGAL::parameters::no_perturb(),
+                                          CGAL::parameters::no_odt(),
+                                          CGAL::parameters::no_lloyd(),
+                                          true);
+
+
+
+    if (parameters["odt_optimize"])
+    {
+      log(dolfin::TRACE, "Optimizing mesh by odt optimization");
+      odt_optimize_mesh_3(c3t3, domain);
+    }
+
+    if (parameters["lloyd_optimize"])
+    {
+      log(dolfin::TRACE, "Optimizing mesh by lloyd optimization");
+      lloyd_optimize_mesh_3(c3t3, domain);
+    }
+
+    if (parameters["perturb_optimize"])
+    {
+      log(dolfin::TRACE, "Optimizing mesh by perturbation");
+      // TODO: Set time limit
+      CGAL::perturb_mesh_3(c3t3, domain);
+    }
+
+    if (parameters["exude_optimize"])
+    {
+      log(dolfin::TRACE, "Optimizing mesh by sliver exudation");
+      exude_mesh_3(c3t3);
+    }
+
+    build_dolfin_mesh(c3t3, mesh);
   }
-  else
-  {
-    // Try to compute reasonable parameters
-    const double mesh_resolution = parameters["mesh_resolution"];
-    const double r = get_bounding_sphere_radius(p);
-    const double cell_size = r/mesh_resolution*2.0;
-    log(dolfin::TRACE, "Computing meshing criterias. Chose cell size %f", cell_size);
 
-    criteria.reset(new Mesh_criteria(CGAL::parameters::edge_size = cell_size,
-                                     CGAL::parameters::facet_angle = 30.0,
-                                     CGAL::parameters::facet_size = cell_size,
-                                     CGAL::parameters::facet_distance = cell_size/10.0, // ???
-                                     CGAL::parameters::cell_radius_edge_ratio = 3.0,
-                                     CGAL::parameters::cell_size = cell_size));
-    edge_size = cell_size;
-  }
-
-  #ifdef NO_MULTICOMPONENT_DOMAIN
-  PolyhedralMeshDomain domain(p);
-  #else
-  PolyhedralMeshDomain domain(p, edge_size);
-  #endif
-
-  if (parameters["detect_sharp_features"])
-  {
-    log(dolfin::TRACE, "Detecting sharp features");
-
-    //const int feature_threshold = parameters["feature_threshold"];
-    domain.detect_features();
-  }
-
-  // Mesh generation
-  log(dolfin::TRACE, "Generating mesh");
-  C3t3 c3t3;
-  make_multicomponent_mesh_3_impl<C3t3>(c3t3,
-                                        domain,
-                                        *criteria,
-                                        CGAL::parameters::no_exude(),
-                                        CGAL::parameters::no_perturb(),
-                                        CGAL::parameters::no_odt(),
-                                        CGAL::parameters::no_lloyd(),
-                                        true);
-
-
-
-  if (parameters["odt_optimize"])
-  {
-    log(dolfin::TRACE, "Optimizing mesh by odt optimization");
-    odt_optimize_mesh_3(c3t3, domain);
-  }
-
-  if (parameters["lloyd_optimize"])
-  {
-    log(dolfin::TRACE, "Optimizing mesh by lloyd optimization");
-    lloyd_optimize_mesh_3(c3t3, domain);
-  }
-
-  if (parameters["perturb_optimize"])
-  {
-    log(dolfin::TRACE, "Optimizing mesh by perturbation");
-    // TODO: Set time limit
-    CGAL::perturb_mesh_3(c3t3, domain);
-  }
-
-  if (parameters["exude_optimize"])
-  {
-    log(dolfin::TRACE, "Optimizing mesh by sliver exudation");
-    exude_mesh_3(c3t3);
-  }
-
-  build_dolfin_mesh(c3t3, mesh);
+  // Distribute the mesh (if in parallel)
+  dolfin::MeshPartitioning::build_distributed_mesh(mesh);
 }
 //-----------------------------------------------------------------------------
 void CSGCGALMeshGenerator3D::generate(const CSGGeometry& geometry,
@@ -359,6 +370,5 @@ void CSGCGALMeshGenerator3D::generate(std::shared_ptr<const CSGGeometry> geometr
   generate(std::move(exact_domain), mesh);
 }
 //-----------------------------------------------------------------------------
-
 
 }

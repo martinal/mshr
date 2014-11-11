@@ -30,12 +30,14 @@
 #include <CGAL/Delaunay_mesh_size_criteria_2.h>
 
 #include <dolfin/common/constants.h>
+#include <dolfin/common/MPI.h>
 #include <dolfin/math/basic.h>
 #include <dolfin/mesh/Mesh.h>
 #include <dolfin/mesh/MeshEditor.h>
 #include <dolfin/mesh/MeshFunction.h>
 #include <dolfin/mesh/MeshDomains.h>
 #include <dolfin/mesh/MeshValueCollection.h>
+#include <dolfin/mesh/MeshPartitioning.h>
 #include <dolfin/log/log.h>
 
 #include <mshr/CSGCGALMeshGenerator2D.h>
@@ -290,204 +292,213 @@ double shortest_constrained_edge(const CDT &cdt)
 //-----------------------------------------------------------------------------
 void CSGCGALMeshGenerator2D::generate(const CSGGeometry& geometry, dolfin::Mesh& mesh)
 {
-  std::vector<std::pair<std::size_t, CSGCGALDomain2D> >
-    subdomain_geometries;
-
-  log(dolfin::TRACE, "Converting geometry to CGAL polygon");
-  CSGCGALDomain2D total_domain(&geometry);
-
-  // Empty polygon, will be populated when traversing the subdomains
-  CSGCGALDomain2D overlaying;
-
-  // Add the subdomains to the PSLG. Traverse in reverse order to get the latest
-  // added subdomain on top
-  std::list<std::pair<std::size_t, std::shared_ptr<const CSGGeometry> > >::const_reverse_iterator it;
-
-  if (!geometry.get_subdomains().empty())
-    log(dolfin::TRACE, "Processing subdomains");
-
-  for (it = geometry.get_subdomains().rbegin(); it != geometry.get_subdomains().rend();
-       ++it)
+  // Note that if not in parallel (ie. size() == 0)
+  // then both receiver and broadcaster will return false
+  if (!dolfin::MPI::is_receiver(mesh.mpi_comm()))
   {
-    const std::size_t current_index = it->first;
-    std::shared_ptr<const CSGGeometry> current_subdomain = it->second;
 
-    CSGCGALDomain2D cgal_geometry(current_subdomain.get());
+    std::vector<std::pair<std::size_t, CSGCGALDomain2D> >
+      subdomain_geometries;
 
-    // Only the part inside the total domain
-    cgal_geometry.intersect_inplace(total_domain);
+    log(dolfin::TRACE, "Converting geometry to CGAL polygon");
+    CSGCGALDomain2D total_domain(&geometry);
 
-    // Only the part outside overlaying subdomains
-    cgal_geometry.difference_inplace(overlaying);
+    // Empty polygon, will be populated when traversing the subdomains
+    CSGCGALDomain2D overlaying;
 
-    subdomain_geometries.push_back(std::make_pair(current_index,
-                                                  cgal_geometry));
+    // Add the subdomains to the PSLG. Traverse in reverse order to get the latest
+    // added subdomain on top
+    std::list<std::pair<std::size_t, std::shared_ptr<const CSGGeometry> > >::const_reverse_iterator it;
 
-    overlaying.join_inplace(cgal_geometry);
-  }
+    if (!geometry.get_subdomains().empty())
+      log(dolfin::TRACE, "Processing subdomains");
 
-  CSGCGALDomain2D remaining(total_domain);
-  remaining.difference_inplace(overlaying);
-  subdomain_geometries.push_back(std::make_pair(0, remaining));
-
-  const double pixel_size = parameters["pixel_size"];
-
-  // Compute cell size
-  double cell_size;
-  const double mesh_resolution = parameters["mesh_resolution"];
-  if (mesh_resolution > 0)
-  {
-    const double min_radius = total_domain.compute_boundingcircle_radius();
-    cell_size = 2.0*min_radius/mesh_resolution;
-  }
-  else
-  {
-    cell_size = parameters["cell_size"];
-  }
-
-  log(dolfin::TRACE, "Request cell size: %f", cell_size);
-  const double truncate_tolerance = parameters["edge_truncate_tolerance"];
-
-  PSLG pslg(subdomain_geometries, pixel_size, truncate_tolerance < 0 ? cell_size/200 : truncate_tolerance);
-
-  // Create empty CGAL triangulation and copy data from the PSLG
-  CDT cdt;
-
-  {
-    std::vector<CDT::Vertex_handle> vertices;
+    for (it = geometry.get_subdomains().rbegin(); it != geometry.get_subdomains().rend();
+         ++it)
     {
-      // Insert the vertices into the triangulation
-      std::vector<dolfin::Point>& v = pslg.vertices;
-      vertices.reserve(v.size());
-      for (auto vit = v.begin(); vit != v.end(); vit++)
-        vertices.push_back(cdt.insert(Point_2(vit->x(), vit->y())));
+      const std::size_t current_index = it->first;
+      std::shared_ptr<const CSGGeometry> current_subdomain = it->second;
+
+      CSGCGALDomain2D cgal_geometry(current_subdomain.get());
+
+      // Only the part inside the total domain
+      cgal_geometry.intersect_inplace(total_domain);
+
+      // Only the part outside overlaying subdomains
+      cgal_geometry.difference_inplace(overlaying);
+
+      subdomain_geometries.push_back(std::make_pair(current_index,
+                                                    cgal_geometry));
+
+      overlaying.join_inplace(cgal_geometry);
     }
 
-    // Insert the edges as constraints
-    std::vector<std::pair<std::size_t, std::size_t> > edges = pslg.edges;
-    for (auto eit = edges.begin(); eit != edges.end(); eit++)
+    CSGCGALDomain2D remaining(total_domain);
+    remaining.difference_inplace(overlaying);
+    subdomain_geometries.push_back(std::make_pair(0, remaining));
+
+    const double pixel_size = parameters["pixel_size"];
+
+    // Compute cell size
+    double cell_size;
+    const double mesh_resolution = parameters["mesh_resolution"];
+    if (mesh_resolution > 0)
     {
-      cdt.insert_constraint(vertices[eit->first], vertices[eit->second]);
+      const double min_radius = total_domain.compute_boundingcircle_radius();
+      cell_size = 2.0*min_radius/mesh_resolution;
     }
-  }
-  
-
-  // log(dolfin::TRACE, "Exploring subdomains in triangulation");
-  // explore_subdomains(cdt, total_domain, subdomain_geometries);
-
-  log(dolfin::TRACE, "Initializing mesh refinement");
-
-  // Create mesher
-  CGAL_Mesher_2 mesher(cdt);
-
-  // Add seeds for all faces in the total domain
-  std::list<Point_2> list_of_seeds;
-  for(CDT::Finite_faces_iterator fit = cdt.finite_faces_begin();
-      fit != cdt.finite_faces_end(); ++fit)
-  {
-    // Calculate center of triangle and add to list of seeds
-    Point_2 p0 = fit->vertex(0)->point();
-    Point_2 p1 = fit->vertex(1)->point();
-    Point_2 p2 = fit->vertex(2)->point();
-    const double x = (p0[0] + p1[0] + p2[0]) / 3;
-    const double y = (p0[1] + p1[1] + p2[1]) / 3;
-
-    if (total_domain.point_in_domain(dolfin::Point(x, y)))
+    else
     {
-      list_of_seeds.push_back(Point_2(x, y));
+      cell_size = parameters["cell_size"];
     }
-  }
 
-  // log(dolfin::TRACE, "Added %d seed points", list_of_seeds.size());
-  mesher.set_seeds(list_of_seeds.begin(), list_of_seeds.end(), true);
+    log(dolfin::TRACE, "Request cell size: %f", cell_size);
+    const double truncate_tolerance = parameters["edge_truncate_tolerance"];
 
-  // Set shape and size criteria
-  const double shape_bound = parameters["triangle_shape_bound"];
-  mesher.set_criteria(Mesh_criteria_2(shape_bound, cell_size));
+    PSLG pslg(subdomain_geometries, pixel_size, truncate_tolerance < 0 ? cell_size/200 : truncate_tolerance);
 
-  // Refine CGAL mesh/triangulation
-  mesher.refine_mesh();
-  
-  // Make sure triangulation is valid
-  dolfin_assert(cdt.is_valid());
+    // Create empty CGAL triangulation and copy data from the PSLG
+    CDT cdt;
 
-  // Mark the subdomains
-  log(dolfin::TRACE, "Exploring subdomains in mesh");
-  explore_subdomains(cdt, total_domain, subdomain_geometries);
-
-  // Clear mesh
-  mesh.clear();
-
-  const std::size_t gdim = cdt.finite_vertices_begin()->point().dimension();
-  const std::size_t tdim = cdt.dimension();
-  const std::size_t num_vertices = cdt.number_of_vertices();
-
-  // Count valid cells
-  std::size_t num_cells = 0;
-  for (CDT::Finite_faces_iterator cgal_cell = cdt.finite_faces_begin();
-       cgal_cell != cdt.finite_faces_end(); ++cgal_cell)
-  {
-    // Add cell if it is in the domain
-    if (cgal_cell->is_in_domain())
     {
-       num_cells++;
-    }
-  }
-
-  log(dolfin::DBG, "Mesh with %d vertices and %d cells created", num_vertices, num_cells);
-
-  // Create a MeshEditor and open
-  dolfin::MeshEditor mesh_editor;
-  mesh_editor.open(mesh, tdim, gdim);
-  mesh_editor.init_vertices(num_vertices);
-  mesh_editor.init_cells(num_cells);
-
-  // Add vertices to mesh
-  std::size_t vertex_index = 0;
-  for (CDT::Finite_vertices_iterator cgal_vertex = cdt.finite_vertices_begin();
-       cgal_vertex != cdt.finite_vertices_end(); ++cgal_vertex)
-  {
-    // Get vertex coordinates and add vertex to the mesh
-    dolfin::Point p;
-    p[0] = cgal_vertex->point()[0];
-    p[1] = cgal_vertex->point()[1];
-
-    // Add mesh vertex
-    mesh_editor.add_vertex(vertex_index, p);
-
-    // Attach index to vertex and increment
-    cgal_vertex->info() = vertex_index++;
-  }
-
-  dolfin_assert(vertex_index == num_vertices);
-
-  // Add cells to mesh and build domain marker mesh function
-  dolfin::MeshDomains &domain_markers = mesh.domains();
-  std::size_t cell_index = 0;
-  const bool mark_cells = geometry.has_subdomains();
-  for (CDT::Finite_faces_iterator cgal_cell = cdt.finite_faces_begin();
-       cgal_cell != cdt.finite_faces_end(); ++cgal_cell)
-  {
-    // Add cell if it is in the domain
-    if (cgal_cell->is_in_domain())
-    {
-      mesh_editor.add_cell(cell_index,
-                           cgal_cell->vertex(0)->info(),
-                           cgal_cell->vertex(1)->info(),
-                           cgal_cell->vertex(2)->info());
-
-      if (mark_cells)
+      std::vector<CDT::Vertex_handle> vertices;
       {
-        domain_markers.set_marker(std::make_pair(cell_index,
-                                                 cgal_cell->counter()), 2);
+        // Insert the vertices into the triangulation
+        std::vector<dolfin::Point>& v = pslg.vertices;
+        vertices.reserve(v.size());
+        for (auto vit = v.begin(); vit != v.end(); vit++)
+          vertices.push_back(cdt.insert(Point_2(vit->x(), vit->y())));
       }
-      ++cell_index;
-    }
-  }
-  dolfin_assert(cell_index == num_cells);
 
-  // Close mesh editor
-  mesh_editor.close();
+      // Insert the edges as constraints
+      std::vector<std::pair<std::size_t, std::size_t> > edges = pslg.edges;
+      for (auto eit = edges.begin(); eit != edges.end(); eit++)
+      {
+        cdt.insert_constraint(vertices[eit->first], vertices[eit->second]);
+      }
+    }
+  
+
+    // log(dolfin::TRACE, "Exploring subdomains in triangulation");
+    // explore_subdomains(cdt, total_domain, subdomain_geometries);
+
+    log(dolfin::TRACE, "Initializing mesh refinement");
+
+    // Create mesher
+    CGAL_Mesher_2 mesher(cdt);
+
+    // Add seeds for all faces in the total domain
+    std::list<Point_2> list_of_seeds;
+    for(CDT::Finite_faces_iterator fit = cdt.finite_faces_begin();
+        fit != cdt.finite_faces_end(); ++fit)
+    {
+      // Calculate center of triangle and add to list of seeds
+      Point_2 p0 = fit->vertex(0)->point();
+      Point_2 p1 = fit->vertex(1)->point();
+      Point_2 p2 = fit->vertex(2)->point();
+      const double x = (p0[0] + p1[0] + p2[0]) / 3;
+      const double y = (p0[1] + p1[1] + p2[1]) / 3;
+
+      if (total_domain.point_in_domain(dolfin::Point(x, y)))
+      {
+        list_of_seeds.push_back(Point_2(x, y));
+      }
+    }
+
+    // log(dolfin::TRACE, "Added %d seed points", list_of_seeds.size());
+    mesher.set_seeds(list_of_seeds.begin(), list_of_seeds.end(), true);
+
+    // Set shape and size criteria
+    const double shape_bound = parameters["triangle_shape_bound"];
+    mesher.set_criteria(Mesh_criteria_2(shape_bound, cell_size));
+
+    // Refine CGAL mesh/triangulation
+    mesher.refine_mesh();
+  
+    // Make sure triangulation is valid
+    dolfin_assert(cdt.is_valid());
+
+    // Mark the subdomains
+    log(dolfin::TRACE, "Exploring subdomains in mesh");
+    explore_subdomains(cdt, total_domain, subdomain_geometries);
+
+    // Clear mesh
+    mesh.clear();
+
+    const std::size_t gdim = cdt.finite_vertices_begin()->point().dimension();
+    const std::size_t tdim = cdt.dimension();
+    const std::size_t num_vertices = cdt.number_of_vertices();
+
+    // Count valid cells
+    std::size_t num_cells = 0;
+    for (CDT::Finite_faces_iterator cgal_cell = cdt.finite_faces_begin();
+         cgal_cell != cdt.finite_faces_end(); ++cgal_cell)
+    {
+      // Add cell if it is in the domain
+      if (cgal_cell->is_in_domain())
+      {
+        num_cells++;
+      }
+    }
+
+    log(dolfin::DBG, "Mesh with %d vertices and %d cells created", num_vertices, num_cells);
+
+    // Create a MeshEditor and open
+    dolfin::MeshEditor mesh_editor;
+    mesh_editor.open(mesh, tdim, gdim);
+    mesh_editor.init_vertices(num_vertices);
+    mesh_editor.init_cells(num_cells);
+
+    // Add vertices to mesh
+    std::size_t vertex_index = 0;
+    for (CDT::Finite_vertices_iterator cgal_vertex = cdt.finite_vertices_begin();
+         cgal_vertex != cdt.finite_vertices_end(); ++cgal_vertex)
+    {
+      // Get vertex coordinates and add vertex to the mesh
+      dolfin::Point p;
+      p[0] = cgal_vertex->point()[0];
+      p[1] = cgal_vertex->point()[1];
+
+      // Add mesh vertex
+      mesh_editor.add_vertex(vertex_index, p);
+
+      // Attach index to vertex and increment
+      cgal_vertex->info() = vertex_index++;
+    }
+
+    dolfin_assert(vertex_index == num_vertices);
+
+    // Add cells to mesh and build domain marker mesh function
+    dolfin::MeshDomains &domain_markers = mesh.domains();
+    std::size_t cell_index = 0;
+    const bool mark_cells = geometry.has_subdomains();
+    for (CDT::Finite_faces_iterator cgal_cell = cdt.finite_faces_begin();
+         cgal_cell != cdt.finite_faces_end(); ++cgal_cell)
+    {
+      // Add cell if it is in the domain
+      if (cgal_cell->is_in_domain())
+      {
+        mesh_editor.add_cell(cell_index,
+                             cgal_cell->vertex(0)->info(),
+                             cgal_cell->vertex(1)->info(),
+                             cgal_cell->vertex(2)->info());
+
+        if (mark_cells)
+        {
+          domain_markers.set_marker(std::make_pair(cell_index,
+                                                   cgal_cell->counter()), 2);
+        }
+        ++cell_index;
+      }
+    }
+    dolfin_assert(cell_index == num_cells);
+
+    // Close mesh editor
+    mesh_editor.close();
+  }
+
+  // Distribute the mesh (if in parallel)
+  dolfin::MeshPartitioning::build_distributed_mesh(mesh);
 }
 }
 //-----------------------------------------------------------------------------
