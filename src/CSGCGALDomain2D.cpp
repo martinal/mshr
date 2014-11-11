@@ -550,7 +550,6 @@ PSLG::PSLG(const std::vector<std::pair<std::size_t, CSGCGALDomain2D> >& domains,
         vertices.push_back(dolfin::Point(CGAL::to_double(current->x()),
                                          CGAL::to_double(current->y())));
 
-        std::cout << "Pushing vertex: " << *current << std::endl;
         std::size_t vertex_index = vertex_index_start;
 
         current++;
