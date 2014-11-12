@@ -1,9 +1,16 @@
-find_package(PythonInterp 2)
+
+
+
 find_package(SWIG REQUIRED)
 include(${SWIG_USE_FILE})
 
-find_package(PythonLibs)
-include_directories(${PYTHON_INCLUDE_PATH})
+# FIXME: Instead use DOLFIN_PYTHON_EXECUTABLE when
+# this has been added to Dolfin
+find_package(PythonInterp 2)
+
+# Don't use these. Instad get the values from Dolfin
+# find_package(PythonLibs)
+# include_directories(${PYTHON_INCLUDE_PATH})
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR})
 
@@ -31,7 +38,7 @@ add_definitions( ${DOLFIN_PYTHON_DEFINITIONS} )
 
 set_source_files_properties(mshr.i PROPERTIES CPLUSPLUS ON)
 swig_add_module(mshr python mshr.i)
-swig_link_libraries(mshr ${PYTHON_LIBRARIES} mshr )
+swig_link_libraries(mshr ${DOLFIN_PYTHON_LIBRARIES} mshr )
 
 #get_target_property(SWIG_MODULE_LOCATION
 #${SWIG_MODULE_mshr_REAL_NAME} LOCATION)
