@@ -2,10 +2,11 @@
 
 # Make sure cmake picks up the same swig as Dolfin used
 if (NOT DEFINED DOLFIN_SWIG_EXECUTABLE )
-  message(FATAL_ERROR "DOLFIN_SWIG_EXECUTABLE not defined. This should be in DOLFINConfig.cmake")
+  message(WARNING "DOLFIN_SWIG_EXECUTABLE not defined. This should be in DOLFINConfig.cmake")
+else()
+  set(SWIG_EXECUTABLE ${DOLFIN_SWIG_EXECUTABLE})
 endif()
 
-set(SWIG_EXECUTABLE ${DOLFIN_SWIG_EXECUTABLE})
 find_package(SWIG REQUIRED)
 include(${SWIG_USE_FILE})
 
