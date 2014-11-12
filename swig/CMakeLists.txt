@@ -1,11 +1,16 @@
 
 
+# Make sure cmake picks up the same swig as Dolfin used
+if (NOT DEFINED DOLFIN_SWIG_EXECUTABLE )
+  message(FATAL_ERROR "DOLFIN_SWIG_EXECUTABLE not defined. This should be in DOLFINConfig.cmake")
+endif()
 
+set(SWIG_EXECUTABLE ${DOLFIN_SWIG_EXECUTABLE})
 find_package(SWIG REQUIRED)
 include(${SWIG_USE_FILE})
 
 # FIXME: Instead use DOLFIN_PYTHON_EXECUTABLE when
-# this has been added to Dolfin
+# this has been added to DOLFINConfig.cmake
 find_package(PythonInterp 2)
 
 # Don't use these. Instad get the values from Dolfin
