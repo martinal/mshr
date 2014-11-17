@@ -56,6 +56,9 @@ namespace mshr
     /// @param segments number of segments when computing the polygonal approximation
     Circle(dolfin::Point c, double r, std::size_t segments=32);
 
+    /// @brief Deprecated. Create rectangle defined by two opposite corners
+    Circle(double x1, double y2, double r, std::size_t segments=32);
+
     /// @brief get informal string representation
     /// @param verbose  Verbosity level
     std::string str(bool verbose) const;
@@ -129,6 +132,9 @@ namespace mshr
     /// @param a first corner.
     /// @param b second corner.
     Rectangle(dolfin::Point a, dolfin::Point b);
+
+    /// @brief Deprecated. Create rectangle defined by two opposite corners
+    Rectangle(double x1, double y1, double x2, double y2);
 
     /// @brief get informal string representation
     /// @param verbose  Verbosity level

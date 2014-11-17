@@ -59,6 +59,16 @@ Circle::Circle(dolfin::Point(c), double r, std::size_t segments)
   }
 }
 //-----------------------------------------------------------------------------
+Circle::Circle(double x, double y, double r, std::size_t segments)
+  : Circle(dolfin::Point(x, y), r, segments)
+{
+  dolfin::deprecation("Construct circle",
+                      "1.4.0",
+                      "1.5.0",
+                      "Use the constructor that takes Point arguments");
+
+}
+//-----------------------------------------------------------------------------
 std::string Circle::str(bool verbose) const
 {
   std::stringstream s;
@@ -128,6 +138,16 @@ Rectangle::Rectangle(dolfin::Point a, dolfin::Point b)
                  "create rectangle",
                          s.str());
   }
+}
+//-----------------------------------------------------------------------------
+Rectangle::Rectangle(double x1, double y1, double x2, double y2)
+  : Rectangle(dolfin::Point(x1, y1), dolfin::Point(x2, y2))
+{
+  dolfin::deprecation("Construct rectangle",
+                      "1.4.0",
+                      "1.5.0",
+                      "Use the constructor that takes Point arguments");
+
 }
 //-----------------------------------------------------------------------------
 std::string Rectangle::str(bool verbose) const

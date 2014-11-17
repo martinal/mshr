@@ -77,6 +77,10 @@ namespace mshr
     /// @param b The second corner
     Box(dolfin::Point a, dolfin::Point b);
 
+    /// @brief Deprecated. Create box defined by two opposite corners
+    Box(double x1, double y1, double z1,
+        double x2, double y2, double z2);
+
     /// @brief Informal string representation
     std::string str(bool verbose) const;
 
