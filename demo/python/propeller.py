@@ -26,6 +26,7 @@ h = 0.025
 rotate_blades = True
 include_tip = False
 extra_rotation = True # only applied to inner mesh
+resolution = 4
 
 # Define geometries
 sphere = Sphere(Point(0, 0, 0), 2*R)
@@ -33,8 +34,8 @@ geometry_inside = CSGGeometries.propeller(r, R, w, h, rotate_blades, include_tip
 geometry_outside = sphere - geometry_inside
 
 # Generate meshes
-mesh_inside = generate_mesh(geometry_inside, 16)
-mesh_outside = generate_mesh(geometry_outside, 16)
+mesh_inside = generate_mesh(geometry_inside, resolution)
+mesh_outside = generate_mesh(geometry_outside, resolution)
 
 # Rotate blades
 if extra_rotation:
@@ -67,6 +68,10 @@ if extra_rotation:
         c[i][0] = xx
         c[i][1] = yy
         c[i][2] = zz
+
+# Report size of meshes
+print "Mesh of propeller inside:  %d cells" % mesh_inside.num_cells()
+print "Mesh of propeller outside: %d cells" % mesh_outside.num_cells()
 
 # Save meshes to file
 File("propeller_inside.xml.gz") << mesh_inside
