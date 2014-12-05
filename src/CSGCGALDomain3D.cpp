@@ -25,6 +25,7 @@
 
 #include "meshclean.h"
 #include "triangulate_polyhedron.h"
+#include "triangulation_refinement.h"
 
 #include <dolfin/geometry/Point.h>
 #include <dolfin/math/basic.h>
