@@ -244,8 +244,8 @@ for triangle_no, triangle in enumerate(triangles) :
 
             add_cell(editor, cell_count,
                      vertex_start+current_inner_vertex+step,
-                     get_edge_vertex(triangle[1], triangle[0], i-3+2),
-                     get_edge_vertex(triangle[1], triangle[0], i-3+3))
+                     get_edge_vertex(triangle[1], triangle[0], i-3+3),
+                     get_edge_vertex(triangle[1], triangle[0], i-3+2))
             cell_count += 1
             
             current_inner_vertex += step
