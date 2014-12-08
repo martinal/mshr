@@ -170,8 +170,8 @@ for triangle_no, triangle in enumerate(triangles) :
 
         add_cell(editor, cell_count,
                  vertex_start+N-3,
-                 get_edge_vertex(triangle[1], triangle[2], 1),
-                 get_edge_vertex(triangle[1], triangle[0], 1))
+                 get_edge_vertex(triangle[1], triangle[0], 1),
+                 get_edge_vertex(triangle[1], triangle[2], 1))
         cell_count += 1 
 
         add_cell(editor, cell_count,
