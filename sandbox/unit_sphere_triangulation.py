@@ -58,8 +58,22 @@ def get_edge_vertex(a, b, i) :
     print "getting edge vertex ({}, {}, {}) = {}".format(a, b, i, v)
     return v
 
+vertices = []
+halfedges = set()
+def add_vertex(editor, vertex_no, v) :
+    assert len(vertices) == vertex_no
+    vertices.append(v)
+    print "Adding vertex {} at {}".format(vertex_count, v.str())
+    editor.add_vertex(vertex_no, v)
+
 def add_cell(editor, cell_no, v0, v1, v2) :
     print "    Adding cell {}: {}, {}, {}".format(cell_count, v0, v1, v2)
+    assert (v0, v1) not in halfedges
+    assert (v1, v2) not in halfedges
+    assert (v2, v0) not in halfedges
+    halfedges.add((v0, v1))
+    halfedges.add((v1, v2))
+    halfedges.add((v2, v0))
     editor.add_cell(cell_no, v0, v1, v2)
 
 N = int(sys.argv[1])
@@ -76,9 +90,8 @@ vertex_count = 0
 
 # Add the corner vertices
 for v in initial_vertices :
-    print "Adding vertex {} at {}".format(vertex_count, v)
     p = dolfin.Point(*v)
-    editor.add_vertex(vertex_count, p/p.norm())
+    add_vertex(editor, vertex_count, p/p.norm())
     vertex_count += 1
 
 
@@ -88,9 +101,7 @@ for i in range(1, N) :
     for e in edges :
         edge_vertices[(e[0], e[1], i)] = vertex_count
         v = get_edge_point(initial_vertices[e[0]], initial_vertices[e[1]], float(i)/N) 
-        print "Adding vertex {} at {}".format(vertex_count, v.str())
-        
-        editor.add_vertex(vertex_count, v/v.norm())
+        add_vertex(editor, vertex_count, v/v.norm())
         vertex_count += 1
 
 cell_count = 0
@@ -115,10 +126,8 @@ for triangle_no, triangle in enumerate(triangles) :
             p = ordinary(triangle, (l1, l2, l3))
             pp = dolfin.Point(p[0], p[1], p[2])
             pp /= pp.norm()
-            print "Adding vertex {} at {}".format(vertex_count, pp.str())
             print "    ({}, {}, {}): {}".format(l1, l2, l3, pp.str())
-            editor.add_vertex(vertex_count, pp)
-            #vertices.append(vertex_count)
+            add_vertex(editor, vertex_count, pp)
             vertex_count += 1
 
 
