@@ -306,9 +306,10 @@ void refine_triangulation(const std::vector<dolfin::Point> initial_vertices,
 
       for (std::size_t j = 0; j < N-3-i; j++)
       {
-        add_cell(triangles, {vertex_start+row_offset+row_length+j,
-              vertex_start+row_offset+row_length+j+1,
-              vertex_start+row_offset+j+1});
+        add_cell(triangles,
+                 {vertex_start+row_offset+row_length+j,
+                  vertex_start+row_offset+row_length+j+1,
+                  vertex_start+row_offset+j+1});
         cell_count += 1;
 
         add_cell(triangles, {vertex_start+row_offset+row_length+j+1,
