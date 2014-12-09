@@ -315,9 +315,8 @@ void refine_triangulation(const std::vector<dolfin::Point> initial_vertices,
               vertex_start+row_offset+j+2,
               vertex_start+row_offset+j+1});
         cell_count += 1;
-
-        row_offset += row_length;
       }
+      row_offset += row_length;
     }
   }
 }
