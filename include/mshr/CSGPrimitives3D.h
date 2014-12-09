@@ -51,7 +51,7 @@ namespace mshr
     /// @param center center of sphere
     /// @param radius radius of sphere
     /// @param segments resolution when generating a polyhedral appoximation
-    Sphere(dolfin::Point center, double radius, std::size_t segments=32);
+    Sphere(dolfin::Point center, double radius, std::size_t segments=10);
 
     /// @brief Informal string representation
     /// @param verbose  Verbosity level

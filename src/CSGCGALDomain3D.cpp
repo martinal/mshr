@@ -121,60 +121,48 @@ class Build_sphere : public CGAL::Modifier_base<Exact_HalfedgeDS>
 
   void operator()( Exact_HalfedgeDS& hds )
   {
-    const std::size_t num_segments = _sphere._segments;
-    const std::size_t num_sectors = _sphere._segments*2 + 1;
+    std::vector<dolfin::Point> initial_vertices { dolfin::Point( 0.0, 0.0, 1.0 ),
+                                                  dolfin::Point( 1.0, 0.0, 0.0 ),
+                                                  dolfin::Point( 0.0,-1.0, 0.0 ),
+                                                  dolfin::Point(-1.0, 0.0, 0.0 ),
+                                                  dolfin::Point( 0.0, 1.0, 0.0 ),
+                                                  dolfin::Point( 0.0, 0.0,-1.0 )};
 
-    const dolfin::Point top = _sphere.c + dolfin::Point(_sphere.r, 0, 0);
-    const dolfin::Point bottom = _sphere.c - dolfin::Point(_sphere.r, 0, 0);
-    const dolfin::Point axis = dolfin::Point(1, 0, 0);
+    std::vector<std::array<std::size_t, 3> > initial_triangles { {0, 1, 2 },
+                                                                 {0, 2, 3 },
+                                                                 {0, 3, 4 },
+                                                                 {0, 4, 1 },
+                                                                 {5, 1, 4 },
+                                                                 {5, 2, 1 },
+                                                                 {5, 3, 2 },
+                                                                 {5, 4, 3 } };
 
-    const int num_vertices = num_segments*num_sectors+2;
-    const int num_facets = num_sectors*2*num_segments;
+    std::vector<dolfin::Point> vertices;
+    std::vector<std::array<std::size_t, 3> > triangles;
+    refine_triangulation(initial_vertices,
+                         initial_triangles,
+                         _sphere._segments,
+                         vertices,
+                         triangles);
+
+    std::cout << "Refinement level:    " << _sphere._segments << std::endl;
+    std::cout << "Number of vertices:  " << vertices.size() << std::endl;
+    std::cout << "Number of triangles: " << triangles.size() << std::endl;
 
     CGAL::Polyhedron_incremental_builder_3<Exact_HalfedgeDS> builder( hds, true );
+    builder.begin_surface(vertices.size(), triangles.size());
 
-    builder.begin_surface(num_vertices, num_facets);
-
-    const dolfin::Point slice_rotation_axis(0, 1, 0);
-
-    for (std::size_t i = 0; i < num_segments; i++)
+    for (const dolfin::Point& p : vertices)
     {
-      const dolfin::Point sliced = axis.rotate(slice_rotation_axis, (i+1)*DOLFIN_PI/(num_segments+1));
-      for (std::size_t j = 0; j < num_sectors; j++)
-      {
-        const dolfin::Point direction = sliced.rotate(axis, j*2.0*DOLFIN_PI/num_sectors);
-        const dolfin::Point v = _sphere.c + direction*_sphere.r;
-        add_vertex(builder, Exact_Point_3 (v.x(), v.y(), v.z()));
-      }
+      std::cout << "Vertex: " << p.str() << std::endl;
+      add_vertex(builder, Exact_Point_3(p.x(), p.y(), p.z()));
     }
 
-    // Add bottom has index num_vertices-1, top has index num_vertices-2
-    add_vertex(builder, Exact_Point_3(top.x(), top.y(), top.z()));
-    add_vertex(builder, Exact_Point_3(bottom.x(), bottom.y(), bottom.z()));
-
-    // Add the side facets
-    for (std::size_t i = 0; i < num_segments-1; i++)
+    for (const std::array<std::size_t, 3>& t : triangles)
     {
-      for (std::size_t j = 0; j < num_sectors; j++)
-      {
-        const std::size_t offset1 = i*num_sectors;
-        const std::size_t offset2 = (i+1)*num_sectors;
-
-        add_triangular_facet(builder, offset1 + j, offset1 + (j+1)%num_sectors, offset2 + j);
-        add_triangular_facet(builder, offset2 + (j+1)%num_sectors, offset2 + j, offset1 + (j+1)%num_sectors);
-      }
+      add_triangular_facet(builder, t[0], t[1], t[2]);
     }
 
-    // Add the top and bottom facets
-    const std::size_t top_offset = num_sectors*(num_segments-1);
-    for (std::size_t i = 0; i < num_sectors; i++)
-    {
-      // Bottom facet
-      add_triangular_facet(builder, num_vertices-2, (i+1)%num_sectors, i);
-
-      // Top facet
-      add_triangular_facet(builder, num_vertices-1, top_offset + (i%num_sectors), top_offset + (i+1)%num_sectors);
-    }
     builder.end_surface();
   }
 
