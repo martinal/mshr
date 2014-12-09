@@ -54,11 +54,12 @@ def get_edge_point(a, b, f) :
 
 def get_edge_vertex(a, b, i) :
     v = edge_vertices[(min(a, b), max(a, b), i if a < b else N-i)]
-    print "getting edge vertex ({}, {}, {}) = {}".format(a, b, i, v)
+    #print "getting edge vertex ({}, {}, {}) = {}".format(a, b, i, v)
     return v
 
 vertices = []
 halfedges = set()
+cells = []
 def add_vertex(editor, vertex_no, v) :
     assert len(vertices) == vertex_no
     vertices.append(v)
@@ -70,10 +71,12 @@ def add_cell(editor, cell_no, v0, v1, v2) :
     assert (v0, v1) not in halfedges
     assert (v1, v2) not in halfedges
     assert (v2, v0) not in halfedges
+
     halfedges.add((v0, v1))
     halfedges.add((v1, v2))
     halfedges.add((v2, v0))
     editor.add_cell(cell_no, v0, v1, v2)
+    cells.append((v0, v1, v2))
 
 N = int(sys.argv[1])
 
@@ -103,10 +106,14 @@ for i in range(1, N) :
         add_vertex(editor, vertex_count, v/v.norm())
         vertex_count += 1
 
+for key, value in edge_vertices.iteritems() :
+    print "{} --> {}".format(key, value)
+
 cell_count = 0
 for triangle_no, triangle in enumerate(triangles) :
     print "Processing triangle ({}, {}, {})".format(*triangle)
     vertex_start = vertex_count
+    print "Vertex_start: ", vertex_start
 
     for i in range(1, N) :
         print "i = {}".format(i)
@@ -253,6 +260,7 @@ for triangle_no, triangle in enumerate(triangles) :
     
     row_offset = 0
     for i in range(1, N-2) :
+        print "i=",i
         row_length = N-1-i
         add_cell(editor, cell_count,
                  vertex_start+row_offset,
@@ -261,6 +269,7 @@ for triangle_no, triangle in enumerate(triangles) :
         cell_count += 1
 
         for j in range(N-3-i) :
+            print "j=",j
             add_cell(editor, cell_count,
                      vertex_start+row_offset+row_length+j,
                      vertex_start+row_offset+row_length+j+1,
@@ -288,10 +297,10 @@ dolfin.info(m)
 with open("sphere.off", "w") as f :
     f.write("OFF\n")
     f.write("{} {} 0\n\n".format(vertex_count, cell_count))
-    for v in m.coordinates() :
+    for v in vertices :
         f.write("{} {} {}\n".format(v[0], v[1], v[2]))
 
-    for c in m.cells() :
+    for c in cells :
         f.write("3 {} {} {}\n".format(c[0], c[1], c[2]))
 
 dolfin.plot(m)
