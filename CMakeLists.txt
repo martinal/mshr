@@ -25,14 +25,11 @@ set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/3rdparty/CGAL-4.5/cmake/modules")
 
 
 # Use C++11
-SET(CMAKE_CXX_FLAGS "-std=c++0x -Wall")
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -Wall")
 
 # Boost
 find_package( Boost REQUIRED system filesystem program_options )
-
-if ( NOT Boost_FOUND )
-  message(FATAL_ERROR "This project requires the Boost library, and will not be compiled.")
-endif()
+include_directories("${Boost_INCLUDE_DIRS}")
 
 # Temporary: attempt to find linking problem
 find_package(MPI REQUIRED)
@@ -41,6 +38,7 @@ find_package(MPI REQUIRED)
 #  GMP_LIBRARIES_DIR     - directory where the GMP libraries are located
 #  GMP_LIBRARIES         - Link these to use GMP
 find_package(GMP REQUIRED)
+include_directories("${GMP_INCLUDE_DIR}")
 
 # Try to find the MPFR libraries
 # MPFR_FOUND - system has MPFR lib
@@ -49,6 +47,7 @@ find_package(GMP REQUIRED)
 # MPFR_LIBRARIES - the MPFR libraries
 # MPFR_IN_CGAL_AUXILIARY - TRUE if the MPFR found is the one distributed with CGAL in the auxiliary folder
 find_package(MPFR REQUIRED)
+include_directories("${MPFR_INCLUDE_DIR}")
 
 add_subdirectory(3rdparty)
 #include_directories(BEFORE ${CGAL_INCLUDE_DIR})
