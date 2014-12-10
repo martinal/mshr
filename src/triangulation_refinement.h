@@ -21,6 +21,10 @@
 
 #include <dolfin/mesh/MeshEditor.h>
 
+#ifndef DEBUG_TRIANGULATION_REFINEMENT
+  #define DEBUG_TRIANGULATION_REFINEMENT 0
+#endif
+
 namespace 
 {
   // Simple convenience class for converting from barycentric coordinates wrt to 
@@ -66,18 +70,16 @@ namespace
   //-----------------------------------------------------------------------------
   inline void add_cell(std::vector<std::array<std::size_t, 3> >& triangles, std::array<std::size_t, 3> v)
   {
-    static std::set<std::pair<std::size_t, std::size_t> > halfedges;
+    #if DEBUG_TRIANGULATION_REFINEMENT
+      static std::set<std::pair<std::size_t, std::size_t> > halfedges;
 
-    std::cout << "    Adding cell " << v[0] << ", " << v[1] << ", " << v[2] << std::endl;
-
-    {
       auto ins = halfedges.insert(std::make_pair(v[0], v[1]));
       dolfin_assert(ins.second);
       ins = halfedges.insert(std::make_pair(v[1], v[2]));
       dolfin_assert(ins.second);
       ins = halfedges.insert(std::make_pair(v[2], v[0]));
       dolfin_assert(ins.second);
-    }
+    #endif
 
     triangles.push_back(v);
   }
