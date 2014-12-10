@@ -122,7 +122,6 @@ void refine_triangulation(const std::vector<dolfin::Point> initial_vertices,
       {
         if (t[j] < t[(j+1)%3])
         {
-          std::cout << "Adding vertex: " << t[j] << ", " << t[(j+1)%3] << std::endl;
           dolfin::Point v = get_edge_point(initial_vertices[t[j]], initial_vertices[t[(j+1)%3]], float(i)/N);
           vertices.push_back(v/v.norm());
           // TODO: Use vertices.size() ?
@@ -138,19 +137,15 @@ void refine_triangulation(const std::vector<dolfin::Point> initial_vertices,
   std::size_t cell_count = 0;
   for (const std::array<std::size_t, 3>& triangle : initial_triangulation) 
   {
-    std::cout << "Processing triangle (" << triangle[0] << ", " << triangle[1] << ", " << triangle[2] << ")" << std::endl;
+    //std::cout << "Processing triangle (" << triangle[0] << ", " << triangle[1] << ", " << triangle[2] << ")" << std::endl;
     RefTriangle ref_triangle(initial_vertices[triangle[0]], initial_vertices[triangle[1]], initial_vertices[triangle[2]]);
     const std::size_t vertex_start = vertex_count;
 
     for (std::size_t i = 1; i < N; i++)
     {
-      std::cout << "i = " << i << std::endl;
-
       const double l1 = static_cast<double>(i)/N;
       for (std::size_t j=1; j < N-i; j++)
       {
-        std::cout << "  j = " << j << std::endl;
-
         // Don't edge along initial vertices
         if (i+j == N)
           continue;
@@ -165,8 +160,7 @@ void refine_triangulation(const std::vector<dolfin::Point> initial_vertices,
       }
     }
 
-    //  add the "corner" facets
-    std::cout << "  Adding corner facets" << std::endl;
+    // std::cout << "  Adding corner facets" << std::endl;
     add_cell(triangles, { triangle[0],
                           get_edge_vertex(edge_vertices, 
                                           triangle[0],
@@ -202,7 +196,7 @@ void refine_triangulation(const std::vector<dolfin::Point> initial_vertices,
 
     if (N == 2)
     {
-      std::cout << "  Refinement level 2: Adding interior cell" << std::endl;
+      // std::cout << "  Refinement level 2: Adding interior cell" << std::endl;
       add_cell(triangles, {get_edge_vertex(edge_vertices, triangle[0], triangle[1], 1, N),
                            get_edge_vertex(edge_vertices, triangle[1], triangle[2], 1, N),
                            get_edge_vertex(edge_vertices, triangle[2], triangle[0], 1, N)});
@@ -210,7 +204,7 @@ void refine_triangulation(const std::vector<dolfin::Point> initial_vertices,
     }
     else
     {
-      std::cout << "  Add facets incident to original edges" << std::endl;
+      // std::cout << "  Add facets incident to original edges" << std::endl;
       add_cell(triangles, {vertex_start,
             get_edge_vertex(edge_vertices, triangle[2], triangle[1], 1, N),
             get_edge_vertex(edge_vertices, triangle[2], triangle[0], 1, N)});
@@ -227,7 +221,7 @@ void refine_triangulation(const std::vector<dolfin::Point> initial_vertices,
       cell_count += 1;
 
 
-      std::cout << "  Add the facets along the original edges" << std::endl;
+      // std::cout << "  Add the facets along the original edges" << std::endl;
 
       // along edge(triangle[1] <--> triangle[2])
       add_cell(triangles, {vertex_start,
@@ -295,8 +289,8 @@ void refine_triangulation(const std::vector<dolfin::Point> initial_vertices,
       }
     }
     
-    std::cout << "  Add the inner facets that don't touch initial edges" << std::endl;
-    
+    // std::cout << "  Add the inner facets that don't touch initial edges" << std::endl;
+
     std::size_t row_offset = 0;
     for (std::size_t i = 1; i < N-2; i++)
     {
@@ -323,6 +317,5 @@ void refine_triangulation(const std::vector<dolfin::Point> initial_vertices,
     }
   }
 }
-
 
 #endif

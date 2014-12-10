@@ -145,16 +145,11 @@ class Build_sphere : public CGAL::Modifier_base<Exact_HalfedgeDS>
                          vertices,
                          triangles);
 
-    std::cout << "Refinement level:    " << _sphere._segments << std::endl;
-    std::cout << "Number of vertices:  " << vertices.size() << std::endl;
-    std::cout << "Number of triangles: " << triangles.size() << std::endl;
-
     CGAL::Polyhedron_incremental_builder_3<Exact_HalfedgeDS> builder( hds, true );
     builder.begin_surface(vertices.size(), triangles.size());
 
     for (const dolfin::Point& p : vertices)
     {
-      std::cout << "Vertex: " << p.str() << std::endl;
       add_vertex(builder, Exact_Point_3(p.x(), p.y(), p.z()));
     }
 
