@@ -59,7 +59,7 @@
 // Patch suggested by Marc Glisse here:
 // http://cgal-discuss.949826.n4.nabble.com/Error-on-installing-CGAL-on-LINUX-CentOS-td4659148.html
 #ifndef mpn_sqr
-#define mpn_sqr(dest,a,n) mpn_mul(dest,a,a,n)
+#define mpn_sqr(dest,a,n) mpn_mul_n(dest,a,a,n)
 #endif
 
 // GMP before 5.0 doesn't provide mpn_copyi.
