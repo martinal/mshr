@@ -54,6 +54,14 @@
 #ifndef mpn_neg
 #define mpn_neg mpn_neg_n
 #endif
+
+// GMP-4.3.0 is missing mpn_sqr
+// Patch suggested by Marc Glisse here:
+// http://cgal-discuss.949826.n4.nabble.com/Error-on-installing-CGAL-on-LINUX-CentOS-td4659148.html
+#ifndef mpn_sqr
+#define mpn_sqr(dest,a,n) mpn_mul(dest,a,a,n)
+#endif
+
 // GMP before 5.0 doesn't provide mpn_copyi.
 #ifndef mpn_copyi
 #define mpn_copyi(dst, src, siz) std::copy((src), (src)+(siz), (dst))
