@@ -102,13 +102,10 @@ void refine_triangulation(const std::vector<dolfin::Point> initial_vertices,
   vertices.reserve(num_vertices);
   triangles.reserve(num_triangles);
 
-  std::size_t vertex_count = 0;
-
   // Add the corner vertices
   for (const dolfin::Point& p : initial_vertices)
   {
     vertices.push_back(p/p.norm());
-    vertex_count += 1;
   }
 
   std::map<std::array<std::size_t, 3>, std::size_t> edge_vertices;
@@ -123,10 +120,9 @@ void refine_triangulation(const std::vector<dolfin::Point> initial_vertices,
         if (t[j] < t[(j+1)%3])
         {
           dolfin::Point v = get_edge_point(initial_vertices[t[j]], initial_vertices[t[(j+1)%3]], float(i)/N);
+
+          edge_vertices[{t[j], t[(j+1)%3], i}] = vertices.size();
           vertices.push_back(v/v.norm());
-          // TODO: Use vertices.size() ?
-          edge_vertices[{t[j], t[(j+1)%3], i}] = vertex_count;
-          vertex_count += 1;
         }
       }
     }
@@ -139,7 +135,7 @@ void refine_triangulation(const std::vector<dolfin::Point> initial_vertices,
   {
     //std::cout << "Processing triangle (" << triangle[0] << ", " << triangle[1] << ", " << triangle[2] << ")" << std::endl;
     RefTriangle ref_triangle(initial_vertices[triangle[0]], initial_vertices[triangle[1]], initial_vertices[triangle[2]]);
-    const std::size_t vertex_start = vertex_count;
+    const std::size_t vertex_start = vertices.size();
 
     for (std::size_t i = 1; i < N; i++)
     {
@@ -154,9 +150,8 @@ void refine_triangulation(const std::vector<dolfin::Point> initial_vertices,
         const double l3 = 1.0 - l1 - l2;
             
        dolfin::Point p = ref_triangle.barycentric2Point(l1, l2, l3);
-        p /= p.norm();
-        vertices.push_back(p);
-        vertex_count += 1;
+       p /= p.norm();
+       vertices.push_back(p);
       }
     }
 
@@ -215,7 +210,7 @@ void refine_triangulation(const std::vector<dolfin::Point> initial_vertices,
             get_edge_vertex(edge_vertices, triangle[1], triangle[2], 1, N)});
       cell_count += 1;
 
-      add_cell(triangles, {vertex_count - 1,
+      add_cell(triangles, { vertices.size() - 1,
             get_edge_vertex(edge_vertices,triangle[0], triangle[2], 1, N),
             get_edge_vertex(edge_vertices,triangle[0], triangle[1], 1, N)});
       cell_count += 1;
