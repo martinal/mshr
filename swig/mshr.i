@@ -19,6 +19,7 @@
     #include <mshr/CSGCGALMeshGenerator2D.h>
     #include <mshr/CSGCGALMeshGenerator3D.h>
     #include <mshr/DolfinMeshUtils.h>
+    #include <mshr/Meshes.h>
 
  %}
 
@@ -103,6 +104,7 @@
 %shared_ptr(mshr::CSGCGALMeshGenerator3D)
 %shared_ptr(mshr::CSGCGALDomain2D)
 %shared_ptr(mshr::CSGCGALDomain3D)
+%shared_ptr(mshr::UnitSphereMesh)
 
 %rename(_generate) mshr::generate;
 %ignore mshr::get_boundary_mesh;
@@ -119,6 +121,7 @@
 %include <mshr/CSGCGALMeshGenerator3D.h>
 %include <mshr/CSGGeometries3D.h>
 %include <mshr/DolfinMeshUtils.h>
+%include <mshr/Meshes.h>
 
 %extend mshr::CSGGeometry {
   %pythoncode %{

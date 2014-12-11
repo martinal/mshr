@@ -21,6 +21,7 @@
 #include <dolfin/mesh/Mesh.h>
 #include <dolfin/mesh/MeshEditor.h>
 #include <dolfin/common/NoDeleter.h>
+#include <dolfin/log/log.h>
 #include <tetgen.h>
 
 // Bounding sphere computation
@@ -176,7 +177,9 @@ void TetgenMeshGenerator3D::generate(std::shared_ptr<const CSGCGALDomain3D> doma
   //   do quality mesh generation (q) with a specified quality bound
   //   (1.414), and apply a maximum volume constraint (a0.1).
 
-  std::stringstream tetgenparams("p");
+  std::stringstream tetgenparams;
+  tetgenparams << "p";
+
   if (!parameters["disable_quality_improvement"])
   {
     tetgenparams << "q"
@@ -199,6 +202,12 @@ void TetgenMeshGenerator3D::generate(std::shared_ptr<const CSGCGALDomain3D> doma
     }
   }
 
+  if (dolfin::get_log_level() > dolfin::DBG)
+  {
+    tetgenparams << "Q";
+  }
+
+  dolfin::log(dolfin::TRACE, "Calling tetgen with parameters: " + tetgenparams.str());
 
   // Tetgen requires a char[] (as opposed to a const char[])
   // so we need to copy of from the string
