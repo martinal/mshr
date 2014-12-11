@@ -16,18 +16,38 @@
 // along with mshr. If not, see <http://www.gnu.org/licenses/>.
 
 #include <mshr/Meshes.h>
-#include <mshr/MeshGenerator.h>
+#include <mshr/TetgenMeshGenerator3D.h>
 #include <mshr/CSGPrimitives3D.h>
+
+#include <dolfin/mesh/MeshPartitioning.h>
 
 namespace mshr
 {
   UnitSphereMesh::UnitSphereMesh(std::size_t resolution)
+    : dolfin::Mesh()
   {
-    Sphere s(dolfin::Point(0,0,0), 
-             1.0, 
-             resolution);
+    // Receive mesh according to parallel policy
+    if (dolfin::MPI::is_receiver(this->mpi_comm()))
+    {
+      dolfin::MeshPartitioning::build_distributed_mesh(*this);
+      return;
+    }
 
-    generate(*this, s, resolution, "tetgen");
+    Sphere s(dolfin::Point(0,0,0), 1.0, resolution);
+
+    TetgenMeshGenerator3D generator;
+    const double max_volume = 1.0/std::pow(3.0, resolution);
+    generator.parameters["max_tet_volume"] = max_volume;
+    generator.parameters["max_radius_edge_ratio"] = 2.0;
+    generator.parameters["min_dihedral_angle"] = 0.0;
+
+    generator.generate(s, *this);
+
+    // Broadcast mesh according to parallel policy
+    if (dolfin::MPI::is_broadcaster(this->mpi_comm()))
+    {
+      dolfin::MeshPartitioning::build_distributed_mesh(*this);
+      return;
+    }
   }
-
 }
