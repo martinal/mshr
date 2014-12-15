@@ -40,6 +40,12 @@
 #include <CGAL/Origin.h>
 #include <CGAL/Self_intersection_polyhedron_3.h>
 
+#include <CGAL/AABB_tree.h>
+#include <CGAL/AABB_traits.h>
+#include <CGAL/boost/graph/graph_traits_Polyhedron_3.h>
+#include <CGAL/AABB_face_graph_triangle_primitive.h>
+
+
 #define BOOST_FILESYSTEM_NO_DEPRECATED
 #include <boost/filesystem.hpp>
 
@@ -64,6 +70,11 @@ typedef CGAL::Polyhedron_3<Exact_Kernel>                  Exact_Polyhedron_3;
 typedef Exact_Polyhedron_3::HalfedgeDS                    Exact_HalfedgeDS;
 typedef Nef_polyhedron_3::Point_3                         Exact_Point_3;
 typedef Exact_Kernel::Vector_3                            Vector_3;
+
+// AABB tree primitives
+typedef CGAL::AABB_face_graph_triangle_primitive<Exact_Polyhedron_3> Primitive;
+typedef CGAL::AABB_traits<Exact_Kernel, Primitive> Traits;
+typedef CGAL::AABB_tree<Traits> AABB_Tree;
 
 
 // Convenience routine to make debugging easier. Remove before releasing.
@@ -755,6 +766,15 @@ struct CSGCGALDomain3DImpl
   Exact_Polyhedron_3 p;
 };
 
+struct CSGCGALDomain3DQueryStructure
+{
+  template <typename A>
+  CSGCGALDomain3DQueryStructure(A start,
+                                A end,
+                                const Exact_Polyhedron_3& p)
+    : aabb_tree(start, end, p) {}
+  AABB_Tree aabb_tree;
+};
 
 CSGCGALDomain3D::CSGCGALDomain3D()
 : impl(new CSGCGALDomain3DImpl)
@@ -846,6 +866,13 @@ void CSGCGALDomain3D::get_facets(std::vector< std::array<std::size_t, 3> > &f) c
   }
 }
 //-----------------------------------------------------------------------------
+void CSGCGALDomain3D::get_points_in_holes(std::vector<dolfin::Point> h,
+                                          std::shared_ptr<CSGCGALDomain3DQueryStructure> q) const
+{
+  std::vector<typename Exact_Polyhedron_3::Vertex_const_handle> parts;
+  //get_disconnected_parts(impl->p, std::back_inserter(parts));
+}
+//-----------------------------------------------------------------------------
 void CSGCGALDomain3D::remove_degenerate_facets(double tolerance) 
 {
   remove_degenerate(impl->p, tolerance);
@@ -862,6 +889,13 @@ void CSGCGALDomain3D::ensure_meshing_preconditions()
     remove_degenerate_facets(parameters["degenerate_tolerance"]);
 }
 //-----------------------------------------------------------------------------
+std::unique_ptr<CSGCGALDomain3DQueryStructure> CSGCGALDomain3D::get_query_structure() const
+{
+  return std::unique_ptr<CSGCGALDomain3DQueryStructure>(new CSGCGALDomain3DQueryStructure(faces(impl->p).first,
+                                                                                          faces(impl->p).second,
+                                                                                          impl->p));
+}
+//-----------------------------------------------------------------------------
 bool CSGCGALDomain3D::is_insideout() const
 {
   typedef Exact_Kernel::Ray_3 Exact_Ray_3;
@@ -870,7 +904,7 @@ bool CSGCGALDomain3D::is_insideout() const
   // the number of distinct hits (if the ray hit an edge, the same intersection
   // point will hit sevel facets). Excluding the hit on facet a the number
   // should be even for the polyhedron to be bounded.
-  // NOTE: Not constructing AABB tree since we are doing only one query.
+  // TODO: Take QueryStructure argument.
   Exact_Polyhedron_3::Facet_iterator f = impl->p.facets_begin();
 
   Exact_Ray_3 ray;
