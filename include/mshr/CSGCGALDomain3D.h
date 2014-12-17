@@ -29,7 +29,16 @@ namespace mshr
 
   // Forward declaration
   struct CSGCGALDomain3DImpl;
-  struct CSGCGALDomain3DQueryStructure;
+  struct CSGCGALDomain3DQueryStructureImpl;
+
+class CSGCGALDomain3DQueryStructure
+{
+ public:
+  CSGCGALDomain3DQueryStructure(std::unique_ptr<CSGCGALDomain3DQueryStructureImpl> impl);
+  ~CSGCGALDomain3DQueryStructure();
+ private:
+  std::unique_ptr<CSGCGALDomain3DQueryStructureImpl> impl;
+};
 
 /// @brief A polyhedron meshing domain.
 ///
@@ -101,7 +110,7 @@ class CSGCGALDomain3D : public dolfin::Variable
   /// essentially a wrapper for a CGAL AABB tree of the polyhedron triangles.
   /// When performing queries, the user is responsible for the query structure
   /// being in sync with the CSGCGALDomain3D object.
-  std::unique_ptr<CSGCGALDomain3DQueryStructure> get_query_structure() const;
+  std::shared_ptr<CSGCGALDomain3DQueryStructure> get_query_structure() const;
 
   /// Default parameter values
   static dolfin::Parameters default_parameters()

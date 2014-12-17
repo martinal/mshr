@@ -26,6 +26,7 @@
 #include "meshclean.h"
 #include "triangulate_polyhedron.h"
 #include "triangulation_refinement.h"
+#include "Polyhedron_utils.h"
 
 #include <dolfin/geometry/Point.h>
 #include <dolfin/math/basic.h>
@@ -55,6 +56,7 @@
 #include <iomanip>
 #include <set>
 #include <cmath>
+#include <memory>
 
 using namespace mshr;
 
@@ -765,17 +767,21 @@ struct CSGCGALDomain3DImpl
 {
   Exact_Polyhedron_3 p;
 };
-
-struct CSGCGALDomain3DQueryStructure
+//-----------------------------------------------------------------------------
+struct CSGCGALDomain3DQueryStructureImpl
 {
   template <typename A>
-  CSGCGALDomain3DQueryStructure(A start,
-                                A end,
-                                const Exact_Polyhedron_3& p)
-    : aabb_tree(start, end, p) {}
+  CSGCGALDomain3DQueryStructureImpl(A start, A end, const Exact_Polyhedron_3& p)
+    : aabb_tree(start, end, p){}
+
   AABB_Tree aabb_tree;
 };
-
+//-----------------------------------------------------------------------------
+CSGCGALDomain3DQueryStructure::CSGCGALDomain3DQueryStructure(std::unique_ptr<CSGCGALDomain3DQueryStructureImpl> impl)
+{}
+//-----------------------------------------------------------------------------
+CSGCGALDomain3DQueryStructure::~CSGCGALDomain3DQueryStructure(){}
+//-----------------------------------------------------------------------------
 CSGCGALDomain3D::CSGCGALDomain3D()
 : impl(new CSGCGALDomain3DImpl)
 {
@@ -870,7 +876,7 @@ void CSGCGALDomain3D::get_points_in_holes(std::vector<dolfin::Point> h,
                                           std::shared_ptr<CSGCGALDomain3DQueryStructure> q) const
 {
   std::vector<typename Exact_Polyhedron_3::Vertex_const_handle> parts;
-  //get_disconnected_parts(impl->p, std::back_inserter(parts));
+  get_disconnected_components(impl->p,std::back_inserter(parts));
 }
 //-----------------------------------------------------------------------------
 void CSGCGALDomain3D::remove_degenerate_facets(double tolerance) 
@@ -889,11 +895,12 @@ void CSGCGALDomain3D::ensure_meshing_preconditions()
     remove_degenerate_facets(parameters["degenerate_tolerance"]);
 }
 //-----------------------------------------------------------------------------
-std::unique_ptr<CSGCGALDomain3DQueryStructure> CSGCGALDomain3D::get_query_structure() const
+std::shared_ptr<CSGCGALDomain3DQueryStructure> CSGCGALDomain3D::get_query_structure() const
 {
-  return std::unique_ptr<CSGCGALDomain3DQueryStructure>(new CSGCGALDomain3DQueryStructure(faces(impl->p).first,
-                                                                                          faces(impl->p).second,
-                                                                                          impl->p));
+  std::unique_ptr<CSGCGALDomain3DQueryStructureImpl> i(new CSGCGALDomain3DQueryStructureImpl(faces(impl->p).first,
+                                                                                             faces(impl->p).second,
+                                                                                             impl->p));
+  return std::shared_ptr<CSGCGALDomain3DQueryStructure>(new CSGCGALDomain3DQueryStructure(std::move(i)));
 }
 //-----------------------------------------------------------------------------
 bool CSGCGALDomain3D::is_insideout() const

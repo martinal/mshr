@@ -20,61 +20,10 @@
 #define POLYHEDRAL_MULTICOMPONENT_MESH_DOMAIN_WITH_FEATURES_3_H
 
 #include "Point3FuzzyStrictlyLess.h"
+#include "Polyhedron_utils.h"
 #include <CGAL/Polyhedral_mesh_domain_with_features_3.h>
 
 #include <dolfin/log/log.h>
-//-----------------------------------------------------------------------------
-template<typename Polyhedron>
-void recursive_remove(std::set<typename Polyhedron::Vertex_const_handle>& s,
-                      typename Polyhedron::Vertex_const_handle h)
-{
-  typedef typename Polyhedron::Halfedge_around_vertex_const_circulator HV_const_circulator;
-  typedef typename Polyhedron::Vertex_const_handle Vertex_const_handle;
-  typedef Polyhedron Polyhedron_type;
-
-  const HV_const_circulator start = h->vertex_begin();
-  HV_const_circulator current = start;
-  do
-  {
-    Vertex_const_handle current_vertex = current->opposite()->vertex();
-    assert(current_vertex != h);
-    if (s.count(current_vertex))
-    {
-      s.erase(current_vertex);
-      recursive_remove<Polyhedron_type>(s, current_vertex);
-    }
-    current++;
-  } while (current != start);
-}
-//-----------------------------------------------------------------------------
-// Scans the vertices of the polyhedron the polyhedron and returns a
-// Polyhedron::Vertex_const_handle for each disconnected component.
-template <typename Polyhedron, typename OutputIterator>
-void get_disconnected_components(const Polyhedron& p, OutputIterator it)
-{
-  typedef Polyhedron Polyhedron_t;
-  typedef typename Polyhedron_t::Vertex_const_handle Vertex_const_handle;
-
-  // store all vertices in a set
-  std::set<Vertex_const_handle> v;
-  for (typename Polyhedron_t::Vertex_const_iterator vit = p.vertices_begin();
-       vit != p.vertices_end(); vit++)
-    v.insert(vit);
-
-  while (!v.empty())
-  {
-    // Add the component to the output
-    typename std::set<Vertex_const_handle>::iterator start_it = v.begin();
-    Vertex_const_handle start = *start_it;
-    v.erase(start_it);
-
-    *it = start;
-    it++;
-
-    // Remove rest of component
-    recursive_remove<Polyhedron_t>(v, start);
-  }
-}
 //-----------------------------------------------------------------------------
 // This class reimplements Construct_initial_points (from Polyhedral_mesh_domain)
 // in order to make sure that all disconnected parts of the polyhedron are
