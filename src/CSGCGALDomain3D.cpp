@@ -173,7 +173,8 @@ class Build_sphere : public CGAL::Modifier_base<Exact_HalfedgeDS>
 
     for (const dolfin::Point& p : vertices)
     {
-      add_vertex(builder, Exact_Point_3(p.x(), p.y(), p.z()));
+      const double scaling = _sphere.r/std::sqrt(p.x()*p.x() + p.y()*p.y() + p.z()*p.z());
+      add_vertex(builder, Exact_Point_3(p.x()*scaling, p.y()*scaling, p.z()*scaling));
     }
 
     for (const std::array<std::size_t, 3>& t : triangles)
