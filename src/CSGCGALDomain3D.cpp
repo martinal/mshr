@@ -164,6 +164,7 @@ class Build_sphere : public CGAL::Modifier_base<Exact_HalfedgeDS>
     {
       vertices.reserve(initial_vertices.size());
       std::copy(initial_vertices.begin(), initial_vertices.end(), std::back_inserter(vertices));
+
       triangles.reserve(initial_triangles.size());
       std::copy(initial_triangles.begin(), initial_triangles.end(), std::back_inserter(triangles));
     }
@@ -171,10 +172,13 @@ class Build_sphere : public CGAL::Modifier_base<Exact_HalfedgeDS>
     CGAL::Polyhedron_incremental_builder_3<Exact_HalfedgeDS> builder( hds, true );
     builder.begin_surface(vertices.size(), triangles.size());
 
+    dolfin::Point center = _sphere.c;
     for (const dolfin::Point& p : vertices)
     {
       const double scaling = _sphere.r/std::sqrt(p.x()*p.x() + p.y()*p.y() + p.z()*p.z());
-      add_vertex(builder, Exact_Point_3(p.x()*scaling, p.y()*scaling, p.z()*scaling));
+      add_vertex(builder, Exact_Point_3(center.x() + p.x()*scaling,
+                                        center.y() + p.y()*scaling,
+                                        center.z() + p.z()*scaling));
     }
 
     for (const std::array<std::size_t, 3>& t : triangles)
