@@ -23,8 +23,6 @@
 #include <CGAL/Kernel/global_functions.h>
 #include <CGAL/Triangle_3.h>
 
-#define MESHCLEAN_DEBUG_OUTPUT 0
-
 //-----------------------------------------------------------------------------
 template<typename Polyhedron>
 inline double
@@ -246,15 +244,7 @@ inline void remove_degree3_center_vertex(Polyhedron& p,
 {
   // Remove center vertex, but assure the degree of the vertex is 3 and that at least
   // one of the sides of the incident triangles is short
-
-  //std::cout << "Remove degree 3 center vertex" << std::endl;
-
   dolfin_assert(h->vertex()->vertex_degree() == 3);
-
-  // FIXME: Remove debug output
-  /* std::cout << get_edge_length<Polyhedron>(h->prev()) << " " */
-  /*           << get_edge_length<Polyhedron>(h->opposite()->next()) << " " */
-  /*           << get_edge_length<Polyhedron>(h->next()->opposite()->prev()) << std::endl; */
 
   p.erase_center_vertex(h);
 }
@@ -276,8 +266,8 @@ inline bool remove_degree3_with_short_edges(Polyhedron& p, double tolerance)
           get_edge_length<Polyhedron>(h->next()) < tolerance ||
           get_edge_length<Polyhedron>(h->prev()) < tolerance)
       {
-        if (MESHCLEAN_DEBUG_OUTPUT)
-          std::cout << "Removing degree 3 with short edges" << std::endl;
+
+        // std::cout << "Removing degree 3 with short edges" << std::endl;
 
         p.erase_center_vertex(h);
         removed = true;
@@ -291,8 +281,7 @@ template <typename Polyhedron>
 inline void collapse_edge(Polyhedron& p,
                           typename Polyhedron::Halfedge_handle edge)
 {
-  if (MESHCLEAN_DEBUG_OUTPUT)
-    std::cout << "--Collapse edge" << std::endl;
+  // std::cout << "--Collapse edge" << std::endl;
 
   ASSERT_GOOD_STATE(p);
 

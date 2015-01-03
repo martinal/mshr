@@ -179,8 +179,6 @@ CSGTranslation::CSGTranslation(std::shared_ptr<CSGGeometry> g,
 {
   assert(g);
 
-  dolfin::cout << "Creating Translation" << dolfin::endl;
-
   dim_ = g->dim();
 }
 //-----------------------------------------------------------------------------

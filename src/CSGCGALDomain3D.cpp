@@ -80,47 +80,21 @@ typedef CGAL::AABB_tree<Traits> AABB_Tree;
 
 
 // Convenience routine to make debugging easier. Remove before releasing.
-template<typename Builder, bool print=false>
+template<typename Builder>
 inline void add_triangular_facet(Builder& builder,
-                          int v0, int v1, int v2)
+                                 int v0, int v1, int v2)
 {
-  static int facet_no = 0;
-
-  if (print)
-  {
-    std::cout << "Begin facet " << facet_no << std::endl;
-
-    // Print vertices
-    std::cout << "Vertex: " << v0 << " " << v1 << " " << v2 << std::endl;
-
-    // if (builder.test_facet(vertices.begin(), vertices.end()))
-    //   std::cout << "Facet ok, size: " << vertices.size() << std::endl;
-    // else
-    //   std::cout << "Facet not ok" << std::endl;
-  }
-
   builder.begin_facet();
   builder.add_vertex_to_facet(v0);
   builder.add_vertex_to_facet(v1);
   builder.add_vertex_to_facet(v2);
   builder.end_facet();
-
-  if (print)
-    std::cout << "End facet" << std::endl;
-  facet_no++;
 }
 //-----------------------------------------------------------------------------
-template<typename Builder, bool print=false>
+template<typename Builder>
 inline void add_vertex(Builder& builder,
                 const Exact_Point_3& point)
 {
-  if (print)
-  {
-    static int vertex_no = 0;
-    std::cout << "Adding vertex " << vertex_no << " at " << point << std::endl;
-    vertex_no++;
-  }
-
   builder.add_vertex(point);
 }
 
