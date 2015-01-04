@@ -72,6 +72,7 @@ typedef CGAL::Polyhedron_3<Exact_Kernel>                  Exact_Polyhedron_3;
 typedef Exact_Polyhedron_3::HalfedgeDS                    Exact_HalfedgeDS;
 typedef Nef_polyhedron_3::Point_3                         Exact_Point_3;
 typedef Exact_Kernel::Vector_3                            Vector_3;
+typedef Exact_Kernel::Ray_3                               Ray_3;
 
 // AABB tree primitives
 typedef CGAL::AABB_face_graph_triangle_primitive<Exact_Polyhedron_3> Primitive;
@@ -856,6 +857,24 @@ void CSGCGALDomain3D::get_points_in_holes(std::vector<dolfin::Point> h,
 {
   std::vector<typename Exact_Polyhedron_3::Vertex_const_handle> parts;
   get_disconnected_components(impl->p,std::back_inserter(parts));
+
+  for (std::vector<typename Exact_Polyhedron_3::Vertex_const_handle>::const_iterator it = parts.begin();
+       it != parts.end(); it++)
+  {
+    typename Exact_Polyhedron_3::Halfedge_const_handle h = (*it)->halfedge();
+    const Exact_Point_3 x1 = h->vertex()->point();
+    const Exact_Point_3 x2 = h->next()->vertex()->point();
+    const Exact_Point_3 x3 = h->next()->next()->vertex()->point();
+    Exact_Point_3 p( (x1.x()+x2.x()+x3.x())/3,
+                     (x1.y()+x2.y()+x3.y())/3,
+                     (x1.z()+x2.z()+x3.z())/3);
+
+    Vector_3 n = CGAL::cross_product(x2-x1, x3-x1);
+
+    // shoot a ray from the facet and count the number of hits
+    Ray_3 r(p, n);
+
+  }
 }
 //-----------------------------------------------------------------------------
 void CSGCGALDomain3D::remove_degenerate_facets(double tolerance) 
