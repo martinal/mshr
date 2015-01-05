@@ -36,7 +36,7 @@ class CSGCGALDomain3DQueryStructure
  public:
   CSGCGALDomain3DQueryStructure(std::unique_ptr<CSGCGALDomain3DQueryStructureImpl> impl);
   ~CSGCGALDomain3DQueryStructure();
- private:
+
   std::unique_ptr<CSGCGALDomain3DQueryStructureImpl> impl;
 };
 
@@ -94,9 +94,9 @@ class CSGCGALDomain3D : public dolfin::Variable
   void get_facets(std::vector<std::array<std::size_t, 3> > &f) const;
 
   /// @brief get one point per hole, strictly inside the hole.
-  /// @param h the returned points
-  /// @param q
-  void get_points_in_holes(std::vector<dolfin::Point> h,
+  /// @param holes the returned points
+  /// @param q a query structure returned from get_query_structure()
+  void get_points_in_holes(std::vector<dolfin::Point>& holes,
                            std::shared_ptr<CSGCGALDomain3DQueryStructure> q) const;
 
   /// @brief Attempt to remove degenerate facets.

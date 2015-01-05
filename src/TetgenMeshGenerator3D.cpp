@@ -128,9 +128,6 @@ void TetgenMeshGenerator3D::generate(std::shared_ptr<const CSGCGALDomain3D> doma
   domain->get_vertices(vertices);
   domain->get_facets(facets);
 
-  // Release domain object, possibly deleting it
-  domain.reset();
-
   tetgenio in;
 
   // Copy the vertices to the tetgen structure
@@ -198,6 +195,9 @@ void TetgenMeshGenerator3D::generate(std::shared_ptr<const CSGCGALDomain3D> doma
 
     i++;
   }
+
+  // Release domain object, possibly deleting it
+  domain.reset();
 
   // set tetgen parameters
   std::stringstream tetgenparams;
