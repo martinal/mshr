@@ -26,6 +26,7 @@
 #include "meshclean.h"
 #include "triangulate_polyhedron.h"
 #include "triangulation_refinement.h"
+#include "Polyhedron_utils.h"
 
 #include <dolfin/geometry/Point.h>
 #include <dolfin/math/basic.h>
@@ -40,6 +41,12 @@
 #include <CGAL/Origin.h>
 #include <CGAL/Self_intersection_polyhedron_3.h>
 
+#include <CGAL/AABB_tree.h>
+#include <CGAL/AABB_traits.h>
+#include <CGAL/boost/graph/graph_traits_Polyhedron_3.h>
+#include <CGAL/AABB_face_graph_triangle_primitive.h>
+
+
 #define BOOST_FILESYSTEM_NO_DEPRECATED
 #include <boost/filesystem.hpp>
 
@@ -49,6 +56,7 @@
 #include <iomanip>
 #include <set>
 #include <cmath>
+#include <memory>
 
 using namespace mshr;
 
@@ -64,50 +72,30 @@ typedef CGAL::Polyhedron_3<Exact_Kernel>                  Exact_Polyhedron_3;
 typedef Exact_Polyhedron_3::HalfedgeDS                    Exact_HalfedgeDS;
 typedef Nef_polyhedron_3::Point_3                         Exact_Point_3;
 typedef Exact_Kernel::Vector_3                            Vector_3;
+typedef Exact_Kernel::Ray_3                               Ray_3;
+
+// AABB tree primitives
+typedef CGAL::AABB_face_graph_triangle_primitive<Exact_Polyhedron_3> Primitive;
+typedef CGAL::AABB_traits<Exact_Kernel, Primitive> Traits;
+typedef CGAL::AABB_tree<Traits> AABB_Tree;
 
 
 // Convenience routine to make debugging easier. Remove before releasing.
-template<typename Builder, bool print=false>
+template<typename Builder>
 inline void add_triangular_facet(Builder& builder,
-                          int v0, int v1, int v2)
+                                 int v0, int v1, int v2)
 {
-  static int facet_no = 0;
-
-  if (print)
-  {
-    std::cout << "Begin facet " << facet_no << std::endl;
-
-    // Print vertices
-    std::cout << "Vertex: " << v0 << " " << v1 << " " << v2 << std::endl;
-
-    // if (builder.test_facet(vertices.begin(), vertices.end()))
-    //   std::cout << "Facet ok, size: " << vertices.size() << std::endl;
-    // else
-    //   std::cout << "Facet not ok" << std::endl;
-  }
-
   builder.begin_facet();
   builder.add_vertex_to_facet(v0);
   builder.add_vertex_to_facet(v1);
   builder.add_vertex_to_facet(v2);
   builder.end_facet();
-
-  if (print)
-    std::cout << "End facet" << std::endl;
-  facet_no++;
 }
 //-----------------------------------------------------------------------------
-template<typename Builder, bool print=false>
+template<typename Builder>
 inline void add_vertex(Builder& builder,
                 const Exact_Point_3& point)
 {
-  if (print)
-  {
-    static int vertex_no = 0;
-    std::cout << "Adding vertex " << vertex_no << " at " << point << std::endl;
-    vertex_no++;
-  }
-
   builder.add_vertex(point);
 }
 
@@ -151,6 +139,7 @@ class Build_sphere : public CGAL::Modifier_base<Exact_HalfedgeDS>
     {
       vertices.reserve(initial_vertices.size());
       std::copy(initial_vertices.begin(), initial_vertices.end(), std::back_inserter(vertices));
+
       triangles.reserve(initial_triangles.size());
       std::copy(initial_triangles.begin(), initial_triangles.end(), std::back_inserter(triangles));
     }
@@ -158,9 +147,13 @@ class Build_sphere : public CGAL::Modifier_base<Exact_HalfedgeDS>
     CGAL::Polyhedron_incremental_builder_3<Exact_HalfedgeDS> builder( hds, true );
     builder.begin_surface(vertices.size(), triangles.size());
 
+    dolfin::Point center = _sphere.c;
     for (const dolfin::Point& p : vertices)
     {
-      add_vertex(builder, Exact_Point_3(p.x(), p.y(), p.z()));
+      const double scaling = _sphere.r/std::sqrt(p.x()*p.x() + p.y()*p.y() + p.z()*p.z());
+      add_vertex(builder, Exact_Point_3(center.x() + p.x()*scaling,
+                                        center.y() + p.y()*scaling,
+                                        center.z() + p.z()*scaling));
     }
 
     for (const std::array<std::size_t, 3>& t : triangles)
@@ -754,8 +747,22 @@ struct CSGCGALDomain3DImpl
 {
   Exact_Polyhedron_3 p;
 };
+//-----------------------------------------------------------------------------
+struct CSGCGALDomain3DQueryStructureImpl
+{
+  template <typename A>
+  CSGCGALDomain3DQueryStructureImpl(A start, A end, const Exact_Polyhedron_3& p)
+    : aabb_tree(start, end, p){}
 
-
+  AABB_Tree aabb_tree;
+};
+//-----------------------------------------------------------------------------
+CSGCGALDomain3DQueryStructure::CSGCGALDomain3DQueryStructure(std::unique_ptr<CSGCGALDomain3DQueryStructureImpl> impl)
+  : impl(std::move(impl))
+{}
+//-----------------------------------------------------------------------------
+CSGCGALDomain3DQueryStructure::~CSGCGALDomain3DQueryStructure(){}
+//-----------------------------------------------------------------------------
 CSGCGALDomain3D::CSGCGALDomain3D()
 : impl(new CSGCGALDomain3DImpl)
 {
@@ -846,6 +853,75 @@ void CSGCGALDomain3D::get_facets(std::vector< std::array<std::size_t, 3> > &f) c
   }
 }
 //-----------------------------------------------------------------------------
+void CSGCGALDomain3D::get_points_in_holes(std::vector<dolfin::Point>& holes,
+                                          std::shared_ptr<CSGCGALDomain3DQueryStructure> q) const
+{
+  std::vector<typename Exact_Polyhedron_3::Vertex_const_handle> parts;
+  get_disconnected_components(impl->p,std::back_inserter(parts));
+
+  for (std::vector<typename Exact_Polyhedron_3::Vertex_const_handle>::const_iterator it = parts.begin();
+       it != parts.end(); it++)
+  {
+    typename Exact_Polyhedron_3::Halfedge_const_handle h = (*it)->halfedge();
+    const Exact_Point_3 x1 = h->vertex()->point();
+    const Exact_Point_3 x2 = h->next()->vertex()->point();
+    const Exact_Point_3 x3 = h->next()->next()->vertex()->point();
+    const Exact_Point_3 origin( (x1.x()+x2.x()+x3.x())/3,
+                                (x1.y()+x2.y()+x3.y())/3,
+                                (x1.z()+x2.z()+x3.z())/3);
+
+    Vector_3 n = CGAL::cross_product(x3-x1, x2-x1);
+
+    // shoot a ray from the facet and count the number of hits
+    Ray_3 ray(origin, n);
+
+    std::list<AABB_Tree::Object_and_primitive_id> intersections;
+    q->impl->aabb_tree.all_intersections(ray, std::back_inserter(intersections));
+    // std::cout << "Number of intersections: " << intersections.size() << std::endl;
+
+    // Collect unique intersection points not including the origin point
+    std::set<Exact_Point_3> intersection_points;
+    for (std::list<AABB_Tree::Object_and_primitive_id>::const_iterator
+           iit = intersections.begin();
+         iit != intersections.end(); iit++)
+    {
+      if (const Exact_Point_3* p = CGAL::object_cast<Exact_Point_3>(&(iit->first)))
+      {
+        if (*p != origin)
+          intersection_points.insert(*p);
+      }
+    }
+
+    // std::cout << "Number of unique point intersections: " << intersection_points.size() << std::endl;
+    if (intersection_points.size() % 2 == 0)
+    {
+      // This is a hole
+      // Find a point strictly inside it
+
+      std::set<Exact_Point_3>::const_iterator pit = intersection_points.begin();
+      Exact_Point_3 closest_point = *pit;
+      Exact_Kernel::FT distance_to_closest = (closest_point-origin).squared_length();
+      pit++;
+
+      for (;pit != intersection_points.end(); pit++)
+      {
+        Exact_Kernel::FT d = (*pit-origin).squared_length();
+        if (d < distance_to_closest)
+        {
+          distance_to_closest = d;
+          closest_point = *pit;
+        }
+      }
+
+      const dolfin::Point h_point( (CGAL::to_double(origin.x())+CGAL::to_double(closest_point.x()))/2,
+                                   (CGAL::to_double(origin.y())+CGAL::to_double(closest_point.y()))/2,
+                                   (CGAL::to_double(origin.z())+CGAL::to_double(closest_point.z()))/2 );
+      // std::cout << "Point in hole: " << h_point << std::endl;
+      holes.push_back(h_point);
+    }
+  }
+}
+//-----------------------------------------------------------------------------
 void CSGCGALDomain3D::remove_degenerate_facets(double tolerance) 
 {
   remove_degenerate(impl->p, tolerance);
@@ -862,6 +938,14 @@ void CSGCGALDomain3D::ensure_meshing_preconditions()
     remove_degenerate_facets(parameters["degenerate_tolerance"]);
 }
 //-----------------------------------------------------------------------------
+std::shared_ptr<CSGCGALDomain3DQueryStructure> CSGCGALDomain3D::get_query_structure() const
+{
+  std::unique_ptr<CSGCGALDomain3DQueryStructureImpl> i(new CSGCGALDomain3DQueryStructureImpl(faces(impl->p).first,
+                                                                                             faces(impl->p).second,
+                                                                                             impl->p));
+  return std::shared_ptr<CSGCGALDomain3DQueryStructure>(new CSGCGALDomain3DQueryStructure(std::move(i)));
+}
+//-----------------------------------------------------------------------------
 bool CSGCGALDomain3D::is_insideout() const
 {
   typedef Exact_Kernel::Ray_3 Exact_Ray_3;
@@ -870,7 +954,7 @@ bool CSGCGALDomain3D::is_insideout() const
   // the number of distinct hits (if the ray hit an edge, the same intersection
   // point will hit sevel facets). Excluding the hit on facet a the number
   // should be even for the polyhedron to be bounded.
-  // NOTE: Not constructing AABB tree since we are doing only one query.
+  // TODO: Take QueryStructure argument.
   Exact_Polyhedron_3::Facet_iterator f = impl->p.facets_begin();
 
   Exact_Ray_3 ray;

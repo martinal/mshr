@@ -128,60 +128,86 @@ void TetgenMeshGenerator3D::generate(std::shared_ptr<const CSGCGALDomain3D> doma
   domain->get_vertices(vertices);
   domain->get_facets(facets);
 
-  // Release domain object, possibly deleting it
-  domain.reset();
-
   tetgenio in;
 
   // Copy the vertices to the tetgen structure
-  in.numberofpoints = vertices.size();
-  in.pointlist = new REAL[in.numberofpoints * 3];
-
-  int i = 0;
-  for (std::vector<dolfin::Point>::const_iterator it = vertices.begin();
-       it != vertices.end(); it++)
   {
-    in.pointlist[i*3 + 0] = it->x();
-    in.pointlist[i*3 + 1] = it->y();
-    in.pointlist[i*3 + 2] = it->z();
+    in.numberofpoints = vertices.size();
+    in.pointlist = new REAL[in.numberofpoints * 3];
 
-    i++;
+    std::size_t i = 0;
+    for (std::vector<dolfin::Point>::const_iterator it = vertices.begin();
+         it != vertices.end(); it++)
+    {
+      in.pointlist[i*3 + 0] = it->x();
+      in.pointlist[i*3 + 1] = it->y();
+      in.pointlist[i*3 + 2] = it->z();
+
+      i++;
+    }
   }
   
-  // Copy the facets
-  in.numberoffacets = facets.size();
-  in.facetlist = new tetgenio::facet[in.numberoffacets];
-  //in.facetmarkerlist = new int[in.numberoffacets];
-
-  i = 0;
-  for (std::vector<std::array<std::size_t, 3> >::const_iterator it = facets.begin();
-       it != facets.end(); it++)
+  // Copy the facets to the tetgen structure
   {
-    // Facet 1. The leftmost facet.
-    tetgenio::facet *f = &in.facetlist[i];
-    f->numberofpolygons = 1;
-    f->polygonlist = new tetgenio::polygon[f->numberofpolygons];
-    f->numberofholes = 0;
-    f->holelist = NULL;
-    tetgenio::polygon *p = &f->polygonlist[0];
-    p->numberofvertices = 3;
-    p->vertexlist = new int[p->numberofvertices];
-    p->vertexlist[0] = (*it)[0];
-    p->vertexlist[1] = (*it)[1];
-    p->vertexlist[2] = (*it)[2];
+    in.numberoffacets = facets.size();
+    in.facetlist = new tetgenio::facet[in.numberoffacets];
+    //in.facetmarkerlist = new int[in.numberoffacets];
+
+    std::size_t i = 0;
+    for (std::vector<std::array<std::size_t, 3> >::const_iterator it = facets.begin();
+         it != facets.end(); it++)
+    {
+      tetgenio::facet *f = &in.facetlist[i];
+      f->numberofpolygons = 1;
+      f->polygonlist = new tetgenio::polygon[f->numberofpolygons];
+      f->numberofholes = 0;
+      f->holelist = NULL;
+      tetgenio::polygon *p = &f->polygonlist[0];
+      p->numberofvertices = 3;
+      p->vertexlist = new int[p->numberofvertices];
+      p->vertexlist[0] = (*it)[0];
+      p->vertexlist[1] = (*it)[1];
+      p->vertexlist[2] = (*it)[2];
+
+      i++;
+    }
+  }
+
+  // Mark holes in the domain
+  // TODO: Check if there are more than one disconnected part
+  // before creating the query structure.
+  {
+    std::vector<dolfin::Point> holes;
+    std::shared_ptr<CSGCGALDomain3DQueryStructure> qs = domain->get_query_structure();
+    domain->get_points_in_holes(holes,
+                                qs);
+
+    in.numberofholes = holes.size();
+    in.holelist = new REAL[in.numberofholes*3];
+    std::size_t i = 0;
+    for (std::vector<dolfin::Point>::const_iterator it = holes.begin();
+         it != holes.end(); it++)
+    {
+      in.holelist[i*3]     = it->x();
+      in.holelist[i*3 + 1] = it->y();
+      in.holelist[i*3 + 2] = it->z();
+    }
 
     i++;
   }
 
-  // Tetrahedralize the PLC. Switches are chosen to read a PLC (p),
-  //   do quality mesh generation (q) with a specified quality bound
-  //   (1.414), and apply a maximum volume constraint (a0.1).
+  // Release domain object, possibly deleting it
+  domain.reset();
 
+  // set tetgen parameters
   std::stringstream tetgenparams;
+
+  // tetrahedralize a plc
   tetgenparams << "p";
 
   if (!parameters["disable_quality_improvement"])
   {
+    // set quality constraints
     tetgenparams << "q"
                  << double(parameters["max_radius_edge_ratio"]) << "/"
                  << double(parameters["min_dihedral_angle"]);
@@ -189,13 +215,14 @@ void TetgenMeshGenerator3D::generate(std::shared_ptr<const CSGCGALDomain3D> doma
     tetgenparams << "a";
     if (double(parameters["max_tet_volume"]) > 0)
     {
+      // set maximum cell volume
       tetgenparams << double(parameters["max_tet_volume"]);
     }
     else
     {
       const double resolution = parameters["mesh_resolution"];
 
-      // Try to compute reasonable parameters
+      // try to compute reasonable parameters
       const double r = bounding_sphere_radius(vertices);
       const double cell_size = r/static_cast<double>(resolution)*2.0;
       tetgenparams << cell_size;
@@ -204,6 +231,7 @@ void TetgenMeshGenerator3D::generate(std::shared_ptr<const CSGCGALDomain3D> doma
 
   if (dolfin::get_log_level() > dolfin::DBG)
   {
+    // set verbosity level
     tetgenparams << "Q";
   }
 

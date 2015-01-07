@@ -29,6 +29,16 @@ namespace mshr
 
   // Forward declaration
   struct CSGCGALDomain3DImpl;
+  struct CSGCGALDomain3DQueryStructureImpl;
+
+class CSGCGALDomain3DQueryStructure
+{
+ public:
+  CSGCGALDomain3DQueryStructure(std::unique_ptr<CSGCGALDomain3DQueryStructureImpl> impl);
+  ~CSGCGALDomain3DQueryStructure();
+
+  std::unique_ptr<CSGCGALDomain3DQueryStructureImpl> impl;
+};
 
 /// @brief A polyhedron meshing domain.
 ///
@@ -83,6 +93,11 @@ class CSGCGALDomain3D : public dolfin::Variable
   /// @brief Output facets as indices to the vertices array
   void get_facets(std::vector<std::array<std::size_t, 3> > &f) const;
 
+  /// @brief get one point per hole, strictly inside the hole.
+  /// @param holes the returned points
+  /// @param q a query structure returned from get_query_structure()
+  void get_points_in_holes(std::vector<dolfin::Point>& holes,
+                           std::shared_ptr<CSGCGALDomain3DQueryStructure> q) const;
 
   /// @brief Attempt to remove degenerate facets.
   void remove_degenerate_facets(double tolerance);
@@ -90,6 +105,12 @@ class CSGCGALDomain3D : public dolfin::Variable
   /// @brief Attempts to ensure that the preconditions
   /// for successfull meshing generation are fullfilled.
   void ensure_meshing_preconditions();
+
+  /// @brief Return data structure that allows fast queries,
+  /// essentially a wrapper for a CGAL AABB tree of the polyhedron triangles.
+  /// When performing queries, the user is responsible for the query structure
+  /// being in sync with the CSGCGALDomain3D object.
+  std::shared_ptr<CSGCGALDomain3DQueryStructure> get_query_structure() const;
 
   /// Default parameter values
   static dolfin::Parameters default_parameters()

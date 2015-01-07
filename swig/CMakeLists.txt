@@ -62,11 +62,12 @@ execute_process(COMMAND ${PYTHON_EXECUTABLE} -c "${PYTHON_LIB_DISCOVER_STR}"
 set(INSTALL_PYTHON_MODULE_DIR ${INSTALL_PYTHON_MODULE_DIR}
   CACHE PATH "Python extension module installation directory.")
 
+# Don't remove runtime link paths
+set_target_properties(${SWIG_MODULE_mshr_REAL_NAME} PROPERTIES INSTALL_RPATH_USE_LINK_PATH TRUE)
 
-#install(FILES ${SWIG_MODULE_LOCATION} ${CMAKE_CURRENT_BINARY_DIR}/mshr.py
-#  DESTINATION ${INSTALL_PYTHON_MODULE_DIR})
-
+# install compiled swig generated module
 install(TARGETS ${SWIG_MODULE_mshr_REAL_NAME} DESTINATION ${INSTALL_PYTHON_MODULE_DIR})
 
+# install pure python swig generated module
 install(FILES ${CMAKE_CURRENT_BINARY_DIR}/mshr.py
   DESTINATION ${INSTALL_PYTHON_MODULE_DIR})

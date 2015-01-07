@@ -78,6 +78,7 @@
 %ignore mshr::CSGCGALDomain2D::operator=;
 %ignore mshr::CSGCGALDomain2D::impl;
 %ignore mshr::PSLG;
+%ignore mshr::CSGCGALDomain3DQueryStructure::CSGCGALDomain3DQueryStructure;
 
 %shared_ptr(mshr::CSGGeometry)
 %shared_ptr(mshr::CSGPrimitive)
@@ -105,6 +106,7 @@
 %shared_ptr(mshr::CSGCGALDomain2D)
 %shared_ptr(mshr::CSGCGALDomain3D)
 %shared_ptr(mshr::UnitSphereMesh)
+%shared_ptr(mshr::CSGCGALDomain3DQueryStructure)
 
 %rename(_generate) mshr::generate;
 %ignore mshr::get_boundary_mesh;

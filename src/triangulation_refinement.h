@@ -105,7 +105,7 @@ void refine_triangulation(const std::vector<dolfin::Point> initial_vertices,
   // Add the corner vertices
   for (const dolfin::Point& p : initial_vertices)
   {
-    vertices.push_back(p/p.norm());
+    vertices.push_back(p);
   }
 
   std::map<std::array<std::size_t, 3>, std::size_t> edge_vertices;
