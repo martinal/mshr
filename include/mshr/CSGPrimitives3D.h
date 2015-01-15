@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Anders Logg, 2012-2014 Benjamin Kehlet
+// Copyright (C) 2012 Anders Logg, 2012-2015 Benjamin Kehlet
 //
 // This file is part of mshr.
 //
@@ -76,10 +76,6 @@ namespace mshr
     /// @param a The first corner
     /// @param b The second corner
     Box(dolfin::Point a, dolfin::Point b);
-
-    /// @brief Deprecated. Create box defined by two opposite corners
-    Box(double x1, double y1, double z1,
-        double x2, double y2, double z2);
 
     /// @brief Informal string representation
     std::string str(bool verbose) const;

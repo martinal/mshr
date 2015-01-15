@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Anders Logg, 2012, 2014 Benjamin Kehlet
+// Copyright (C) 2012 Anders Logg and 2012, 2014-2015 Benjamin Kehlet
 //
 // This file is part of mshr.
 //
@@ -80,17 +80,6 @@ Box::Box(dolfin::Point a, dolfin::Point b)
                          "Create axis aligned box",
                          s.str());
   }
-}
-//-----------------------------------------------------------------------------
-Box::Box(double x1, double y1, double z1,
-         double x2, double y2, double z2)
-  : Box(dolfin::Point(x1, y1, z1),
-        dolfin::Point(x2, y2, z2))
-{
-  dolfin::deprecation("Construct Box",
-                      "1.4.0",
-                      "1.5.0",
-                      "Use the constructor that takes Point arguments");
 }
 //-----------------------------------------------------------------------------
 std::string Box::str(bool verbose) const
