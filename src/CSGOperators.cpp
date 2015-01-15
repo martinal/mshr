@@ -254,7 +254,10 @@ CSGRotation::CSGRotation(std::shared_ptr<CSGGeometry> g,
                          double theta)
   : g(g), rot_axis(.0,.0), c(.0,.0), theta(theta), translate(false)
 {
-  if (g->dim() > 2)
+
+  dim_ = g->dim();
+
+  if (dim_ > 2)
     dolfin::dolfin_error("CSGOperators.cpp",
                          "Constructing CSG rotation",
                          "Rotation axis must be given in 3D");
