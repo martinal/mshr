@@ -270,7 +270,7 @@ CSGRotation::CSGRotation(std::shared_ptr<CSGGeometry> g,
     rot_axis(v),
     c(v),
     theta(theta),
-    translate(dim_ == 2 ? true : false)
+    translate(g->dim() == 2 ? true : false)
 {
   assert(g);
 
@@ -298,8 +298,8 @@ CSGRotation::CSGRotation(std::shared_ptr<CSGGeometry> g,
 
   if (dim_ < 3)
     dolfin::dolfin_error("CSGOperators.cpp",
-                 "Constructing CSG rotation",
-                 "Can't give rotation axis for dimension < 3");
+                         "Constructing CSG rotation",
+                         "Can't give rotation axis for dimension < 3");
 }
 //-----------------------------------------------------------------------------
 std::string CSGRotation::str(bool verbose) const

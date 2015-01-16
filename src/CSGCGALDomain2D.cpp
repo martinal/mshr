@@ -268,7 +268,7 @@ CSGCGALDomain2D::CSGCGALDomain2D(const CSGGeometry *geometry)
                                                  Vector_2(-t->c.x(), -t->c.y())) * tr;
 
       // Do the rotation
-      tr = Exact_Kernel::Aff_transformation_2(CGAL::ROTATION, sin(t->theta), cos(t->theta)) *tr;
+      tr = Exact_Kernel::Aff_transformation_2(CGAL::ROTATION, sin(t->theta), cos(t->theta)) * tr;
 
       if (t->translate)
         tr = Exact_Kernel::Aff_transformation_2(CGAL::TRANSLATION,
