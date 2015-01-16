@@ -121,7 +121,8 @@ void refine_triangulation(const std::vector<dolfin::Point> initial_vertices,
         {
           dolfin::Point v = get_edge_point(initial_vertices[t[j]], initial_vertices[t[(j+1)%3]], float(i)/N);
 
-          edge_vertices[{t[j], t[(j+1)%3], i}] = vertices.size();
+          // Try not using brace elision to see if gcc 4.6.3 gets more happy.
+          edge_vertices[{{t[j], t[(j+1)%3], i}}] = vertices.size();
           vertices.push_back(v/v.norm());
         }
       }
