@@ -121,6 +121,8 @@ void refine_triangulation(const std::vector<dolfin::Point> initial_vertices,
         {
           dolfin::Point v = get_edge_point(initial_vertices[t[j]], initial_vertices[t[(j+1)%3]], float(i)/N);
 
+          // NOTE: Some older compilers (eg. gcc on Ubuntu Precise) require the std::array type to be given
+          // explicitly.
           edge_vertices[std::array<std::size_t,3>{{t[j], t[(j+1)%3], i}}] = vertices.size();
           vertices.push_back(v/v.norm());
         }
