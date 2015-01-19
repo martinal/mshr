@@ -12,6 +12,12 @@ if ( CMAKE_BUILD_TYPE )
 else()
   set(CGAL_BUILD_TYPE Debug)
 endif()
+
+# CGAL doesn't allow Developer as build type.
+if ( "${CMAKE_BUILD_TYPE}" STREQUAL "Developer" )
+  set(CGAL_BUILD_TYPE "Debug")
+endif()
+
 message(STATUS "CGAL build type: ${CGAL_BUILD_TYPE}")
 
 # Note: Need to add fPIC in order to be able to link staticly with CGAL
