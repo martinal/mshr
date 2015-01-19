@@ -62,7 +62,7 @@ namespace
                                      std::size_t i, 
                                      std::size_t N)
   {
-    const std::array<std::size_t, 3> key{std::min(a, b), std::max(a, b), a < b ? i : N-i};
+    const std::array<std::size_t, 3> key{{std::min(a, b), std::max(a, b), a < b ? i : N-i}};
     std::size_t v = edge_vertices.at(key);
     // print "getting edge vertex ({}, {}, {}) = {}".format(a, b, i, v)
     return v;
@@ -121,8 +121,7 @@ void refine_triangulation(const std::vector<dolfin::Point> initial_vertices,
         {
           dolfin::Point v = get_edge_point(initial_vertices[t[j]], initial_vertices[t[(j+1)%3]], float(i)/N);
 
-          // Try not using brace elision to see if gcc 4.6.3 gets more happy.
-          edge_vertices[{{t[j], t[(j+1)%3], i}}] = vertices.size();
+          edge_vertices[std::array<std::size_t,3>{{t[j], t[(j+1)%3], i}}] = vertices.size();
           vertices.push_back(v/v.norm());
         }
       }
@@ -157,17 +156,17 @@ void refine_triangulation(const std::vector<dolfin::Point> initial_vertices,
     }
 
     // std::cout << "  Adding corner facets" << std::endl;
-    add_cell(triangles, { triangle[0],
+    add_cell(triangles, std::array<std::size_t, 3>{{ triangle[0],
                           get_edge_vertex(edge_vertices, 
                                           triangle[0],
                                           triangle[1], 
                                           1, N),
                           get_edge_vertex(edge_vertices,
                                           triangle[0], triangle[2],
-                                          1, N)});
+                                          1, N)}});
     cell_count += 1;
 
-    add_cell(triangles, {triangle[1],
+    add_cell(triangles, std::array<std::size_t, 3>{{triangle[1],
                          get_edge_vertex(edge_vertices,
                                          triangle[1], 
                                          triangle[2],
@@ -175,10 +174,10 @@ void refine_triangulation(const std::vector<dolfin::Point> initial_vertices,
                          get_edge_vertex(edge_vertices, 
                                          triangle[1],
                                          triangle[0],
-                                         1, N)});
+                                         1, N)}});
     cell_count += 1;
 
-    add_cell(triangles, {triangle[2],
+    add_cell(triangles, std::array<std::size_t, 3>{{triangle[2],
                          get_edge_vertex(edge_vertices,
                                          triangle[2], 
                                          triangle[0], 
@@ -186,99 +185,99 @@ void refine_triangulation(const std::vector<dolfin::Point> initial_vertices,
                          get_edge_vertex(edge_vertices,
                                          triangle[2], 
                                          triangle[1],
-                                         1, N)});
+                                         1, N)}});
     cell_count += 1;
 
 
     if (N == 2)
     {
       // std::cout << "  Refinement level 2: Adding interior cell" << std::endl;
-      add_cell(triangles, {get_edge_vertex(edge_vertices, triangle[0], triangle[1], 1, N),
-                           get_edge_vertex(edge_vertices, triangle[1], triangle[2], 1, N),
-                           get_edge_vertex(edge_vertices, triangle[2], triangle[0], 1, N)});
+      add_cell(triangles, std::array<std::size_t, 3>{{get_edge_vertex(edge_vertices, triangle[0], triangle[1], 1, N),
+	      get_edge_vertex(edge_vertices, triangle[1], triangle[2], 1, N),
+	      get_edge_vertex(edge_vertices, triangle[2], triangle[0], 1, N)}});
       cell_count += 1;
     }
     else
     {
       // std::cout << "  Add facets incident to original edges" << std::endl;
-      add_cell(triangles, {vertex_start,
-            get_edge_vertex(edge_vertices, triangle[2], triangle[1], 1, N),
-            get_edge_vertex(edge_vertices, triangle[2], triangle[0], 1, N)});
+      add_cell(triangles, std::array<std::size_t, 3>{{vertex_start,
+	      get_edge_vertex(edge_vertices, triangle[2], triangle[1], 1, N),
+	      get_edge_vertex(edge_vertices, triangle[2], triangle[0], 1, N)}});
       cell_count += 1;
 
-      add_cell(triangles, {vertex_start+N-3,
-            get_edge_vertex(edge_vertices, triangle[1], triangle[0], 1, N),
-            get_edge_vertex(edge_vertices, triangle[1], triangle[2], 1, N)});
+      add_cell(triangles, std::array<std::size_t, 3>{{vertex_start+N-3,
+	      get_edge_vertex(edge_vertices, triangle[1], triangle[0], 1, N),
+	      get_edge_vertex(edge_vertices, triangle[1], triangle[2], 1, N)}});
       cell_count += 1;
 
-      add_cell(triangles, { vertices.size() - 1,
-            get_edge_vertex(edge_vertices,triangle[0], triangle[2], 1, N),
-            get_edge_vertex(edge_vertices,triangle[0], triangle[1], 1, N)});
+      add_cell(triangles, std::array<std::size_t, 3>{{ vertices.size() - 1,
+	      get_edge_vertex(edge_vertices,triangle[0], triangle[2], 1, N),
+	      get_edge_vertex(edge_vertices,triangle[0], triangle[1], 1, N)}});
       cell_count += 1;
 
 
       // std::cout << "  Add the facets along the original edges" << std::endl;
 
       // along edge(triangle[1] <--> triangle[2])
-      add_cell(triangles, {vertex_start,
-            get_edge_vertex(edge_vertices,triangle[2], triangle[1], 2, N),
-            get_edge_vertex(edge_vertices,triangle[2], triangle[1], 1, N)});
+      add_cell(triangles, std::array<std::size_t, 3>{{vertex_start,
+	      get_edge_vertex(edge_vertices,triangle[2], triangle[1], 2, N),
+	      get_edge_vertex(edge_vertices,triangle[2], triangle[1], 1, N)}});
       cell_count += 1;
 
       for (std::size_t i = 3; i < N; i++)
       {
-        add_cell(triangles, {vertex_start+i-3,
-              vertex_start+i-2,
-              get_edge_vertex(edge_vertices,triangle[2], triangle[1], i-1, N)});
+        add_cell(triangles, std::array<std::size_t, 3>{{vertex_start+i-3,
+		vertex_start+i-2,
+		get_edge_vertex(edge_vertices,triangle[2], triangle[1], i-1, N)}});
         cell_count += 1;
 
-        add_cell(triangles, {vertex_start+i-2,
-              get_edge_vertex(edge_vertices,triangle[2], triangle[1], i, N),
-              get_edge_vertex(edge_vertices,triangle[2], triangle[1], i-1, N)});
+        add_cell(triangles, std::array<std::size_t, 3>{{vertex_start+i-2,
+		get_edge_vertex(edge_vertices,triangle[2], triangle[1], i, N),
+		get_edge_vertex(edge_vertices,triangle[2], triangle[1], i-1, N)}});
         cell_count += 1;
       }
             
       // along edge(triangle[2], triangle[0])
-      add_cell(triangles, {vertex_start,
-            get_edge_vertex(edge_vertices,triangle[2], triangle[0], 1, N),
-            get_edge_vertex(edge_vertices,triangle[2], triangle[0], 2, N)});
+      add_cell(triangles, std::array<std::size_t, 3>{{vertex_start,
+	      get_edge_vertex(edge_vertices,triangle[2], triangle[0], 1, N),
+	      get_edge_vertex(edge_vertices,triangle[2], triangle[0], 2, N)}});
       cell_count += 1;
 
       std::size_t current_inner_vertex = 0;
       for (std::size_t i = 3; i < N; i++)
       {
         const std::size_t step = N-2-i+3;
-        add_cell(triangles, {vertex_start+current_inner_vertex+step,
-              vertex_start+current_inner_vertex,
-              get_edge_vertex(edge_vertices,triangle[2], triangle[0], i-1, N)});
+        add_cell(triangles, std::array<std::size_t, 3>{{vertex_start+current_inner_vertex+step,
+		vertex_start+current_inner_vertex,
+		get_edge_vertex(edge_vertices,triangle[2], triangle[0], i-1, N)}});
         cell_count += 1;
 
-        add_cell(triangles, {get_edge_vertex(edge_vertices,triangle[2], triangle[0], i-1, N),
-              get_edge_vertex(edge_vertices,triangle[2], triangle[0], i, N),
-              vertex_start+current_inner_vertex+step});
+        add_cell(triangles, std::array<std::size_t, 3>{{get_edge_vertex(edge_vertices,triangle[2], triangle[0], i-1, N),
+		get_edge_vertex(edge_vertices,triangle[2], triangle[0], i, N),
+		vertex_start+current_inner_vertex+step}});
         cell_count += 1;
         
         current_inner_vertex += step;
       }
 
       // along edge(triangle[1], triangle[0])
-      add_cell(triangles, {vertex_start+N-3,
-            get_edge_vertex(edge_vertices,triangle[1], triangle[0], 2, N),
-            get_edge_vertex(edge_vertices,triangle[1], triangle[0], 1, N)});
+      add_cell(triangles, std::array<std::size_t, 3>{{vertex_start+N-3,
+	      get_edge_vertex(edge_vertices,triangle[1], triangle[0], 2, N),
+	      get_edge_vertex(edge_vertices,triangle[1], triangle[0], 1, N)}});
       cell_count += 1;
 
       current_inner_vertex = N-3;
       for (std::size_t i = 3; i < N; i++)
       {
         const std::size_t step = N-3-i+3;
-        add_cell(triangles, {vertex_start+current_inner_vertex,
-              vertex_start+current_inner_vertex+step,
-              get_edge_vertex(edge_vertices,triangle[1], triangle[0], i-3+2, N)});
+        add_cell(triangles, std::array<std::size_t, 3>{{vertex_start+current_inner_vertex,
+		vertex_start+current_inner_vertex+step,
+		get_edge_vertex(edge_vertices,triangle[1], triangle[0], i-3+2, N)}});
         cell_count += 1;
 
-        add_cell(triangles, {vertex_start+current_inner_vertex+step,
-              get_edge_vertex(edge_vertices,triangle[1], triangle[0], i-3+3, N),
-              get_edge_vertex(edge_vertices,triangle[1], triangle[0], i-3+2, N)});
+        add_cell(triangles, std::array<std::size_t, 3>{{vertex_start+current_inner_vertex+step,
+		get_edge_vertex(edge_vertices,triangle[1], triangle[0], i-3+3, N),
+		get_edge_vertex(edge_vertices,triangle[1], triangle[0], i-3+2, N)}});
         cell_count += 1;
             
         current_inner_vertex += step;
@@ -291,22 +290,22 @@ void refine_triangulation(const std::vector<dolfin::Point> initial_vertices,
     for (std::size_t i = 1; i < N-2; i++)
     {
       const std::size_t row_length = N-1-i;
-      add_cell(triangles, {vertex_start+row_offset,
-            vertex_start+row_offset+row_length,
-            vertex_start+row_offset+1});
+      add_cell(triangles, std::array<std::size_t, 3>{{vertex_start+row_offset,
+	      vertex_start+row_offset+row_length,
+	      vertex_start+row_offset+1}});
       cell_count += 1;
 
       for (std::size_t j = 0; j < N-3-i; j++)
       {
         add_cell(triangles,
-                 {vertex_start+row_offset+row_length+j,
-                  vertex_start+row_offset+row_length+j+1,
-                  vertex_start+row_offset+j+1});
+                 std::array<std::size_t, 3>{{vertex_start+row_offset+row_length+j,
+		       vertex_start+row_offset+row_length+j+1,
+		       vertex_start+row_offset+j+1}});
         cell_count += 1;
 
-        add_cell(triangles, {vertex_start+row_offset+row_length+j+1,
-              vertex_start+row_offset+j+2,
-              vertex_start+row_offset+j+1});
+        add_cell(triangles, std::array<std::size_t, 3>{{vertex_start+row_offset+row_length+j+1,
+		vertex_start+row_offset+j+2,
+		vertex_start+row_offset+j+1}});
         cell_count += 1;
       }
       row_offset += row_length;
