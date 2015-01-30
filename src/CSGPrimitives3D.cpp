@@ -112,15 +112,15 @@ Cylinder::Cylinder(dolfin::Point top,
   if (dolfin::near(top_radius, 0.0) && dolfin::near(bottom_radius, 0.0))
   {
     dolfin::dolfin_error("CSGPrimitives3D.cpp",
-		   "Create cylinder",
-		   "Cylinder with zero thickness");
+                         "Create cylinder",
+                         "Cylinder with zero thickness");
   }
 
   if (top.distance(bottom) < DOLFIN_EPS)
   {
     dolfin::dolfin_error("CSGPrimitives3D.cpp",
-		 "Create cylinder",
-		 "Cylinder with zero length");
+                         "Create cylinder",
+                         "Cylinder with zero length");
   }
 }
 //-----------------------------------------------------------------------------
@@ -177,6 +177,32 @@ Surface3D::Surface3D(std::string filename, double degenerate_tolerance)
 std::string Surface3D::str(bool verbose) const
 {
   return std::string("Surface3D from file ") + _filename;
+}
+//-----------------------------------------------------------------------------
+Ellipsoid::Ellipsoid(dolfin::Point center, double a, double b, double c, std::size_t segments)
+  : center(center), a(a), b(b), c(c), _segments(segments)
+{
+  if (a < DOLFIN_EPS || b < DOLFIN_EPS || c < DOLFIN_EPS)
+  {
+    dolfin::dolfin_error("CSGPrimitives3D.cpp",
+                         "Create ellipsoid",
+                         "Ellipsoid with zero or negative semi-principal axis");
+  }
+
+  if (segments < 1)
+  {
+    dolfin::dolfin_error("CSGPrimitives3D.cpp",
+                         "Create ellipsoid",
+                         "Can't create ellipsoid with zero segments");
+  }
+}
+//-----------------------------------------------------------------------------
+std::string Ellipsoid::str(bool verbose) const
+{
+  std::stringstream ss;
+  ss << "Ellipsoid with semi-principal axes of lengths ";
+  ss << a  << ", " << b << " and " << c;
+  return ss.str();
 }
 //-----------------------------------------------------------------------------
 }

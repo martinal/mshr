@@ -372,6 +372,85 @@ private:
   dolfin_assert(P.is_valid());
 }
 //-----------------------------------------------------------------------------
+class Build_ellipsoid : public CGAL::Modifier_base<Exact_HalfedgeDS>
+{
+ public:
+  Build_ellipsoid(const Ellipsoid& ellipsoid) : _ellipsoid(ellipsoid) {}
+
+  void operator()(Exact_HalfedgeDS& hds)
+  {
+    std::vector<dolfin::Point> initial_vertices { dolfin::Point( 0.0, 0.0, 1.0 ),
+                                                  dolfin::Point( 1.0, 0.0, 0.0 ),
+                                                  dolfin::Point( 0.0,-1.0, 0.0 ),
+                                                  dolfin::Point(-1.0, 0.0, 0.0 ),
+                                                  dolfin::Point( 0.0, 1.0, 0.0 ),
+                                                  dolfin::Point( 0.0, 0.0,-1.0 )};
+
+    // Note: Some older compilers (eg. gcc on Ubuntu Precise) require std::array<std::size_t, 3> to be
+    // given explicitly in the initializer list.
+    std::vector<std::array<std::size_t, 3> > initial_triangles { std::array<std::size_t, 3>{{0, 1, 2 }},
+                                                                 std::array<std::size_t, 3>{{0, 2, 3 }},
+								 std::array<std::size_t, 3>{{0, 3, 4 }},
+								 std::array<std::size_t, 3>{{0, 4, 1 }},
+								 std::array<std::size_t, 3>{{5, 1, 4 }},
+								 std::array<std::size_t, 3>{{5, 2, 1 }},
+								 std::array<std::size_t, 3>{{5, 3, 2 }},
+								 std::array<std::size_t, 3>{{5, 4, 3 }} };
+
+    std::vector<dolfin::Point> vertices;
+    std::vector<std::array<std::size_t, 3> > triangles;
+    if (_ellipsoid._segments > 1 )
+    {
+      refine_triangulation(initial_vertices,
+                           initial_triangles,
+                           _ellipsoid._segments,
+                           vertices,
+                           triangles);
+    }
+    else
+    {
+      vertices.reserve(initial_vertices.size());
+      std::copy(initial_vertices.begin(), initial_vertices.end(), std::back_inserter(vertices));
+
+      triangles.reserve(initial_triangles.size());
+      std::copy(initial_triangles.begin(), initial_triangles.end(), std::back_inserter(triangles));
+    }
+
+    CGAL::Polyhedron_incremental_builder_3<Exact_HalfedgeDS> builder( hds, true );
+    builder.begin_surface(vertices.size(), triangles.size());
+
+    dolfin::Point center = _ellipsoid.c;
+    const double a = _ellipsoid.a, b = _ellipsoid.b, c = _ellipsoid.c;
+    for (const dolfin::Point& p : vertices)
+    {
+      const double scaling = 1.0/std::sqrt( (p.x()*p.x())/(a*a) +
+                                            (p.y()*p.y())/(b*b) +
+                                            (p.z()*p.z())/(c*c) );
+      add_vertex(builder, Exact_Point_3(center.x() + p.x()*scaling,
+                                        center.y() + p.y()*scaling,
+                                        center.z() + p.z()*scaling));
+    }
+
+    for (const std::array<std::size_t, 3>& t : triangles)
+    {
+      add_triangular_facet(builder, t[0], t[1], t[2]);
+    }
+
+    builder.end_surface();
+  }
+
+  const Ellipsoid& _ellipsoid;
+};
+//-----------------------------------------------------------------------------
+void make_ellipsoid(const Ellipsoid* e, Exact_Polyhedron_3& P)
+{
+  Build_ellipsoid builder(*e);
+  P.delegate(builder);
+  dolfin_assert(P.is_closed());
+  dolfin_assert(P.is_valid());
+}
+
+//-----------------------------------------------------------------------------
 template <class HDS>
 class BuildFromFacetList : public CGAL::Modifier_base<HDS>
 {
@@ -650,6 +729,15 @@ convertSubTree(const CSGGeometry *geometry)
       return std::shared_ptr<Nef_polyhedron_3>(new Nef_polyhedron_3(P));
       break;
     }
+    case CSGGeometry::Ellipsoid :
+    {
+      const Ellipsoid* b = dynamic_cast<const Ellipsoid*>(geometry);
+      dolfin_assert(b);
+      Exact_Polyhedron_3 P;
+      make_ellipsoid(b, P);
+      return std::shared_ptr<Nef_polyhedron_3>(new Nef_polyhedron_3(P));
+      break;
+    }
     case CSGGeometry::Surface3D :
     {
       const Surface3D* b = dynamic_cast<const Surface3D*>(geometry);
@@ -660,7 +748,7 @@ convertSubTree(const CSGGeometry *geometry)
       break;
     }
     default:
-      dolfin::dolfin_error("GeometryToCGALConverter.cpp",
+      dolfin::dolfin_error("CSGCGALDomain.cpp",
                            "converting geometry to cgal polyhedron",
                            "Unhandled primitive type");
   }
@@ -708,6 +796,13 @@ void convert(const CSGGeometry& geometry,
       make_tetrahedron(b, P);
       break;
     }
+    case CSGGeometry::Ellipsoid :
+    {
+      const Ellipsoid* b = dynamic_cast<const Ellipsoid*>(&geometry);
+      dolfin_assert(b);
+      make_ellipsoid(b, P);
+      break;
+    }
     case CSGGeometry::Surface3D :
     {
       const Surface3D* b = dynamic_cast<const Surface3D*>(&geometry);
@@ -716,7 +811,7 @@ void convert(const CSGGeometry& geometry,
       break;
     }
     default:
-      dolfin::dolfin_error("GeometryToCGALConverter.cpp",
+      dolfin::dolfin_error("CSGCGALDomain3D.cpp",
                    "converting geometry to cgal polyhedron",
                    "Unhandled primitive type");
     }

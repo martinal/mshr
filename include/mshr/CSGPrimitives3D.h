@@ -39,6 +39,7 @@ namespace mshr
 
   };
 
+  // TODO: Make sphere a special case of ellipsoid.
   /// @brief A 3D sphere
   ///
   /// { "small-icon" : "sphere-small.png" }
@@ -182,6 +183,30 @@ namespace mshr
     const double degenerate_tolerance;
   };
 
+  /// @brief An axis-aligned ellipsoid
+  class Ellipsoid : public CSGPrimitive3D
+  {
+   public:
+    /// @brief Create axis aligned ellipsoid
+    ///
+    /// @param center the center
+    /// @param a semi-principal axis in x direction
+    /// @param b semi-principal axis in y direction
+    /// @param c semi-principal axis in z direction
+    /// @param segments resolution when generating a polyhedral appoximation
+    Ellipsoid(dolfin::Point center, double a, double b, double c, std::size_t segments=15);
+
+    /// @brief Informal string representation
+    /// @return The description string
+    std::string str(bool verbose) const;
+
+    Type getType() const
+    { return CSGGeometry::Ellipsoid; }
+
+    dolfin::Point center;
+    const double a, b, c;
+    const std::size_t _segments;
+  };
 }
 
 #endif
