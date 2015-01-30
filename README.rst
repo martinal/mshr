@@ -20,7 +20,7 @@ Documentation
 =============
 
 The documentation is currently being prepared here: 
-`https://bitbucket.org/benjamik/mshr/wiki <https://bitbucket.org/benjamik/mshr/wiki>`_
+`https://bitbucket.org/fenics-project/mshr/wiki <https://bitbucket.org/fenics-project/mshr/wiki>`_
 
 Installation
 ============
@@ -52,7 +52,7 @@ version.
 Contact
 =======
 
-mshr is hosted at https://bitbucket.org/benjamik/mshr/
+mshr is hosted at https://bitbucket.org/fenics-project/mshr/
 
 For comments and requests, send an email to the FEniCS mailing list::
 
@@ -60,7 +60,7 @@ For comments and requests, send an email to the FEniCS mailing list::
 
 For bug reports and feature requests, visit mshr's issue tracker at BitBucket::
 
- https://bitbucket.org/benjamik/mshr/issues
+ https://bitbucket.org/fenics-project/mshr/issues
 
 Contributions
 =============
