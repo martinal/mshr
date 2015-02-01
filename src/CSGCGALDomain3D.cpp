@@ -419,7 +419,7 @@ class Build_ellipsoid : public CGAL::Modifier_base<Exact_HalfedgeDS>
     CGAL::Polyhedron_incremental_builder_3<Exact_HalfedgeDS> builder( hds, true );
     builder.begin_surface(vertices.size(), triangles.size());
 
-    dolfin::Point center = _ellipsoid.c;
+    dolfin::Point center = _ellipsoid.center;
     const double a = _ellipsoid.a, b = _ellipsoid.b, c = _ellipsoid.c;
     for (const dolfin::Point& p : vertices)
     {
