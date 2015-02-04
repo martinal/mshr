@@ -36,7 +36,11 @@
 #include <CGAL/basic.h>
 #include <CGAL/Exact_predicates_exact_constructions_kernel.h>
 #include <CGAL/Polyhedron_incremental_builder_3.h>
-#include <CGAL/Nef_polyhedron_3.h>
+#ifndef MSHR_ENABLE_EXPERIMENTAL
+  #include <CGAL/Nef_polyhedron_3.h>
+#else
+  #include <CGAL/corefinement_operations.h>
+#endif
 #include <CGAL/IO/Polyhedron_iostream.h>
 #include <CGAL/Origin.h>
 #include <CGAL/Self_intersection_polyhedron_3.h>
@@ -67,12 +71,15 @@ namespace
 typedef CGAL::Exact_predicates_exact_constructions_kernel Exact_Kernel;
 typedef Exact_Kernel::Triangle_3                          Exact_Triangle_3;
 typedef Exact_Kernel::Vector_3                            Exact_Vector_3;
-typedef CGAL::Nef_polyhedron_3<Exact_Kernel>              Nef_polyhedron_3;
 typedef CGAL::Polyhedron_3<Exact_Kernel>                  Exact_Polyhedron_3;
 typedef Exact_Polyhedron_3::HalfedgeDS                    Exact_HalfedgeDS;
-typedef Nef_polyhedron_3::Point_3                         Exact_Point_3;
+typedef Exact_Kernel::Point_3                             Exact_Point_3;
 typedef Exact_Kernel::Vector_3                            Vector_3;
 typedef Exact_Kernel::Ray_3                               Ray_3;
+
+#ifndef MSHR_ENABLE_EXPERIMENTAL
+typedef CGAL::Nef_polyhedron_3<Exact_Kernel>              Nef_polyhedron_3;
+#endif
 
 // AABB tree primitives
 typedef CGAL::AABB_face_graph_triangle_primitive<Exact_Polyhedron_3> Primitive;
@@ -554,6 +561,8 @@ void make_surface3D(const Surface3D* s, Exact_Polyhedron_3& P)
   }
 }
 //-----------------------------------------------------------------------------
+#ifdef MSHR_ENABLE_EXPERIMENTAL
+#else
 void do_scaling(const CSGScaling& s, Nef_polyhedron_3& p)
 {
   Exact_Kernel::Aff_transformation_3 transformation(CGAL::IDENTITY);
@@ -626,7 +635,14 @@ void do_rotation(const CSGRotation& r, Nef_polyhedron_3& p)
 
   p.transform(transformation);
 }
+#endif
 //-----------------------------------------------------------------------------
+#ifdef MSHR_ENABLE_EXPERIMENTAL
+void convertSubTree(const CSGGeometry* geometry, Exact_Polyhedron_3& P)
+{
+
+}
+#else
 std::shared_ptr<Nef_polyhedron_3>
 convertSubTree(const CSGGeometry *geometry)
 {
@@ -719,7 +735,6 @@ convertSubTree(const CSGGeometry *geometry)
       return std::shared_ptr<Nef_polyhedron_3>(new Nef_polyhedron_3(P));
       break;
     }
-
     case CSGGeometry::Tetrahedron :
     {
       const Tetrahedron* b = dynamic_cast<const Tetrahedron*>(geometry);
@@ -756,6 +771,7 @@ convertSubTree(const CSGGeometry *geometry)
   // Make compiler happy.
   return std::shared_ptr<Nef_polyhedron_3>(new Nef_polyhedron_3);
 }
+#endif
 //-----------------------------------------------------------------------------
 void convert(const CSGGeometry& geometry,
              Exact_Polyhedron_3 &P)
@@ -818,12 +834,16 @@ void convert(const CSGGeometry& geometry,
   }
   else
   {
+    #ifdef MSHR_ENABLE_EXPERIMENTAL
+    convertSubTree(&geometry, P);
+    #else
     log(dolfin::TRACE, "Convert to nef polyhedron");
     std::shared_ptr<Nef_polyhedron_3> cgal_geometry
       = convertSubTree(&geometry);
     dolfin_assert(cgal_geometry->is_valid());
     dolfin_assert(cgal_geometry->is_simple());
     cgal_geometry->convert_to_polyhedron(P);
+    #endif
   }
 
   if (P.size_of_facets() == 0)
