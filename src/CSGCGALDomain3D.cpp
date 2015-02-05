@@ -76,6 +76,7 @@ typedef Exact_Polyhedron_3::HalfedgeDS                    Exact_HalfedgeDS;
 typedef Exact_Kernel::Point_3                             Exact_Point_3;
 typedef Exact_Kernel::Vector_3                            Vector_3;
 typedef Exact_Kernel::Ray_3                               Ray_3;
+typedef Exact_Kernel::Aff_transformation_3                Aff_transformation_3;
 
 #ifndef MSHR_ENABLE_EXPERIMENTAL
 typedef CGAL::Nef_polyhedron_3<Exact_Kernel>              Nef_polyhedron_3;
@@ -561,46 +562,43 @@ void make_surface3D(const Surface3D* s, Exact_Polyhedron_3& P)
   }
 }
 //-----------------------------------------------------------------------------
-#ifdef MSHR_ENABLE_EXPERIMENTAL
-#else
-void do_scaling(const CSGScaling& s, Nef_polyhedron_3& p)
+Aff_transformation_3 get_scaling(const CSGScaling& s)
 {
-  Exact_Kernel::Aff_transformation_3 transformation(CGAL::IDENTITY);
+  Aff_transformation_3 transformation(CGAL::IDENTITY);
   if (s.translate)
   {
-    Exact_Kernel::Aff_transformation_3 translation(CGAL::TRANSLATION,
+    Aff_transformation_3 translation(CGAL::TRANSLATION,
                                                    Vector_3(-s.c.x(),
                                                             -s.c.y(),
                                                             -s.c.z()));
     transformation = translation * transformation;
   }
 
-  Exact_Kernel::Aff_transformation_3 scaling(CGAL::SCALING, s.s);
+  Aff_transformation_3 scaling(CGAL::SCALING, s.s);
   transformation = scaling * transformation;
 
   if (s.translate)
   {
-    Exact_Kernel::Aff_transformation_3 translation(CGAL::TRANSLATION,
+    Aff_transformation_3 translation(CGAL::TRANSLATION,
                                                    Vector_3(s.c.x(),
                                                             s.c.y(),
                                                             s.c.z()));
     transformation = translation * transformation;
   }
 
-  p.transform(transformation);
+  return transformation;
 }
 //-----------------------------------------------------------------------------
-void do_rotation(const CSGRotation& r, Nef_polyhedron_3& p)
+Aff_transformation_3 get_rotation(const CSGRotation& r)
 {
-
   // Normalize rotation axis vector
   dolfin::Point axis = r.rot_axis/(r.rot_axis.norm());
   dolfin_assert(dolfin::near(axis.norm(), 1.0));
 
-  Exact_Kernel::Aff_transformation_3 transformation(CGAL::IDENTITY);
+  Aff_transformation_3 transformation(CGAL::IDENTITY);
   if (r.translate)
   {
-    Exact_Kernel::Aff_transformation_3 translation(CGAL::TRANSLATION,
+    Aff_transformation_3 translation(CGAL::TRANSLATION,
                                                    Vector_3(-r.c.x(),
                                                             -r.c.y(),
                                                             -r.c.z()));
@@ -613,7 +611,7 @@ void do_rotation(const CSGRotation& r, Nef_polyhedron_3& p)
   const double c = -axis.y()*sin(r.theta/2);
   const double d = -axis.z()*sin(r.theta/2);
 
-  Exact_Kernel::Aff_transformation_3 rotation(a*a+b*b-c*c-d*d,
+  Aff_transformation_3 rotation(a*a+b*b-c*c-d*d,
                                               2*(b*c-a*d),
                                               2*(b*d+a*c),
                                               2*(b*c+a*d),
@@ -626,16 +624,15 @@ void do_rotation(const CSGRotation& r, Nef_polyhedron_3& p)
 
   if (r.translate)
   {
-    Exact_Kernel::Aff_transformation_3 translation(CGAL::TRANSLATION,
+    Aff_transformation_3 translation(CGAL::TRANSLATION,
                                                    Vector_3(r.c.x(),
                                                             r.c.y(),
                                                             r.c.z()));
     transformation = translation * transformation;
   }
 
-  p.transform(transformation);
+  return transformation;
 }
-#endif
 //-----------------------------------------------------------------------------
 #ifdef MSHR_ENABLE_EXPERIMENTAL
 typedef CGAL::Polyhedron_corefinement<Exact_Polyhedron_3> CGALCSGOperator;
@@ -695,7 +692,7 @@ void convertSubTree(const CSGGeometry* geometry, Exact_Polyhedron_3& P)
       const CSGTranslation* t = dynamic_cast<const CSGTranslation*>(geometry);
       dolfin_assert(t);
       convertSubTree(t->g.get(), P);
-      Exact_Kernel::Aff_transformation_3 translation(CGAL::TRANSLATION, Vector_3(t->t.x(), t->t.y(), t->t.z()));
+      Aff_transformation_3 translation(CGAL::TRANSLATION, Vector_3(t->t.x(), t->t.y(), t->t.z()));
       std::transform(P.points_begin(), P.points_end(), P.points_begin(), translation);
       break;
     }
@@ -704,12 +701,9 @@ void convertSubTree(const CSGGeometry* geometry, Exact_Polyhedron_3& P)
       const CSGScaling* t = dynamic_cast<const CSGScaling*>(geometry);
       dolfin_assert(t);
       convertSubTree(t->g.get(), P);
-      // TODO:
-      //do_scaling(*t, P);
-      dolfin::dolfin_error("CSGCGALDomain3D.cpp",
-			   "CSG intersection",
-			   "operation not implemented");
-      
+
+      Aff_transformation_3 scaling = get_scaling(*t);
+      std::transform(P.points_begin(), P.points_end(), P.points_begin(), scaling);
       break;
     }
     case CSGGeometry::Rotation :
@@ -718,12 +712,8 @@ void convertSubTree(const CSGGeometry* geometry, Exact_Polyhedron_3& P)
       dolfin_assert(t);
 
       convertSubTree(t->g.get(), P);
-      // TODO:
-      // do_rotation(*t, P);
-      dolfin::dolfin_error("CSGCGALDomain3D.cpp",
-			   "CSG intersection",
-			   "operation not implemented");
-
+      Aff_transformation_3 rotation = get_rotation(*t);
+      std::transform(P.points_begin(), P.points_end(), P.points_begin(), rotation);
       break;
     }
     case CSGGeometry::Cylinder :
@@ -816,7 +806,7 @@ convertSubTree(const CSGGeometry *geometry)
       const CSGTranslation* t = dynamic_cast<const CSGTranslation*>(geometry);
       dolfin_assert(t);
       std::shared_ptr<Nef_polyhedron_3> g = convertSubTree(t->g.get());
-      Exact_Kernel::Aff_transformation_3 translation(CGAL::TRANSLATION, Vector_3(t->t.x(), t->t.y(), t->t.z()));
+      Aff_transformation_3 translation(CGAL::TRANSLATION, Vector_3(t->t.x(), t->t.y(), t->t.z()));
       g->transform(translation);
       return g;
       break;
@@ -826,7 +816,8 @@ convertSubTree(const CSGGeometry *geometry)
       const CSGScaling* t = dynamic_cast<const CSGScaling*>(geometry);
       dolfin_assert(t);
       std::shared_ptr<Nef_polyhedron_3> g = convertSubTree(t->g.get());
-      do_scaling(*t, *g);
+      Exact_transformation_3 scaling = get_scaling(*t);
+      g.transform(scaling);
       return g;
       break;
     }
@@ -836,7 +827,8 @@ convertSubTree(const CSGGeometry *geometry)
       dolfin_assert(t);
 
       std::shared_ptr<Nef_polyhedron_3> g = convertSubTree(t->g.get());
-      do_rotation(*t, *g);
+      Exact_transformation rotation = get_rotation(*t);
+      g.transform(rotation);
       return g;
       break;
     }
