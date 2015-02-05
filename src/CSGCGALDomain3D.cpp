@@ -638,12 +638,15 @@ void do_rotation(const CSGRotation& r, Nef_polyhedron_3& p)
 #endif
 //-----------------------------------------------------------------------------
 #ifdef MSHR_ENABLE_EXPERIMENTAL
+typedef CGAL::Polyhedron_corefinement<Exact_Polyhedron_3> CGALCSGOperator;
+  
 void convertSubTree(const CSGGeometry* geometry, Exact_Polyhedron_3& P)
 {
   switch (geometry->getType())
   {
     case CSGGeometry::Union :
     {
+      std::cout << "Union" << std::endl;
       const CSGUnion* u = dynamic_cast<const CSGUnion*>(geometry);
       dolfin_assert(u);
       convertSubTree(u->_g0.get(), P);
@@ -651,30 +654,40 @@ void convertSubTree(const CSGGeometry* geometry, Exact_Polyhedron_3& P)
       convertSubTree(u->_g1.get(), P2);
 
       // TODO: Do union
+      std::vector<std::vector<Exact_Point_3> > dummy_vector;
+      CGALCSGOperator op;
+      op(P, P2, std::back_inserter(dummy_vector), CGALCSGOperator::Join_tag);
 
       break;
     }
     case CSGGeometry::Intersection :
     {
+      std::cout << "Intersection" << std::endl;
       const CSGIntersection* u = dynamic_cast<const CSGIntersection*>(geometry);
       dolfin_assert(u);
       convertSubTree(u->_g0.get(), P);
       Exact_Polyhedron_3 P2;
       convertSubTree(u->_g1.get(), P2);
 
-      // TODO: Do intersection
+      std::vector<std::vector<Exact_Point_3> > dummy_vector;
+      CGALCSGOperator op;
+      op(P, P2, std::back_inserter(dummy_vector), CGALCSGOperator::Intersection_tag);
 
       break;
     }
     case CSGGeometry::Difference :
     {
+      std::cout << "Difference" << std::endl;
       const CSGDifference* u = dynamic_cast<const CSGDifference*>(geometry);
       dolfin_assert(u);
       convertSubTree(u->_g0.get(), P);
       Exact_Polyhedron_3 P2;
       convertSubTree(u->_g1.get(), P2);
 
-      // TODO: Do difference
+      std::vector<std::vector<Exact_Point_3> > dummy_vector;
+      CGALCSGOperator op;
+      op(P, P2, std::back_inserter(dummy_vector), CGALCSGOperator::P_minus_Q_tag);
+
       break;
     }
     case CSGGeometry::Translation :
@@ -693,6 +706,10 @@ void convertSubTree(const CSGGeometry* geometry, Exact_Polyhedron_3& P)
       convertSubTree(t->g.get(), P);
       // TODO:
       //do_scaling(*t, P);
+      dolfin::dolfin_error("CSGCGALDomain3D.cpp",
+			   "CSG intersection",
+			   "operation not implemented");
+      
       break;
     }
     case CSGGeometry::Rotation :
@@ -703,13 +720,16 @@ void convertSubTree(const CSGGeometry* geometry, Exact_Polyhedron_3& P)
       convertSubTree(t->g.get(), P);
       // TODO:
       // do_rotation(*t, P);
+      dolfin::dolfin_error("CSGCGALDomain3D.cpp",
+			   "CSG intersection",
+			   "operation not implemented");
+
       break;
     }
     case CSGGeometry::Cylinder :
     {
       const Cylinder* c = dynamic_cast<const Cylinder*>(geometry);
       dolfin_assert(c);
-      Exact_Polyhedron_3 P;
       make_cylinder(c, P);
       break;
     }
@@ -717,7 +737,6 @@ void convertSubTree(const CSGGeometry* geometry, Exact_Polyhedron_3& P)
     {
       const Sphere* s = dynamic_cast<const Sphere*>(geometry);
       dolfin_assert(s);
-      Exact_Polyhedron_3 P;
       make_sphere(s, P);
       break;
     }
@@ -725,7 +744,6 @@ void convertSubTree(const CSGGeometry* geometry, Exact_Polyhedron_3& P)
     {
       const Box* b = dynamic_cast<const Box*>(geometry);
       dolfin_assert(b);
-      Exact_Polyhedron_3 P;
       make_box(b, P);
       break;
     }
@@ -733,7 +751,6 @@ void convertSubTree(const CSGGeometry* geometry, Exact_Polyhedron_3& P)
     {
       const Tetrahedron* b = dynamic_cast<const Tetrahedron*>(geometry);
       dolfin_assert(b);
-      Exact_Polyhedron_3 P;
       make_tetrahedron(b, P);
       break;
     }
@@ -741,7 +758,6 @@ void convertSubTree(const CSGGeometry* geometry, Exact_Polyhedron_3& P)
     {
       const Ellipsoid* b = dynamic_cast<const Ellipsoid*>(geometry);
       dolfin_assert(b);
-      Exact_Polyhedron_3 P;
       make_ellipsoid(b, P);
       break;
     }
@@ -749,7 +765,6 @@ void convertSubTree(const CSGGeometry* geometry, Exact_Polyhedron_3& P)
     {
       const Surface3D* b = dynamic_cast<const Surface3D*>(geometry);
       dolfin_assert(b);
-      Exact_Polyhedron_3 P;
       make_surface3D(b, P);
       break;
     }
