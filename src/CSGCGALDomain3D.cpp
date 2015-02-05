@@ -640,7 +640,124 @@ void do_rotation(const CSGRotation& r, Nef_polyhedron_3& p)
 #ifdef MSHR_ENABLE_EXPERIMENTAL
 void convertSubTree(const CSGGeometry* geometry, Exact_Polyhedron_3& P)
 {
+  switch (geometry->getType())
+  {
+    case CSGGeometry::Union :
+    {
+      const CSGUnion* u = dynamic_cast<const CSGUnion*>(geometry);
+      dolfin_assert(u);
+      convertSubTree(u->_g0.get(), P);
+      Exact_Polyhedron_3 P2;
+      convertSubTree(u->_g1.get(), P2);
 
+      // TODO: Do union
+
+      break;
+    }
+    case CSGGeometry::Intersection :
+    {
+      const CSGIntersection* u = dynamic_cast<const CSGIntersection*>(geometry);
+      dolfin_assert(u);
+      convertSubTree(u->_g0.get(), P);
+      Exact_Polyhedron_3 P2;
+      convertSubTree(u->_g1.get(), P2);
+
+      // TODO: Do intersection
+
+      break;
+    }
+    case CSGGeometry::Difference :
+    {
+      const CSGDifference* u = dynamic_cast<const CSGDifference*>(geometry);
+      dolfin_assert(u);
+      convertSubTree(u->_g0.get(), P);
+      Exact_Polyhedron_3 P2;
+      convertSubTree(u->_g1.get(), P2);
+
+      // TODO: Do difference
+      break;
+    }
+    case CSGGeometry::Translation :
+    {
+      const CSGTranslation* t = dynamic_cast<const CSGTranslation*>(geometry);
+      dolfin_assert(t);
+      convertSubTree(t->g.get(), P);
+      Exact_Kernel::Aff_transformation_3 translation(CGAL::TRANSLATION, Vector_3(t->t.x(), t->t.y(), t->t.z()));
+      std::transform(P.points_begin(), P.points_end(), P.points_begin(), translation);
+      break;
+    }
+    case CSGGeometry::Scaling :
+    {
+      const CSGScaling* t = dynamic_cast<const CSGScaling*>(geometry);
+      dolfin_assert(t);
+      convertSubTree(t->g.get(), P);
+      // TODO:
+      //do_scaling(*t, P);
+      break;
+    }
+    case CSGGeometry::Rotation :
+    {
+      const CSGRotation* t = dynamic_cast<const CSGRotation*>(geometry);
+      dolfin_assert(t);
+
+      convertSubTree(t->g.get(), P);
+      // TODO:
+      // do_rotation(*t, P);
+      break;
+    }
+    case CSGGeometry::Cylinder :
+    {
+      const Cylinder* c = dynamic_cast<const Cylinder*>(geometry);
+      dolfin_assert(c);
+      Exact_Polyhedron_3 P;
+      make_cylinder(c, P);
+      break;
+    }
+    case CSGGeometry::Sphere :
+    {
+      const Sphere* s = dynamic_cast<const Sphere*>(geometry);
+      dolfin_assert(s);
+      Exact_Polyhedron_3 P;
+      make_sphere(s, P);
+      break;
+    }
+    case CSGGeometry::Box :
+    {
+      const Box* b = dynamic_cast<const Box*>(geometry);
+      dolfin_assert(b);
+      Exact_Polyhedron_3 P;
+      make_box(b, P);
+      break;
+    }
+    case CSGGeometry::Tetrahedron :
+    {
+      const Tetrahedron* b = dynamic_cast<const Tetrahedron*>(geometry);
+      dolfin_assert(b);
+      Exact_Polyhedron_3 P;
+      make_tetrahedron(b, P);
+      break;
+    }
+    case CSGGeometry::Ellipsoid :
+    {
+      const Ellipsoid* b = dynamic_cast<const Ellipsoid*>(geometry);
+      dolfin_assert(b);
+      Exact_Polyhedron_3 P;
+      make_ellipsoid(b, P);
+      break;
+    }
+    case CSGGeometry::Surface3D :
+    {
+      const Surface3D* b = dynamic_cast<const Surface3D*>(geometry);
+      dolfin_assert(b);
+      Exact_Polyhedron_3 P;
+      make_surface3D(b, P);
+      break;
+    }
+    default:
+      dolfin::dolfin_error("CSGCGALDomain.cpp",
+                           "converting geometry to cgal polyhedron",
+                           "Unhandled primitive type");
+  }
 }
 #else
 std::shared_ptr<Nef_polyhedron_3>
