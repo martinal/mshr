@@ -118,14 +118,14 @@ class Build_sphere : public CGAL::Modifier_base<Exact_HalfedgeDS>
 
     // Note: Some older compilers (eg. gcc on Ubuntu Precise) require std::array<std::size_t, 3> to be
     // given explicitly in the initializer list.
-    std::vector<std::array<std::size_t, 3> > initial_triangles { std::array<std::size_t, 3>{{0, 1, 2 }},
-                                                                 std::array<std::size_t, 3>{{0, 2, 3 }},
-								 std::array<std::size_t, 3>{{0, 3, 4 }},
-								 std::array<std::size_t, 3>{{0, 4, 1 }},
-								 std::array<std::size_t, 3>{{5, 1, 4 }},
-								 std::array<std::size_t, 3>{{5, 2, 1 }},
-								 std::array<std::size_t, 3>{{5, 3, 2 }},
-								 std::array<std::size_t, 3>{{5, 4, 3 }} };
+    std::vector<std::array<std::size_t, 3> > initial_triangles { std::array<std::size_t, 3>{{0, 2, 1}},
+                                                                 std::array<std::size_t, 3>{{0, 3, 2 }},
+                                                                 std::array<std::size_t, 3>{{0, 4, 3 }},
+                                                                 std::array<std::size_t, 3>{{0, 1, 4,}},
+                                                                 std::array<std::size_t, 3>{{5, 4, 1}},
+                                                                 std::array<std::size_t, 3>{{5, 1, 2 }},
+                                                                 std::array<std::size_t, 3>{{5, 2, 3 }},
+                                                                 std::array<std::size_t, 3>{{5, 3, 4 }} };
 
     std::vector<dolfin::Point> vertices;
     std::vector<std::array<std::size_t, 3> > triangles;
@@ -388,14 +388,14 @@ class Build_ellipsoid : public CGAL::Modifier_base<Exact_HalfedgeDS>
 
     // Note: Some older compilers (eg. gcc on Ubuntu Precise) require std::array<std::size_t, 3> to be
     // given explicitly in the initializer list.
-    std::vector<std::array<std::size_t, 3> > initial_triangles { std::array<std::size_t, 3>{{0, 1, 2 }},
-                                                                 std::array<std::size_t, 3>{{0, 2, 3 }},
-								 std::array<std::size_t, 3>{{0, 3, 4 }},
-								 std::array<std::size_t, 3>{{0, 4, 1 }},
-								 std::array<std::size_t, 3>{{5, 1, 4 }},
-								 std::array<std::size_t, 3>{{5, 2, 1 }},
-								 std::array<std::size_t, 3>{{5, 3, 2 }},
-								 std::array<std::size_t, 3>{{5, 4, 3 }} };
+    std::vector<std::array<std::size_t, 3> > initial_triangles { std::array<std::size_t, 3>{{0, 2, 1 }},
+                                                                 std::array<std::size_t, 3>{{0, 3, 2 }},
+                                                                 std::array<std::size_t, 3>{{0, 4, 3 }},
+                                                                 std::array<std::size_t, 3>{{0, 1, 4 }},
+                                                                 std::array<std::size_t, 3>{{5, 4, 1 }},
+                                                                 std::array<std::size_t, 3>{{5, 1, 2 }},
+                                                                 std::array<std::size_t, 3>{{5, 2, 3 }},
+                                                                 std::array<std::size_t, 3>{{5, 3, 4 }} };
 
     std::vector<dolfin::Point> vertices;
     std::vector<std::array<std::size_t, 3> > triangles;
