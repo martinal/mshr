@@ -1,7 +1,7 @@
 project( MSHR )
 set(MSHR_VERSION_MAJOR "1")
-set(MSHR_VERSION_MINOR "4")
-set(MSHR_VERSION_MICRO "0")
+set(MSHR_VERSION_MINOR "5")
+set(MSHR_VERSION_MICRO "0+")
 set(MSHR_VERSION "${MSHR_VERSION_MAJOR}.${MSHR_VERSION_MINOR}.${MSHR_VERSION_MICRO}")
 
 ########################## Initialize cmake ############################
