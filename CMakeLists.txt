@@ -132,6 +132,7 @@ endif()
 #
 option(ENABLE_EXPERIMENTAL "Enable experimental code" OFF)
 if(ENABLE_EXPERIMENTAL)
+  message(STATUS "Enabling experimental code")
   add_definitions( -DMSHR_ENABLE_EXPERIMENTAL )
 endif()
 
