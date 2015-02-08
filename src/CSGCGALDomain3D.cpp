@@ -1,4 +1,4 @@
-// Copyright (C) 2012-2014 Benjamin Kehlet
+// Copyright (C) 2012-2015 Benjamin Kehlet
 //
 // This file is part of mshr.
 //
@@ -87,7 +87,21 @@ typedef CGAL::AABB_face_graph_triangle_primitive<Exact_Polyhedron_3> Primitive;
 typedef CGAL::AABB_traits<Exact_Kernel, Primitive> Traits;
 typedef CGAL::AABB_tree<Traits> AABB_Tree;
 
+double get_polyline_squared_length(const std::vector<Exact_Point_3>& polyline)
+{
+  double length = 0;
+  std::vector<Exact_Point_3>::const_iterator it = polyline.begin();
+  Exact_Point_3 prev = *it;
+  it++;
+  for (;it != polyline.end(); it++)
+  {
+    length += CGAL::to_double((*it-prev).squared_length());
+  }
+  length += CGAL::to_double((polyline.back()-polyline.front()).squared_length());
 
+  return length;
+}
+//-----------------------------------------------------------------------------
 // Convenience routine to make debugging easier. Remove before releasing.
 template<typename Builder>
 inline void add_triangular_facet(Builder& builder,
@@ -650,11 +664,20 @@ void convertSubTree(const CSGGeometry* geometry, Exact_Polyhedron_3& P)
       Exact_Polyhedron_3 P2;
       convertSubTree(u->_g1.get(), P2);
 
-      // TODO: Do union
       std::vector<std::vector<Exact_Point_3> > dummy_vector;
       CGALCSGOperator op;
       op(P, P2, std::back_inserter(dummy_vector), CGALCSGOperator::Join_tag);
 
+      // Check that intersection is not degenerate
+      for (std::vector<std::vector<Exact_Point_3> >::iterator it=dummy_vector.begin(); it != dummy_vector.end(); it++)
+      {
+	if (get_polyline_squared_length(*it) < DOLFIN_EPS)
+	{
+	  dolfin::dolfin_error("CSGCGALDomain3D.cpp",
+			       "union of csg geometries",
+			       "degenerate intersection polyline (geometries meet in a single point?)");
+	}
+      }
       break;
     }
     case CSGGeometry::Intersection :
