@@ -816,8 +816,8 @@ convertSubTree(const CSGGeometry *geometry)
       const CSGScaling* t = dynamic_cast<const CSGScaling*>(geometry);
       dolfin_assert(t);
       std::shared_ptr<Nef_polyhedron_3> g = convertSubTree(t->g.get());
-      Exact_transformation_3 scaling = get_scaling(*t);
-      g.transform(scaling);
+      Aff_transformation_3 scaling = get_scaling(*t);
+      g->transform(scaling);
       return g;
       break;
     }
@@ -827,8 +827,8 @@ convertSubTree(const CSGGeometry *geometry)
       dolfin_assert(t);
 
       std::shared_ptr<Nef_polyhedron_3> g = convertSubTree(t->g.get());
-      Exact_transformation rotation = get_rotation(*t);
-      g.transform(rotation);
+      Aff_transformation_3 rotation = get_rotation(*t);
+      g->transform(rotation);
       return g;
       break;
     }
