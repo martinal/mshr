@@ -657,7 +657,6 @@ void convertSubTree(const CSGGeometry* geometry, Exact_Polyhedron_3& P)
   {
     case CSGGeometry::Union :
     {
-      std::cout << "Union" << std::endl;
       const CSGUnion* u = dynamic_cast<const CSGUnion*>(geometry);
       dolfin_assert(u);
       convertSubTree(u->_g0.get(), P);
