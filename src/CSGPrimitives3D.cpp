@@ -200,8 +200,15 @@ Ellipsoid::Ellipsoid(dolfin::Point center, double a, double b, double c, std::si
 std::string Ellipsoid::str(bool verbose) const
 {
   std::stringstream ss;
-  ss << "Ellipsoid with semi-principal axes of lengths ";
-  ss << a  << ", " << b << " and " << c;
+  if (verbose)
+  {
+    ss << "Ellipsoid centered at " << center.str() << " with semi-principal axes of lengths ";
+    ss << a  << ", " << b << " and " << c;
+  }
+  else
+  {
+    ss << "Ellipsoid(" << center.str() << ", " << a << ", " << b << ", " << c << ")";
+  }
   return ss.str();
 }
 //-----------------------------------------------------------------------------
