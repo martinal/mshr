@@ -663,12 +663,13 @@ void convertSubTree(const CSGGeometry* geometry, Exact_Polyhedron_3& P)
       Exact_Polyhedron_3 P2;
       convertSubTree(u->_g1.get(), P2);
 
-      std::vector<std::vector<Exact_Point_3> > dummy_vector;
+      std::list<std::vector<Exact_Point_3> > intersection_polylines;
       CGALCSGOperator op;
-      op(P, P2, std::back_inserter(dummy_vector), CGALCSGOperator::Join_tag);
+      op(P, P2, std::back_inserter(intersection_polylines), CGALCSGOperator::Join_tag);
 
       // Check that intersection is not degenerate
-      for (std::vector<std::vector<Exact_Point_3> >::iterator it=dummy_vector.begin(); it != dummy_vector.end(); it++)
+      for (std::list<std::vector<Exact_Point_3> >::iterator it=intersection_polylines.begin();
+           it != intersection_polylines.end(); it++)
       {
 	if (get_polyline_squared_length(*it) < DOLFIN_EPS)
 	{
@@ -681,31 +682,54 @@ void convertSubTree(const CSGGeometry* geometry, Exact_Polyhedron_3& P)
     }
     case CSGGeometry::Intersection :
     {
-      std::cout << "Intersection" << std::endl;
       const CSGIntersection* u = dynamic_cast<const CSGIntersection*>(geometry);
       dolfin_assert(u);
       convertSubTree(u->_g0.get(), P);
       Exact_Polyhedron_3 P2;
       convertSubTree(u->_g1.get(), P2);
 
-      std::vector<std::vector<Exact_Point_3> > dummy_vector;
+      std::list<std::vector<Exact_Point_3> > intersection_polylines;
       CGALCSGOperator op;
-      op(P, P2, std::back_inserter(dummy_vector), CGALCSGOperator::Intersection_tag);
+      op(P, P2, std::back_inserter(intersection_polylines), CGALCSGOperator::Intersection_tag);
+
+      // Check that intersection is not degenerate
+      for (std::list<std::vector<Exact_Point_3> >::iterator it=intersection_polylines.begin();
+           it != intersection_polylines.end(); it++)
+      {
+	if (get_polyline_squared_length(*it) < DOLFIN_EPS)
+	{
+	  dolfin::dolfin_error("CSGCGALDomain3D.cpp",
+			       "intersection of csg geometries",
+			       "degenerate intersection polyline (geometries meet in a single point?)");
+	}
+      }
 
       break;
     }
     case CSGGeometry::Difference :
     {
-      std::cout << "Difference" << std::endl;
       const CSGDifference* u = dynamic_cast<const CSGDifference*>(geometry);
       dolfin_assert(u);
       convertSubTree(u->_g0.get(), P);
       Exact_Polyhedron_3 P2;
       convertSubTree(u->_g1.get(), P2);
 
-      std::vector<std::vector<Exact_Point_3> > dummy_vector;
+      std::list<std::vector<Exact_Point_3> > intersection_polylines;
       CGALCSGOperator op;
-      op(P, P2, std::back_inserter(dummy_vector), CGALCSGOperator::P_minus_Q_tag);
+      op(P, P2, std::back_inserter(intersection_polylines), CGALCSGOperator::P_minus_Q_tag);
+
+      // Check that intersection is not degenerate
+      for (std::list<std::vector<Exact_Point_3> >::iterator it=intersection_polylines.begin();
+           it != intersection_polylines.end(); it++)
+      {
+	if (get_polyline_squared_length(*it) < DOLFIN_EPS)
+	{
+	  dolfin::dolfin_error("CSGCGALDomain3D.cpp",
+			       "difference of csg geometries",
+			       "degenerate intersection polyline (geometries meet in a single point?)");
+	}
+      }
+
 
       break;
     }
