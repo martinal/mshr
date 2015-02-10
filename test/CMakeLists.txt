@@ -37,6 +37,12 @@ set_property(TEST "Python-DegenerateRemoval" PROPERTY
     ENVIRONMENT "PYTHONPATH=${PYTHON_ENVIR}"
 )
 
+############# Test the csg operators ##########################################################
+add_test("Python-CSGOperators" "python" "${CMAKE_SOURCE_DIR}/test/test-csg.py")
+set_property(TEST "Python-CSGOperators" PROPERTY
+    ENVIRONMENT "PYTHONPATH=${PYTHON_ENVIR}"
+)
+
 
 
 ############# Try meshing some surface files found in the cgal source ########################

@@ -369,7 +369,6 @@ inline void collapse_edge(Polyhedron& p,
     dolfin_assert(p.is_valid());
 
     dolfin_assert(edge->vertex() != edge->opposite()->vertex());
-    dolfin_assert(!has_slivers(p));
     
     // We can possibly have a sliver now
 
