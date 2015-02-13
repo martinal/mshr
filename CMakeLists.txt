@@ -129,6 +129,14 @@ if (INIT_CGAL_RANDOM)
   add_definitions( -DINIT_RANDOM_GENERATOR=0 )
 endif()
 
+#
+option(ENABLE_EXPERIMENTAL "Enable experimental code" OFF)
+if(ENABLE_EXPERIMENTAL)
+  message(STATUS "Enabling experimental code")
+  add_definitions( -DMSHR_ENABLE_EXPERIMENTAL )
+endif()
+
+
 export(PACKAGE mshr)
 
 add_executable( mshrable app/mshrable.cpp )

@@ -8,7 +8,7 @@ from mshr import *
 
 a = Sphere(dolfin.Point(0,0,0), .5)
 b = Sphere(dolfin.Point(.5,0,0), .5)
-g = a+b
 
-m = generate_mesh(g, 20)
+domain = CSGCGALDomain3D(a+b)
+domain.ensure_meshing_preconditions()
 

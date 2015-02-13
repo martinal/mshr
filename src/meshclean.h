@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Benjamin Kehlet
+// Copyright (C) 2014-2015 Benjamin Kehlet
 //
 // This file is part of mshr.
 //
@@ -102,30 +102,6 @@ inline double triangle_projection(typename Polyhedron::Facet_const_handle f)
   return CGAL::to_double( (l.projection(longest->next()->vertex()->point()) - longest->next()->vertex()->point()).squared_length());
 }
 //-----------------------------------------------------------------------------
-// Print some info about a facet
-// Meant for debugging
-template<typename Polyhedron>
-void print_facet(typename Polyhedron::Halfedge_const_handle h)
-{
-  typename Polyhedron::Halfedge_const_handle h2 = h->next(), h3 = h2->next();
-  std::cout << "Vertices: " << std::endl;
-  std::cout << "(" << h->vertex()->point() << ") "
-            << "(" << h2->vertex()->point() << ") "
-            << "(" << h3->vertex()->point() << ")" << std::endl;
-  std::cout << "Edge lengths (squared):"
-            << (h->vertex()->point() - h2->vertex()->point()).squared_length() << " "
-            << (h2->vertex()->point() - h3->vertex()->point()).squared_length() << " "
-            << (h3->vertex()->point() - h->vertex()->point()).squared_length() << std::endl;
-  typename Polyhedron::Traits::Triangle_3 t(h->vertex()->point(),
-                                            h2->vertex()->point(),
-                                            h3->vertex()->point());
-  std::cout << "Area: " << t.squared_area() << std::endl;
-  
-  typename Polyhedron::Halfedge_const_handle longest = get_longest_const_edge<Polyhedron>(h->facet());
-  typename Polyhedron::Traits::Line_3 l(longest->vertex()->point(), longest->opposite()->vertex()->point());
-  std::cout << "Colinearity: " << triangle_projection<Polyhedron>(h->facet()) << std::endl;
-}
-//-----------------------------------------------------------------------------
 template<typename Polyhedron>
 inline double
 get_min_edge_length(typename Polyhedron::Facet_const_handle facet)
@@ -164,6 +140,61 @@ template<typename Polyhedron>
 std::size_t get_vertex_id(const Polyhedron& p, typename Polyhedron::Vertex_const_handle v)
 {
   return std::distance(p.vertices_begin(), v);
+}
+//-----------------------------------------------------------------------------
+template<typename Polyhedron>
+void print_vertex(const Polyhedron& p, typename Polyhedron::Halfedge_const_handle h)
+{
+  typename Polyhedron::Halfedge_const_handle current = h;
+  do
+  {
+    dolfin_assert(current->vertex() == h->vertex());
+    std::cout << get_vertex_id(p, current->opposite()->vertex()) << std::endl;
+
+    current = current->opposite()->prev();
+  } while(current != h);
+}
+
+//-----------------------------------------------------------------------------
+template<typename Polyhedron>
+void print_edge(const Polyhedron& p, typename Polyhedron::Halfedge_const_handle h)
+{
+  std::cout << "(" << get_vertex_id(p, h->opposite()->vertex()) << ": " << h->opposite()->vertex()->point() << ", "
+	    << get_vertex_id(p, h->vertex()) << ": " << h->vertex()->point() << ")" << std::endl;
+}
+//-----------------------------------------------------------------------------
+// Print some info about a facet
+// Meant for debugging
+template<typename Polyhedron>
+void print_facet(const Polyhedron& p, typename Polyhedron::Halfedge_const_handle h, bool verbose=true)
+{
+  std::cout << "Vertices: " << std::endl;
+  typename Polyhedron::Halfedge_const_handle current = h;
+  do
+  {
+    std::cout << "  " << get_vertex_id<Polyhedron>(p, current->vertex()) << ": (" << current->vertex()->point() << ") " << std::endl;
+    current = current ->next();
+  } while (current != h);
+  
+  if (verbose)
+  {
+    std::cout << "Edge lengths (squared):" << std::endl;
+    current = h;
+    do
+    {
+      std::cout << "  " << (current->vertex()->point() - current->next()->vertex()->point()).squared_length() << std::endl;
+      current = current->next();
+    } while (current != h);
+  
+    typename Polyhedron::Traits::Triangle_3 t(h->vertex()->point(),
+					      h->next()->vertex()->point(),
+					      h->next()->next()->vertex()->point());
+    std::cout << "Area (if triangle): " << t.squared_area() << std::endl;
+  
+    typename Polyhedron::Halfedge_const_handle longest = get_longest_const_edge<Polyhedron>(h->facet());
+    typename Polyhedron::Traits::Line_3 l(longest->vertex()->point(), longest->opposite()->vertex()->point());
+    std::cout << "Colinearity (if triangle): " << triangle_projection<Polyhedron>(h->facet()) << std::endl;
+  }
 }
 //-----------------------------------------------------------------------------
 template<typename Polyhedron>
@@ -213,6 +244,14 @@ inline bool has_slivers(const Polyhedron& p)
       return true;
   }
 
+  /* for (typename Polyhedron::Halfedge_const_iterator it = p.halfedges_begin(); */
+  /*      it != p.halfedges_end(); it++) */
+  /* { */
+  /*   if (it->next()->vertex() == it->opposite()->next()->vertex()) */
+  /*   { */
+  /*     return true; */
+  /*   } */
+  /* }   */
   return false;
 }
 //-----------------------------------------------------------------------------
@@ -281,97 +320,63 @@ template <typename Polyhedron>
 inline void collapse_edge(Polyhedron& p,
                           typename Polyhedron::Halfedge_handle edge)
 {
-  // std::cout << "--Collapse edge" << std::endl;
-
   ASSERT_GOOD_STATE(p);
-
-
-  if (edge->vertex()->is_trivalent())
-  {
-    /*   std::cout << "Point: " << edge->vertex()->point() << ", degree: " << edge->vertex()->vertex_degree() << std::endl; */
-    /*   typename Polyhedron::Halfedge_around_vertex_circulator start = edge->vertex()->vertex_begin(); */
-    /*   typename Polyhedron::Halfedge_around_vertex_circulator current = start; */
-    /*   do */
-    /*   { */
-    /*     std::cout << "Neighbor: " << current->opposite()->vertex()->point()  */
-    /*               << ", length: " << (current->vertex()->point()-current->opposite()->vertex()->point()).squared_length() */
-    /*               << ", degree: " << current->opposite()->vertex()->vertex_degree() << std::endl; */
-    /*     current++; */
-    /*   } while (current != start); */
-
-    p.erase_center_vertex(edge);
-    ASSERT_GOOD_STATE(p);
-    return;
-  }
-
-  if (edge->opposite()->vertex()->is_trivalent())
-  {
-    p.erase_center_vertex(edge->opposite());
-    ASSERT_GOOD_STATE(p);
-    return;
-  }
-
-
-  // Join small triangles with neighbor facets
-
-  // Make sure we don't introduce slivers
-  // (ie. vertices of degree 2)
-  while (edge->next()->vertex()->is_trivalent())
-  {
-    // std::cout << "Removing center vertex" << std::endl;
-    remove_degree3_center_vertex(p, edge->next());
-    ASSERT_GOOD_STATE(p);
-  }
-
-  while (edge->opposite()->next()->vertex()->is_trivalent())
-  {
-    // std::cout << "remove opposite vertex" << std::endl;
-    remove_degree3_center_vertex(p, edge->opposite()->next());
-    ASSERT_GOOD_STATE(p);
-  }
 
   if (edge->vertex()->is_trivalent())
   {
     p.erase_center_vertex(edge);
     ASSERT_GOOD_STATE(p);
-    return;
   }
-
-  if (edge->opposite()->vertex()->is_trivalent())
+  else if (edge->opposite()->vertex()->is_trivalent())
   {
     p.erase_center_vertex(edge->opposite());
     ASSERT_GOOD_STATE(p);
-    return;
   }
+  else
+  {
+    // Join small triangles with neighbor facets
 
-  /* std::cout << "Collapsing edge: ( " */
-  /*           << "(" << get_vertex_id(p, edge->opposite()->vertex()) << ", " << edge->opposite()->vertex_degree() << ") --> " */
-  /*           << "(" << get_vertex_id(p, edge->vertex()) << ", " << edge->vertex()->vertex_degree() << ") ), length: " */
-  /*           << get_edge_length<Polyhedron>(edge) << std::endl; */
+    // Make sure we don't introduce slivers
+    // (ie. vertices of degree 2)
+    while (edge->next()->vertex()->is_trivalent())
+    {
+      remove_degree3_center_vertex(p, edge->next());
+      ASSERT_GOOD_STATE(p);
+    }
 
-  /* std::cout << "First opposite: " */
-  /*           << "(" << get_vertex_id(p, edge->next()->vertex()) << ", " << edge->next()->vertex_degree() << ")" << std::endl; */
-  /* std::cout << "Second opposite: " */
-  /*           << "(" << get_vertex_id(p, edge->opposite()->next()->vertex()) << ", " << edge->opposite()->next()->vertex()->vertex_degree() << ")" << std::endl; */
+    while (edge->opposite()->next()->vertex()->is_trivalent())
+    {
+      remove_degree3_center_vertex(p, edge->opposite()->next());
+      ASSERT_GOOD_STATE(p);
+    }
 
-  /* std::cout << "Removing one:" << "(" << get_vertex_id(p, edge->next()->vertex()) << ", " << edge->next()->vertex_degree() << ")" << std::endl; */
+    if (edge->vertex()->is_trivalent())
+    {
+      p.erase_center_vertex(edge);
+    }
+    else if (edge->opposite()->vertex()->is_trivalent())
+    {
+      p.erase_center_vertex(edge->opposite());
+    }
 
-  edge = p.join_facet(edge->next());
-  dolfin_assert(p.is_valid());
-  dolfin_assert(!has_slivers(p));
+    ASSERT_GOOD_STATE(p);
+    
+    edge = p.join_facet(edge->next());
+    dolfin_assert(p.is_valid());
+    dolfin_assert(!has_slivers(p));
 
-  // std::cout << "Removing two: " << "(" << get_vertex_id(p, edge->opposite()->next()->vertex()) << ", " << edge->opposite()->next()->vertex_degree() << ")" << std::endl;
-  p.join_facet(edge->opposite()->prev());
+    p.join_facet(edge->opposite()->prev());
+    dolfin_assert(p.is_valid());
 
-  dolfin_assert(p.is_valid());
+    dolfin_assert(edge->vertex() != edge->opposite()->vertex());
+    
+    // We can possibly have a sliver now
 
-  // We can possibly have a sliver now
-
-  // The joined facets are now quads
-  // Join the two close vertices
-  p.join_vertex(edge);
-
-  ASSERT_GOOD_STATE(p);
+    // The joined facets are now quads
+    // Join the two close vertices
+    p.join_vertex(edge);
+    ASSERT_GOOD_STATE(p);
+  }
 }
 //-----------------------------------------------------------------------------
 // FIXME: Return the number of edges collapsed

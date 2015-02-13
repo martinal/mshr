@@ -1,4 +1,4 @@
-// Copyright (C) 2012-2014 Benjamin Kehlet
+// Copyright (C) 2012-2015 Benjamin Kehlet
 //
 // This file is part of mshr.
 //
@@ -36,7 +36,11 @@
 #include <CGAL/basic.h>
 #include <CGAL/Exact_predicates_exact_constructions_kernel.h>
 #include <CGAL/Polyhedron_incremental_builder_3.h>
-#include <CGAL/Nef_polyhedron_3.h>
+#ifndef MSHR_ENABLE_EXPERIMENTAL
+  #include <CGAL/Nef_polyhedron_3.h>
+#else
+  #include <CGAL/corefinement_operations.h>
+#endif
 #include <CGAL/IO/Polyhedron_iostream.h>
 #include <CGAL/Origin.h>
 #include <CGAL/Self_intersection_polyhedron_3.h>
@@ -67,19 +71,37 @@ namespace
 typedef CGAL::Exact_predicates_exact_constructions_kernel Exact_Kernel;
 typedef Exact_Kernel::Triangle_3                          Exact_Triangle_3;
 typedef Exact_Kernel::Vector_3                            Exact_Vector_3;
-typedef CGAL::Nef_polyhedron_3<Exact_Kernel>              Nef_polyhedron_3;
 typedef CGAL::Polyhedron_3<Exact_Kernel>                  Exact_Polyhedron_3;
 typedef Exact_Polyhedron_3::HalfedgeDS                    Exact_HalfedgeDS;
-typedef Nef_polyhedron_3::Point_3                         Exact_Point_3;
+typedef Exact_Kernel::Point_3                             Exact_Point_3;
 typedef Exact_Kernel::Vector_3                            Vector_3;
 typedef Exact_Kernel::Ray_3                               Ray_3;
+typedef Exact_Kernel::Aff_transformation_3                Aff_transformation_3;
+
+#ifndef MSHR_ENABLE_EXPERIMENTAL
+typedef CGAL::Nef_polyhedron_3<Exact_Kernel>              Nef_polyhedron_3;
+#endif
 
 // AABB tree primitives
 typedef CGAL::AABB_face_graph_triangle_primitive<Exact_Polyhedron_3> Primitive;
 typedef CGAL::AABB_traits<Exact_Kernel, Primitive> Traits;
 typedef CGAL::AABB_tree<Traits> AABB_Tree;
 
+double get_polyline_squared_length(const std::vector<Exact_Point_3>& polyline)
+{
+  double length = 0;
+  std::vector<Exact_Point_3>::const_iterator it = polyline.begin();
+  Exact_Point_3 prev = *it;
+  it++;
+  for (;it != polyline.end(); it++)
+  {
+    length += CGAL::to_double((*it-prev).squared_length());
+  }
+  length += CGAL::to_double((polyline.back()-polyline.front()).squared_length());
 
+  return length;
+}
+//-----------------------------------------------------------------------------
 // Convenience routine to make debugging easier. Remove before releasing.
 template<typename Builder>
 inline void add_triangular_facet(Builder& builder,
@@ -554,44 +576,43 @@ void make_surface3D(const Surface3D* s, Exact_Polyhedron_3& P)
   }
 }
 //-----------------------------------------------------------------------------
-void do_scaling(const CSGScaling& s, Nef_polyhedron_3& p)
+Aff_transformation_3 get_scaling(const CSGScaling& s)
 {
-  Exact_Kernel::Aff_transformation_3 transformation(CGAL::IDENTITY);
+  Aff_transformation_3 transformation(CGAL::IDENTITY);
   if (s.translate)
   {
-    Exact_Kernel::Aff_transformation_3 translation(CGAL::TRANSLATION,
+    Aff_transformation_3 translation(CGAL::TRANSLATION,
                                                    Vector_3(-s.c.x(),
                                                             -s.c.y(),
                                                             -s.c.z()));
     transformation = translation * transformation;
   }
 
-  Exact_Kernel::Aff_transformation_3 scaling(CGAL::SCALING, s.s);
+  Aff_transformation_3 scaling(CGAL::SCALING, s.s);
   transformation = scaling * transformation;
 
   if (s.translate)
   {
-    Exact_Kernel::Aff_transformation_3 translation(CGAL::TRANSLATION,
+    Aff_transformation_3 translation(CGAL::TRANSLATION,
                                                    Vector_3(s.c.x(),
                                                             s.c.y(),
                                                             s.c.z()));
     transformation = translation * transformation;
   }
 
-  p.transform(transformation);
+  return transformation;
 }
 //-----------------------------------------------------------------------------
-void do_rotation(const CSGRotation& r, Nef_polyhedron_3& p)
+Aff_transformation_3 get_rotation(const CSGRotation& r)
 {
-
   // Normalize rotation axis vector
   dolfin::Point axis = r.rot_axis/(r.rot_axis.norm());
   dolfin_assert(dolfin::near(axis.norm(), 1.0));
 
-  Exact_Kernel::Aff_transformation_3 transformation(CGAL::IDENTITY);
+  Aff_transformation_3 transformation(CGAL::IDENTITY);
   if (r.translate)
   {
-    Exact_Kernel::Aff_transformation_3 translation(CGAL::TRANSLATION,
+    Aff_transformation_3 translation(CGAL::TRANSLATION,
                                                    Vector_3(-r.c.x(),
                                                             -r.c.y(),
                                                             -r.c.z()));
@@ -604,7 +625,7 @@ void do_rotation(const CSGRotation& r, Nef_polyhedron_3& p)
   const double c = -axis.y()*sin(r.theta/2);
   const double d = -axis.z()*sin(r.theta/2);
 
-  Exact_Kernel::Aff_transformation_3 rotation(a*a+b*b-c*c-d*d,
+  Aff_transformation_3 rotation(a*a+b*b-c*c-d*d,
                                               2*(b*c-a*d),
                                               2*(b*d+a*c),
                                               2*(b*c+a*d),
@@ -617,16 +638,179 @@ void do_rotation(const CSGRotation& r, Nef_polyhedron_3& p)
 
   if (r.translate)
   {
-    Exact_Kernel::Aff_transformation_3 translation(CGAL::TRANSLATION,
+    Aff_transformation_3 translation(CGAL::TRANSLATION,
                                                    Vector_3(r.c.x(),
                                                             r.c.y(),
                                                             r.c.z()));
     transformation = translation * transformation;
   }
 
-  p.transform(transformation);
+  return transformation;
 }
 //-----------------------------------------------------------------------------
+#ifdef MSHR_ENABLE_EXPERIMENTAL
+typedef CGAL::Polyhedron_corefinement<Exact_Polyhedron_3> CGALCSGOperator;
+  
+void convertSubTree(const CSGGeometry* geometry, Exact_Polyhedron_3& P)
+{
+  switch (geometry->getType())
+  {
+    case CSGGeometry::Union :
+    {
+      const CSGUnion* u = dynamic_cast<const CSGUnion*>(geometry);
+      dolfin_assert(u);
+      convertSubTree(u->_g0.get(), P);
+      Exact_Polyhedron_3 P2;
+      convertSubTree(u->_g1.get(), P2);
+
+      std::list<std::vector<Exact_Point_3> > intersection_polylines;
+      CGALCSGOperator op;
+      op(P, P2, std::back_inserter(intersection_polylines), CGALCSGOperator::Join_tag);
+
+      // Check that intersection is not degenerate
+      for (std::list<std::vector<Exact_Point_3> >::iterator it=intersection_polylines.begin();
+           it != intersection_polylines.end(); it++)
+      {
+	if (get_polyline_squared_length(*it) < DOLFIN_EPS)
+	{
+	  dolfin::dolfin_error("CSGCGALDomain3D.cpp",
+			       "union of csg geometries",
+			       "degenerate intersection polyline (geometries meet in a single point?)");
+	}
+      }
+      break;
+    }
+    case CSGGeometry::Intersection :
+    {
+      const CSGIntersection* u = dynamic_cast<const CSGIntersection*>(geometry);
+      dolfin_assert(u);
+      convertSubTree(u->_g0.get(), P);
+      Exact_Polyhedron_3 P2;
+      convertSubTree(u->_g1.get(), P2);
+
+      std::list<std::vector<Exact_Point_3> > intersection_polylines;
+      CGALCSGOperator op;
+      op(P, P2, std::back_inserter(intersection_polylines), CGALCSGOperator::Intersection_tag);
+
+      // Check that intersection is not degenerate
+      for (std::list<std::vector<Exact_Point_3> >::iterator it=intersection_polylines.begin();
+           it != intersection_polylines.end(); it++)
+      {
+	if (get_polyline_squared_length(*it) < DOLFIN_EPS)
+	{
+	  dolfin::dolfin_error("CSGCGALDomain3D.cpp",
+			       "intersection of csg geometries",
+			       "degenerate intersection polyline (geometries meet in a single point?)");
+	}
+      }
+
+      break;
+    }
+    case CSGGeometry::Difference :
+    {
+      const CSGDifference* u = dynamic_cast<const CSGDifference*>(geometry);
+      dolfin_assert(u);
+      convertSubTree(u->_g0.get(), P);
+      Exact_Polyhedron_3 P2;
+      convertSubTree(u->_g1.get(), P2);
+
+      std::list<std::vector<Exact_Point_3> > intersection_polylines;
+      CGALCSGOperator op;
+      op(P, P2, std::back_inserter(intersection_polylines), CGALCSGOperator::P_minus_Q_tag);
+
+      // Check that intersection is not degenerate
+      for (std::list<std::vector<Exact_Point_3> >::iterator it=intersection_polylines.begin();
+           it != intersection_polylines.end(); it++)
+      {
+	if (get_polyline_squared_length(*it) < DOLFIN_EPS)
+	{
+	  dolfin::dolfin_error("CSGCGALDomain3D.cpp",
+			       "difference of csg geometries",
+			       "degenerate intersection polyline (geometries meet in a single point?)");
+	}
+      }
+
+
+      break;
+    }
+    case CSGGeometry::Translation :
+    {
+      const CSGTranslation* t = dynamic_cast<const CSGTranslation*>(geometry);
+      dolfin_assert(t);
+      convertSubTree(t->g.get(), P);
+      Aff_transformation_3 translation(CGAL::TRANSLATION, Vector_3(t->t.x(), t->t.y(), t->t.z()));
+      std::transform(P.points_begin(), P.points_end(), P.points_begin(), translation);
+      break;
+    }
+    case CSGGeometry::Scaling :
+    {
+      const CSGScaling* t = dynamic_cast<const CSGScaling*>(geometry);
+      dolfin_assert(t);
+      convertSubTree(t->g.get(), P);
+
+      Aff_transformation_3 scaling = get_scaling(*t);
+      std::transform(P.points_begin(), P.points_end(), P.points_begin(), scaling);
+      break;
+    }
+    case CSGGeometry::Rotation :
+    {
+      const CSGRotation* t = dynamic_cast<const CSGRotation*>(geometry);
+      dolfin_assert(t);
+
+      convertSubTree(t->g.get(), P);
+      Aff_transformation_3 rotation = get_rotation(*t);
+      std::transform(P.points_begin(), P.points_end(), P.points_begin(), rotation);
+      break;
+    }
+    case CSGGeometry::Cylinder :
+    {
+      const Cylinder* c = dynamic_cast<const Cylinder*>(geometry);
+      dolfin_assert(c);
+      make_cylinder(c, P);
+      break;
+    }
+    case CSGGeometry::Sphere :
+    {
+      const Sphere* s = dynamic_cast<const Sphere*>(geometry);
+      dolfin_assert(s);
+      make_sphere(s, P);
+      break;
+    }
+    case CSGGeometry::Box :
+    {
+      const Box* b = dynamic_cast<const Box*>(geometry);
+      dolfin_assert(b);
+      make_box(b, P);
+      break;
+    }
+    case CSGGeometry::Tetrahedron :
+    {
+      const Tetrahedron* b = dynamic_cast<const Tetrahedron*>(geometry);
+      dolfin_assert(b);
+      make_tetrahedron(b, P);
+      break;
+    }
+    case CSGGeometry::Ellipsoid :
+    {
+      const Ellipsoid* b = dynamic_cast<const Ellipsoid*>(geometry);
+      dolfin_assert(b);
+      make_ellipsoid(b, P);
+      break;
+    }
+    case CSGGeometry::Surface3D :
+    {
+      const Surface3D* b = dynamic_cast<const Surface3D*>(geometry);
+      dolfin_assert(b);
+      make_surface3D(b, P);
+      break;
+    }
+    default:
+      dolfin::dolfin_error("CSGCGALDomain.cpp",
+                           "converting geometry to cgal polyhedron",
+                           "Unhandled primitive type");
+  }
+}
+#else
 std::shared_ptr<Nef_polyhedron_3>
 convertSubTree(const CSGGeometry *geometry)
 {
@@ -668,7 +852,7 @@ convertSubTree(const CSGGeometry *geometry)
       const CSGTranslation* t = dynamic_cast<const CSGTranslation*>(geometry);
       dolfin_assert(t);
       std::shared_ptr<Nef_polyhedron_3> g = convertSubTree(t->g.get());
-      Exact_Kernel::Aff_transformation_3 translation(CGAL::TRANSLATION, Vector_3(t->t.x(), t->t.y(), t->t.z()));
+      Aff_transformation_3 translation(CGAL::TRANSLATION, Vector_3(t->t.x(), t->t.y(), t->t.z()));
       g->transform(translation);
       return g;
       break;
@@ -678,7 +862,8 @@ convertSubTree(const CSGGeometry *geometry)
       const CSGScaling* t = dynamic_cast<const CSGScaling*>(geometry);
       dolfin_assert(t);
       std::shared_ptr<Nef_polyhedron_3> g = convertSubTree(t->g.get());
-      do_scaling(*t, *g);
+      Aff_transformation_3 scaling = get_scaling(*t);
+      g->transform(scaling);
       return g;
       break;
     }
@@ -688,7 +873,8 @@ convertSubTree(const CSGGeometry *geometry)
       dolfin_assert(t);
 
       std::shared_ptr<Nef_polyhedron_3> g = convertSubTree(t->g.get());
-      do_rotation(*t, *g);
+      Aff_transformation_3 rotation = get_rotation(*t);
+      g->transform(rotation);
       return g;
       break;
     }
@@ -719,7 +905,6 @@ convertSubTree(const CSGGeometry *geometry)
       return std::shared_ptr<Nef_polyhedron_3>(new Nef_polyhedron_3(P));
       break;
     }
-
     case CSGGeometry::Tetrahedron :
     {
       const Tetrahedron* b = dynamic_cast<const Tetrahedron*>(geometry);
@@ -756,6 +941,7 @@ convertSubTree(const CSGGeometry *geometry)
   // Make compiler happy.
   return std::shared_ptr<Nef_polyhedron_3>(new Nef_polyhedron_3);
 }
+#endif
 //-----------------------------------------------------------------------------
 void convert(const CSGGeometry& geometry,
              Exact_Polyhedron_3 &P)
@@ -818,12 +1004,16 @@ void convert(const CSGGeometry& geometry,
   }
   else
   {
+    #ifdef MSHR_ENABLE_EXPERIMENTAL
+    convertSubTree(&geometry, P);
+    #else
     log(dolfin::TRACE, "Convert to nef polyhedron");
     std::shared_ptr<Nef_polyhedron_3> cgal_geometry
       = convertSubTree(&geometry);
     dolfin_assert(cgal_geometry->is_valid());
     dolfin_assert(cgal_geometry->is_simple());
     cgal_geometry->convert_to_polyhedron(P);
+    #endif
   }
 
   if (P.size_of_facets() == 0)
