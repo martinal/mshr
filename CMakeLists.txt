@@ -1,8 +1,12 @@
 project( MSHR )
+set(MSHR_VERSION_RELEASE 0)
 set(MSHR_VERSION_MAJOR "1")
-set(MSHR_VERSION_MINOR "5")
-set(MSHR_VERSION_MICRO "0+")
+set(MSHR_VERSION_MINOR "6")
+set(MSHR_VERSION_MICRO "0")
 set(MSHR_VERSION "${MSHR_VERSION_MAJOR}.${MSHR_VERSION_MINOR}.${MSHR_VERSION_MICRO}")
+if (NOT MSHR_VERSION_RELEASE)
+  set(MSHR_VERSION "${MSHR_VERSION}dev")
+endif()
 
 ########################## Initialize cmake ############################
 cmake_minimum_required(VERSION 2.6.2)
