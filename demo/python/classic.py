@@ -28,7 +28,7 @@ c3 = Cylinder(Point(0, 0, -2), Point(0, 0, 2), 0.8, 0.8)
 geometry = s1*b1 - (c1 + c2 + c3)
 
 # Create mesh
-mesh = generate_mesh(geometry, 16)
+mesh = generate_mesh(geometry, 64)
 
 # Save to file and plot
 File("classic.pvd") << mesh
