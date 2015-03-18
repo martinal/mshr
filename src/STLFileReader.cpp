@@ -39,22 +39,22 @@
 
 namespace
 {
-  inline double strToDouble(const std::string& s)
-  {
-    std::istringstream is(s);
-    double val;
-    is >> val;
+inline double strToDouble(const std::string& s)
+{
+  std::istringstream is(s);
+  double val;
+  is >> val;
 
-    return val;
-  }
+  return val;
+}
 
-
+// get next line of file and trim away whitespace
 inline void get_next_line(std::ifstream& file, std::string& line, std::size_t &lineno)
 {
   std::getline(file, line);
+  boost::algorithm::trim(line);
   lineno++;
 }
-
 } // end anonymous namespace
 //-----------------------------------------------------------------------------
 namespace mshr
@@ -85,7 +85,6 @@ void STLFileReader::read(const std::string filename,
 
   // Read the first line and trim away whitespaces
   get_next_line(file, line, lineno);
-  boost::algorithm::trim(line);
 
   if (line.substr(0, 5) != "solid")
   {
@@ -95,8 +94,12 @@ void STLFileReader::read(const std::string filename,
   }
 
   // TODO: Read name of solid  
-  get_next_line(file, line, lineno);
-  boost::algorithm::trim(line);
+
+  do
+  {
+    // Some files contain color information before the vertex information
+    get_next_line(file, line, lineno);
+  } while (line.substr(0, 5) != "facet");
 
   while (file.good())
   {
@@ -149,7 +152,6 @@ void STLFileReader::read(const std::string filename,
 
     // Read "outer loop" line
     get_next_line(file, line, lineno);
-    boost::algorithm::trim(line);
 
     if (line != "outer loop")
       dolfin::dolfin_error("PolyhedronUtils.cpp",
@@ -159,7 +161,6 @@ void STLFileReader::read(const std::string filename,
     std::vector<std::size_t> v_indices;
 
     get_next_line(file, line, lineno);
-    boost::algorithm::trim(line);
 
     tokenizer tokens(line, sep);
     tokenizer::iterator tok_iter = tokens.begin();
@@ -199,7 +200,6 @@ void STLFileReader::read(const std::string filename,
 
       // Get next line
       get_next_line(file, line, lineno);
-      boost::algorithm::trim(line);
 
       tokens = tokenizer(line, sep);
       tok_iter = tokens.begin();
@@ -208,7 +208,6 @@ void STLFileReader::read(const std::string filename,
     } while (*tok_iter == "vertex");
 
     // Read 'endloop' line
-    boost::algorithm::trim(line);
     if (line != "endloop")
     {
       dolfin::dolfin_error("STLFileReader.cpp",
@@ -217,7 +216,6 @@ void STLFileReader::read(const std::string filename,
     }
 
     get_next_line(file, line, lineno);
-    boost::algorithm::trim(line);
     if (line != "endfacet")
     {
       dolfin::dolfin_error("STLFileReader.cpp",
@@ -250,7 +248,6 @@ void STLFileReader::read(const std::string filename,
     // Get next line 
     // either start of next facet or endsolid
     get_next_line(file, line, lineno);
-    boost::algorithm::trim(line);
 
     if (line.substr(0, 5) != "facet")
       break;
