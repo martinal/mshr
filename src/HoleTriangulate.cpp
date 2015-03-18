@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Benjamin Kehlet
+// Copyright (C) 2015 Benjamin Kehlet
 //
 // This file is part of mshr.
 //
@@ -15,29 +15,14 @@
 // You should have received a copy of the GNU General Public License
 // along with mshr.  If not, see <http://www.gnu.org/licenses/>.
 
-// OBS! Experimental
-
-#ifndef _SURFACE_CONSISTENCY_H
-#define _SURFACE_CONSISTENCY_H
-
-#include <vector>
-#include <set>
+#include "HoleTriangulate.h"
 
 namespace mshr
 {
 
-class SurfaceConsistency
+void HoleTriangulate::triangulate_polygon_3D(const std::vector<dolfin::Point> polygon)
 {
- public:
-
-  /// Check that the connectivity of the facet is consistent, ie. all edges are
-  /// shared by exactly two facets.
-  /// If error is set to True, then an error will be thrown when a duplicated
-  /// halfedges is encountered. Otherwise, the index of one of the facets will
-  /// be stored in the set.
-  static void checkConnectivity(const std::vector<std::vector<std::size_t> >& facets,
-                                std::set<std::size_t>& duplicating, bool error);
-};
+  
+}
 
 }
-#endif

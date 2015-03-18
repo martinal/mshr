@@ -116,7 +116,7 @@ inline void add_triangular_facet(Builder& builder,
 //-----------------------------------------------------------------------------
 template<typename Builder>
 inline void add_vertex(Builder& builder,
-                const Exact_Point_3& point)
+                       const Exact_Point_3& point)
 {
   builder.add_vertex(point);
 }
@@ -478,27 +478,74 @@ class BuildFromFacetList : public CGAL::Modifier_base<HDS>
 {
 public:
   BuildFromFacetList(const std::vector<std::array<double, 3> >& vertices,
-                     const std::vector<std::vector<std::size_t> >& facets)
-    : vertices(vertices), facets(facets){}
+                     const std::vector<std::vector<std::size_t> >& facets,
+                     const std::set<std::size_t>& facets_to_be_skipped)
+    : vertices(vertices), facets(facets), facets_to_be_skipped(facets_to_be_skipped){}
   void operator()(HDS& hds)
   {
+    std::set<std::size_t> isolated_vertices;
+    if (facets_to_be_skipped.size() > 0)
+    {
+      for (std::size_t i = 0; i < vertices.size(); i++)
+        isolated_vertices.insert(i);
+
+      for (std::size_t j = 0; j < facets.size(); j++)
+      {
+        if (facets_to_be_skipped.count(j) == 0)
+        {
+          for (auto it2 = facets[j].begin(); it2 != facets[j].end(); it2++)
+            isolated_vertices.erase(*it2);
+        }
+      }
+    }
+
+    std::cout << "Isolated vertices: " << isolated_vertices.size() << std::endl;
+
     CGAL::Polyhedron_incremental_builder_3<HDS> builder(hds, true);
 
     builder.begin_surface(vertices.size(), facets.size());
     
-    for (std::vector<std::array<double, 3> >::const_iterator it = vertices.begin();
-         it != vertices.end(); ++it)
-      builder.add_vertex(Exact_Point_3( (*it)[0], (*it)[1], (*it)[2]));
+    for (std::size_t i = 0; i < vertices.size(); i++)
+    {
+      if (isolated_vertices.count(i) == 0)
+        builder.add_vertex(Exact_Point_3( vertices[i][0], vertices[i][1], vertices[i][2]) );
+    }
 
-    for (std::vector<std::vector<std::size_t> >::const_iterator it = facets.begin();
-         it != facets.end(); ++it)
-      builder.add_facet(it->begin(), it->end());
+    const bool has_isolated_vertices = isolated_vertices.size() > 0;
+    std::vector<std::size_t> iv(isolated_vertices.begin(), isolated_vertices.end());
+    std::sort(iv.begin(), iv.end());
+    for (std::size_t i = 0; i < facets.size(); i++)
+    {
+      if (facets_to_be_skipped.count(i) == 0)
+      {
+        if (has_isolated_vertices)
+        {
+          std::vector<std::size_t> f;
+          f.reserve(facets[i].size());
+          for (auto it = facets[i].begin(); it != facets[i].end(); it++)
+          {
+            f.push_back(*it - std::distance(iv.begin(), std::lower_bound(iv.begin(), iv.end(), *it)));
+          }
+          builder.add_facet(f.begin(), f.end());
+        }
+        else
+          builder.add_facet(facets[i].begin(), facets[i].end());
+
+        if (builder.error())
+          dolfin::dolfin_error("CSGCGALDomain3D.cpp",
+                               "read surface from file",
+                               "error in polyhedron builder");
+      }
+      else
+        std::cout << "Skipping" << std::endl;
+    }
 
     builder.end_surface();
 
   }
-  const std::vector<std::array<double, 3> > vertices;
-  const std::vector<std::vector<std::size_t> > facets;
+  const std::vector<std::array<double, 3> >& vertices;
+  const std::vector<std::vector<std::size_t> >& facets;
+  const std::set<std::size_t>& facets_to_be_skipped;
 };
 //-----------------------------------------------------------------------------
 void make_surface3D(const Surface3D* s, Exact_Polyhedron_3& P)
@@ -543,11 +590,18 @@ void make_surface3D(const Surface3D* s, Exact_Polyhedron_3& P)
                            "Unknown file type");
     }
 
-    SurfaceConsistency::checkConnectivity(facets);
+    std::set<std::size_t> duplicating;
+    SurfaceConsistency::checkConnectivity(facets, duplicating, !s->repair);
+
+    std::cout << "Duplicating: " << duplicating.size() << std::endl;
+    for (auto it = duplicating.begin(); it != duplicating.end(); it++)
+      std::cout << *it << " ";
+    std::cout << std::endl;
 
     // Create the polyhedron
-    BuildFromFacetList<Exact_HalfedgeDS> builder(vertices, facets);
+    BuildFromFacetList<Exact_HalfedgeDS> builder(vertices, facets, duplicating);
     P.delegate(builder);
+    P.normalize_border();
   }
 
   if (!P.is_valid())
@@ -561,18 +615,37 @@ void make_surface3D(const Surface3D* s, Exact_Polyhedron_3& P)
   triangulate_polyhedron(P);
   dolfin_assert (P.is_pure_triangle());
 
-  if (!P.is_closed())
+  // remove self-intersecting facets
+  if (s->repair)
   {
-    dolfin::dolfin_error("CSGCGALDomain3D.cpp",
-                         "read surface from file",
-                         "Surface is not closed.");
+    typedef Exact_Polyhedron_3::Facet_const_handle Facet_const_handle;
+    std::vector<std::pair<Facet_const_handle, Facet_const_handle> > intersecting_facets;
+    CGAL::self_intersect<Exact_Kernel>(P, std::back_inserter(intersecting_facets));
+
+    std::cout << "ok (" << facets.size() << " triangle pair(s))" << std::endl;
   }
+  
+
 
   if (s->degenerate_tolerance > 0)
   {
     if (remove_degenerate(P, s->degenerate_tolerance))
       log(dolfin::TRACE, "Removed degenerate facets from '%s'",
           s->_filename.c_str());
+  }
+
+  if (!P.is_closed())
+  {
+    if (s->repair)
+    {
+      //close_holes(P);
+    }
+    else
+    {
+      dolfin::dolfin_error("CSGCGALDomain3D.cpp",
+                           "read surface from file",
+                           "Surface is not closed.");
+    }
   }
 }
 //-----------------------------------------------------------------------------

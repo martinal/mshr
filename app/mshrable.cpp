@@ -117,8 +117,8 @@ int main(int argc, char** argv)
   }
 
 
-  mshr::Surface3D surf(vm["input-file"].as<std::string>(),
-                       vm["degenerate_tolerance"].as<double>());
+  mshr::Surface3D surf(vm["input-file"].as<std::string>());
+  surf.degenerate_tolerance = vm["degenerate_tolerance"].as<double>();
 
   // Operations that disable mesh generation
   if (vm.count("polyout") || vm.count("polystats"))

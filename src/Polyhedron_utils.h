@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Benjamin Kehlet
+// Copyright (C) 2014-2015 Benjamin Kehlet
 //
 // This file is part of mshr.
 //
@@ -71,5 +71,16 @@ void get_disconnected_components(const Polyhedron& p, OutputIterator it)
   }
 }
 //-----------------------------------------------------------------------------
+template<typename Polyhedron>
+void close_holes(Polyhedron& P)
+{
+  std::cout << "Closing holes" << std::endl;
 
+  while (!P.is_closed())
+  {
+    P.normalize_border();
+    typename Polyhedron::Halfedge_const_handle h = P. fill_hole(P.border_halfedges_begin()->opposite());
+    std::cout << "Closing hole (" << h->facet()->facet_degree() << ")" << std::endl;
+  }
+}
 #endif
