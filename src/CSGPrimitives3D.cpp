@@ -168,8 +168,8 @@ std::string Tetrahedron::str(bool verbose) const
   return s.str();
 }
 //-----------------------------------------------------------------------------
-Surface3D::Surface3D(std::string filename, double degenerate_tolerance) 
- : _filename(filename), degenerate_tolerance(degenerate_tolerance)
+Surface3D::Surface3D(std::string filename)
+ : _filename(filename), vertex_tolerance(.0), degenerate_tolerance(1e-12), repair(false)
 {
   // Do nothing
 }

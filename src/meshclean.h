@@ -241,7 +241,20 @@ inline bool has_slivers(const Polyhedron& p)
   for (typename Polyhedron::Vertex_const_iterator vit = p.vertices_begin(); vit != p.vertices_end(); vit++)
   {
     if (vit->vertex_degree() < 3)
-      return true;
+    {
+      // Check that this is not on a border (we can have borders eg. when
+      // reading files that must be repaired
+      const typename Polyhedron::Halfedge_around_vertex_const_circulator first = vit->vertex_begin();
+      typename Polyhedron::Halfedge_around_vertex_const_circulator current = first;
+
+      do
+      {
+        if ( !current->is_border() )
+          return true;
+
+        current++;
+      } while (current != first);
+    }
   }
 
   /* for (typename Polyhedron::Halfedge_const_iterator it = p.halfedges_begin(); */

@@ -170,7 +170,7 @@ namespace mshr
   class Surface3D : public CSGPrimitive3D
   {
   public:
-    Surface3D(std::string filename, double degenerate_tolerance=1e-12);
+    Surface3D(std::string filename);
 
     /// @brief Informal string representation
     /// @return The description string
@@ -180,7 +180,15 @@ namespace mshr
     { return CSGGeometry::Surface3D; }
 
     const std::string _filename;
-    const double degenerate_tolerance;
+
+    /// @brief Tolerance when merging close vertices
+    double vertex_tolerance;
+
+    /// @brief Tolerance when removing degenerate facets
+    double degenerate_tolerance;
+
+    /// @brief Attempt to repair if surface is not topologically valid
+    bool repair;
   };
 
   /// @brief An axis-aligned ellipsoid
