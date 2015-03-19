@@ -24,7 +24,7 @@
 #include <mshr/SurfaceConsistency.h>
 
 #include "meshclean.h"
-#include "triangulate_polyhedron.h"
+//#include "triangulate_polyhedron.h"
 #include "triangulation_refinement.h"
 #include "Polyhedron_utils.h"
 
@@ -638,7 +638,8 @@ void make_surface3D(const Surface3D* s, Exact_Polyhedron_3& P)
   {
     if (s->repair)
     {
-      //close_holes(P);
+      close_holes(P);
+      triangulate_polyhedron(P);
     }
     else
     {

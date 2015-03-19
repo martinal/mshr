@@ -19,6 +19,22 @@
 #ifndef POLYHEDRON_UTILS_H__
 #define POLYHEDRON_UTILS_H__
 
+#include <CGAL/basic.h>
+#include <CGAL/Exact_predicates_exact_constructions_kernel.h>
+#include <CGAL/Polyhedron_3.h>
+typedef CGAL::Exact_predicates_exact_constructions_kernel _K;
+namespace std
+{
+  // TODO: This is a hack to allow triangulation of exact polyhedrons.  A proper
+  // fix would be to provide a template specialization of compute_facet_normal
+  // for epeck.
+  inline _K::FT sqrt(_K::FT a)
+  {
+    return std::sqrt(CGAL::to_double(a));
+  }
+}
+#include <CGAL/triangulate_polyhedron.h>
+
 template<typename Polyhedron>
 void recursive_remove(std::set<typename Polyhedron::Vertex_const_handle>& s,
                       typename Polyhedron::Vertex_const_handle h)
@@ -71,6 +87,32 @@ void get_disconnected_components(const Polyhedron& p, OutputIterator it)
   }
 }
 //-----------------------------------------------------------------------------
+// Template specialization to allow triangulation of exact polyhedrons.
+// This uses an approximate normal (with sqrt computed in double precision)
+
+/* typedef CGAL::Polyhedron_3<_K>::Facet _K_Facet; */
+
+/* template <> */
+/* typename _K::Vector_3 compute_facet_normal<_K, _K_Facet>(const _K_Facet& f) */
+/* { */
+/*   typedef typename _K::Point_3 Point; */
+/*   typedef typename _K::Vector_3 Vector; */
+/*   typedef typename _K_Facet::Halfedge_around_facet_const_circulator HF_circulator; */
+/*   Vector normal = CGAL::NULL_VECTOR; */
+/*   /\* HF_circulator he = f.facet_begin(); *\/ */
+/*   /\* HF_circulator end = he; *\/ */
+/*   /\* CGAL_For_all(he,end) *\/ */
+/*   /\* { *\/ */
+/*   /\*   const Point& prev = he->prev()->vertex()->point(); *\/ */
+/*   /\*   const Point& curr = he->vertex()->point(); *\/ */
+/*   /\*   const Point& next = he->next()->vertex()->point(); *\/ */
+/*   /\*   Vector n = CGAL::cross_product(next-curr,prev-curr); *\/ */
+/*   /\*   normal = normal + n; *\/ */
+/*   /\* } *\/ */
+/*   /\* return normal / std::sqrt(normal * normal); *\/ */
+/*   return normal; */
+/* } */
+
 template<typename Polyhedron>
 void close_holes(Polyhedron& P)
 {
@@ -82,5 +124,7 @@ void close_holes(Polyhedron& P)
     typename Polyhedron::Halfedge_const_handle h = P. fill_hole(P.border_halfedges_begin()->opposite());
     std::cout << "Closing hole (" << h->facet()->facet_degree() << ")" << std::endl;
   }
+
+  CGAL::triangulate_polyhedron(P);
 }
 #endif
