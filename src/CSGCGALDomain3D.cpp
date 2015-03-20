@@ -24,7 +24,6 @@
 #include <mshr/SurfaceConsistency.h>
 
 #include "meshclean.h"
-//#include "triangulate_polyhedron.h"
 #include "triangulation_refinement.h"
 #include "Polyhedron_utils.h"
 
