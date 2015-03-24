@@ -24,8 +24,13 @@ The documentation is currently being prepared here:
 
 Installation
 ============
+For Debian and Ubuntu users, installing mshr is as easy as::
 
-To build mshr, run::
+  sudo apt-get install fenics
+
+To get a recent version of, enable the FEniCS PPA first. See `Installation instructions for Ubuntu <http://fenicsproject.org/download/ubuntu_details.html>`_
+
+To build mshr from source, run::
 
   cmake <path to mshr source tree>
   make
