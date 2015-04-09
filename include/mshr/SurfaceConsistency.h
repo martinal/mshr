@@ -22,6 +22,7 @@
 
 #include <vector>
 #include <set>
+#include <array>
 
 namespace mshr
 {
@@ -35,8 +36,12 @@ class SurfaceConsistency
   /// If error is set to True, then an error will be thrown when a duplicated
   /// halfedges is encountered. Otherwise, the index of one of the facets will
   /// be stored in the set.
-  static void checkConnectivity(const std::vector<std::vector<std::size_t> >& facets,
+  static void checkConnectivity(const std::vector<std::array<std::size_t, 3> >& facets,
                                 std::set<std::size_t>& duplicating, bool error);
+
+  static void filterFacets(const std::vector<std::array<std::size_t, 3> >& facets,
+                           const std::vector<std::array<double, 3> >& vertices,
+                           std::size_t start, std::set<std::size_t>& skip);
 };
 
 }

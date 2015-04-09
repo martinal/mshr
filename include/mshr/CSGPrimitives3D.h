@@ -189,6 +189,12 @@ namespace mshr
 
     /// @brief Attempt to repair if surface is not topologically valid
     bool repair;
+    
+    // @brief Read only one connected_component. Only relevant if repair==true
+    bool single_connected_component;
+
+    /// @brief First facet, when reading only one connect component.
+    std::size_t first_facet;
   };
 
   /// @brief An axis-aligned ellipsoid

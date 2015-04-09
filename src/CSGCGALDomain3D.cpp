@@ -21,6 +21,7 @@
 #include <mshr/CSGPrimitives3D.h>
 #include <mshr/STLFileReader.h>
 #include <mshr/VTPFileReader.h>
+#include <mshr/PLYFileReader.h>
 #include <mshr/SurfaceConsistency.h>
 
 #include "meshclean.h"
@@ -477,7 +478,7 @@ class BuildFromFacetList : public CGAL::Modifier_base<HDS>
 {
 public:
   BuildFromFacetList(const std::vector<std::array<double, 3> >& vertices,
-                     const std::vector<std::vector<std::size_t> >& facets,
+                     const std::vector<std::array<std::size_t, 3> >& facets,
                      const std::set<std::size_t>& facets_to_be_skipped)
     : vertices(vertices), facets(facets), facets_to_be_skipped(facets_to_be_skipped){}
   void operator()(HDS& hds)
@@ -536,14 +537,16 @@ public:
                                "error in polyhedron builder");
       }
       else
-        std::cout << "Skipping" << std::endl;
+      {
+        // std::cout << "Skipping" << std::endl;
+      }
     }
 
     builder.end_surface();
 
   }
   const std::vector<std::array<double, 3> >& vertices;
-  const std::vector<std::vector<std::size_t> >& facets;
+  const std::vector<std::array<std::size_t, 3> >& facets;
   const std::set<std::size_t>& facets_to_be_skipped;
 };
 //-----------------------------------------------------------------------------
@@ -552,7 +555,7 @@ void make_surface3D(const Surface3D* s, Exact_Polyhedron_3& P)
   dolfin_assert(s);
 
   std::vector<std::array<double, 3> > vertices;
-  std::vector<std::vector<std::size_t> > facets;
+  std::vector<std::array<std::size_t, 3> > facets;
 
   boost::filesystem::path fpath(s->_filename);
   if (fpath.extension() == ".off")
@@ -582,6 +585,11 @@ void make_surface3D(const Surface3D* s, Exact_Polyhedron_3& P)
       // TODO: Only if vtk is installed
       VTPFileReader::read(s->_filename, vertices, facets);
     }
+    else if (fpath.extension() == ".ply")
+    {
+      // TODO: Only if vtk is installed
+      PLYFileReader::read(s->_filename, vertices, facets);
+    }
     else
     {
       dolfin::dolfin_error("PolyhedronUtils.cpp",
@@ -589,18 +597,43 @@ void make_surface3D(const Surface3D* s, Exact_Polyhedron_3& P)
                            "Unknown file type");
     }
 
-    std::set<std::size_t> duplicating;
-    SurfaceConsistency::checkConnectivity(facets, duplicating, !s->repair);
+    log(dolfin::TRACE, "Done reading file");
 
-    std::cout << "Duplicating: " << duplicating.size() << std::endl;
-    for (auto it = duplicating.begin(); it != duplicating.end(); it++)
-      std::cout << *it << " ";
-    std::cout << std::endl;
+    //tanganyika::closest_vertices(vertices);
+
+    std::set<std::size_t> skip;
+    //std::vector<std::size_t> start_facets = { 0, 70000 };
+    std::size_t start_facet = s->first_facet;
+    std::cout << "Starting facet: " << start_facet << std::endl;
+
+    SurfaceConsistency::filterFacets(facets, 
+                                     vertices, 
+                                     start_facet,
+                                     skip);
+
+    std::vector<std::array<std::size_t, 3> > filtered_facets;
+    filtered_facets.reserve(facets.size()-skip.size());
+    for (std::size_t i = 0; i < facets.size(); i++)
+    {
+      if (skip.count(i) == 0)
+        filtered_facets.push_back(facets[i]);
+    }
+
+    // std::set<std::size_t> duplicating;
+    // SurfaceConsistency::checkConnectivity(filtered_facets, duplicating, false);
+    // skip.insert(duplicating.begin(), duplicating.end());
+
+    // log(dolfin::TRACE, "Done checking connectivity");
+
+    // std::cout << "Duplicating: " << duplicating.size() << std::endl;
+    // for (auto it = duplicating.begin(); it != duplicating.end(); it++)
+    //   std::cout << *it << " ";
+    // std::cout << std::endl;
 
     // Create the polyhedron
-    BuildFromFacetList<Exact_HalfedgeDS> builder(vertices, facets, duplicating);
+    BuildFromFacetList<Exact_HalfedgeDS> builder(vertices, facets, skip);
     P.delegate(builder);
-    P.normalize_border();
+    log(dolfin::TRACE, "Done creating polyhedron");
   }
 
   if (!P.is_valid())
@@ -610,43 +643,58 @@ void make_surface3D(const Surface3D* s, Exact_Polyhedron_3& P)
                          "Polyhedron is not valid. If you are sure your file is valid, please file a bug report");
   }
 
+  P.normalize_border();
+
+  // {
+  //   std::size_t num_vertices = P.size_of_vertices();
+  //   std::list<typename Exact_Polyhedron_3::Vertex_const_handle> components;
+  //   tanganyika::PolyhedronUtils::get_disconnected_components(P, std::back_inserter(components));
+  //   std::cout << "Number of components: " << components.size() << std::endl;
+  //   const unsigned int deleted = P.keep_largest_connected_components(1);
+  //   std::cout << "Deleted " << deleted << " disconnected components with " << num_vertices-P.size_of_vertices() << " vertices" << std::endl;
+  //   std::cout << "Min vertex degree before closing: " << tanganyika::PolyhedronUtils::min_vertex_degree(P) << std::endl;
+  //   std::cout << "Is pure triangular: " << (P.is_pure_triangle() ? "True" : "False") << std::endl;
+  //   int tmp;
+  //   std::cin >> tmp;
+  // }
+  
   // Triangulate polyhedron
-  triangulate_polyhedron(P);
+  //tanganyika::PolyhedronUtils::triangulate_polyhedron(P);
   dolfin_assert (P.is_pure_triangle());
 
   // remove self-intersecting facets
   if (s->repair)
   {
-    typedef Exact_Polyhedron_3::Facet_const_handle Facet_const_handle;
-    std::vector<std::pair<Facet_const_handle, Facet_const_handle> > intersecting_facets;
-    CGAL::self_intersect<Exact_Kernel>(P, std::back_inserter(intersecting_facets));
-
-    std::cout << "ok (" << facets.size() << " triangle pair(s))" << std::endl;
-  }
-  
-
-
-  if (s->degenerate_tolerance > 0)
-  {
-    if (remove_degenerate(P, s->degenerate_tolerance))
-      log(dolfin::TRACE, "Removed degenerate facets from '%s'",
-          s->_filename.c_str());
+    tanganyika::PolyhedronUtils::remove_self_intersections(P);
+    tanganyika::PolyhedronUtils::close_holes(P);
   }
 
-  if (!P.is_closed())
-  {
-    if (s->repair)
-    {
-      close_holes(P);
-      triangulate_polyhedron(P);
-    }
-    else
-    {
-      dolfin::dolfin_error("CSGCGALDomain3D.cpp",
-                           "read surface from file",
-                           "Surface is not closed.");
-    }
-  }
+    tanganyika::PolyhedronUtils::list_self_intersections(P);
+
+  // if (s->degenerate_tolerance > 0)
+  // {
+  //   if (remove_degenerate(P, s->degenerate_tolerance))
+  //     log(dolfin::TRACE, "Removed degenerate facets from '%s'",
+  //         s->_filename.c_str());
+  // }
+
+  // if (!P.is_closed())
+  // {
+  //   if (s->repair)
+  //   {
+  //     tanganyika::PolyhedronUtils::cut_holes(P);
+
+  //     dolfin_assert(P.is_closed());
+  //     dolfin_assert(P.is_pure_triangle());
+  //     remove_degenerate(P, s->degenerate_tolerance);
+  //   }
+  //   else
+  //   {
+  //     dolfin::dolfin_error("CSGCGALDomain3D.cpp",
+  //                          "read surface from file",
+  //                          "Surface is not closed.");
+  //   }
+  // }
 }
 //-----------------------------------------------------------------------------
 Aff_transformation_3 get_scaling(const CSGScaling& s)
@@ -1217,7 +1265,7 @@ void CSGCGALDomain3D::get_points_in_holes(std::vector<dolfin::Point>& holes,
                                           std::shared_ptr<CSGCGALDomain3DQueryStructure> q) const
 {
   std::vector<typename Exact_Polyhedron_3::Vertex_const_handle> parts;
-  get_disconnected_components(impl->p,std::back_inserter(parts));
+  tanganyika::PolyhedronUtils::get_disconnected_components(impl->p,std::back_inserter(parts));
 
   for (std::vector<typename Exact_Polyhedron_3::Vertex_const_handle>::const_iterator it = parts.begin();
        it != parts.end(); it++)

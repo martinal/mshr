@@ -25,7 +25,7 @@ class Point3FuzzyStrictlyLess
  public:
   typedef Point Point_;
 
-  Point3FuzzyStrictlyLess(double squared_distance=1e-10)
+  Point3FuzzyStrictlyLess(double squared_distance=1e-5)
   : tol(squared_distance){}
 
   // strictly less

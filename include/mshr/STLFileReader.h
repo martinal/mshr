@@ -38,7 +38,7 @@ public:
   /// @param facets array to return facets in as indices to the vertex array
   static void read(const std::string filename, 
                    std::vector<std::array<double, 3> >& vertices,
-                   std::vector<std::vector<std::size_t> >& facets);
+                   std::vector<std::array<std::size_t, 3> >& facets);
 };
 
 }

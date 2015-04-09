@@ -55,6 +55,51 @@ inline void get_next_line(std::ifstream& file, std::string& line, std::size_t &l
   boost::algorithm::trim(line);
   lineno++;
 }
+
+
+inline double closest_vertices(const std::map<std::array<double, 3>,std::size_t>& vertices)
+{
+    std::cout << "Computing closest vertices (map)" << std::endl;
+    double min_distance = std::numeric_limits<double>::max();
+    std::array<double, 3> a;
+    std::array<double, 3> b;
+    std::size_t counter = 0;
+    for (auto v1 = vertices.begin(); v1 != vertices.end(); v1++)
+    {
+      if (counter % 1000 == 0)
+        std::cout << counter << std::endl;
+
+      auto v2 = v1;
+      v2++;
+      std::size_t counter2 = 0;
+      for (;v2 != vertices.end(); v2++)
+      {
+        const double d = std::pow( v1->first[0] - v2->first[0], 2 ) + std::pow( v1->first[1]- v2->first[1], 2) + std::pow( v1->first[2]- v2->first[2], 2);
+        if (d < min_distance)
+        {
+          min_distance = d;
+          a = v1->first;
+          b = v2->first;
+          
+        }
+        min_distance = std::min(min_distance, d);
+
+        counter2++;
+      }
+
+      counter++;
+    }
+
+    std::cout << std::scientific << "Min distance: " << min_distance << std::endl;
+    std::cout << "Equal: " << (a == b ? "True" : "False") << std::endl;
+    int tmp;
+    std::cin >> tmp;
+
+    return min_distance;
+}
+
+
+
 } // end anonymous namespace
 //-----------------------------------------------------------------------------
 namespace mshr
@@ -62,10 +107,13 @@ namespace mshr
 
 void STLFileReader::read(const std::string filename,
                          std::vector<std::array<double, 3> >& vertices,
-                         std::vector<std::vector<std::size_t> >& facets)
+                         std::vector<std::array<std::size_t, 3> >& facets)
 {
 
   dolfin::log(dolfin:: TRACE, "Reading surface from %s ", filename.c_str());
+
+  vertices.clear();
+  facets.clear();
 
   typedef boost::tokenizer<boost::char_separator<char> > tokenizer;
 
@@ -77,8 +125,8 @@ void STLFileReader::read(const std::string filename,
                          "Failed to open file");
   }
 
-  std::size_t num_vertices = 0;
   std::map<std::array<double, 3>, std::size_t, Point3FuzzyStrictlyLess<std::array<double, 3> > > vertex_map;
+  // std::map<std::array<double, 3>, std::size_t> vertex_map;
   std::string line;
   std::size_t lineno = 0;
   const boost::char_separator<char> sep(" ");
@@ -158,7 +206,7 @@ void STLFileReader::read(const std::string filename,
                            "open .stl file to read 3D surface",
                            "Expected keyword 'outer loop' (line %u)", lineno);
 
-    std::vector<std::size_t> v_indices;
+    std::array<std::size_t, 3> v_indices;
 
     get_next_line(file, line, lineno);
 
@@ -177,6 +225,9 @@ void STLFileReader::read(const std::string filename,
     // Read lines with vertices
     do
     {
+      // Only support for triangulated surfaces for now
+      dolfin_assert(counter < 3);
+
       // Advance to next
       ++tok_iter;
 
@@ -184,18 +235,17 @@ void STLFileReader::read(const std::string filename,
       const double y = strToDouble(*tok_iter); ++tok_iter;
       const double z = strToDouble(*tok_iter); ++tok_iter;
 
-      std::array<double, 3> vertex = {{x, y, z}};
+      const std::array<double, 3> vertex = {{x, y, z}};
 
       // TODO: Use std::map::find()
       // (to avoid two queries)
       if (vertex_map.count(vertex) > 0)
-        v_indices.push_back(vertex_map[vertex]);
+        v_indices[counter] = vertex_map[vertex];
       else
       {
-        vertex_map[vertex] = num_vertices;
-        v_indices.push_back(num_vertices);
+        vertex_map[vertex] = vertices.size();
+        v_indices[counter] = vertices.size();
         vertices.push_back(vertex);
-        num_vertices++;
       }
 
       // Get next line
@@ -266,8 +316,9 @@ void STLFileReader::read(const std::string filename,
   ++tok_iter;
 
   // TODO: Check name of solid
-
   dolfin::log(dolfin::TRACE, "Done reading surface");
+
+  // closest_vertices(vertex_map);
 }
 
 }

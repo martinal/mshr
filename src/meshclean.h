@@ -246,14 +246,19 @@ inline bool has_slivers(const Polyhedron& p)
       // reading files that must be repaired
       const typename Polyhedron::Halfedge_around_vertex_const_circulator first = vit->vertex_begin();
       typename Polyhedron::Halfedge_around_vertex_const_circulator current = first;
+      
+      bool is_border = false;
 
       do
       {
         if ( !current->is_border() )
-          return true;
+          is_border = true;
 
         current++;
       } while (current != first);
+
+      if (!is_border)
+        return true;
     }
   }
 
@@ -311,6 +316,8 @@ inline bool remove_degree3_with_short_edges(Polyhedron& p, double tolerance)
   {
     if (it->vertex_degree() < 4)
     {
+      if (!it->is_trivalent())
+        std::cout << "Strange! Degree: " << it->vertex_degree() << std::endl;
       dolfin_assert(it->is_trivalent());
 
       typename Polyhedron::Halfedge_handle h = it->halfedge();
@@ -490,9 +497,15 @@ bool has_degenerate_facets(const Polyhedron& p,
 template<typename Polyhedron>
 bool remove_degenerate(Polyhedron &p, double tolerance)
 {
-  dolfin_assert(p.is_pure_triangle());
-  ASSERT_GOOD_STATE(p);
   log(dolfin::TRACE, "Cleaning degenerate facets");
+  dolfin_assert(p.is_pure_triangle());
+
+  const bool edges_removed = remove_degree3_with_short_edges(p, tolerance);
+  if (edges_removed)
+    std::cout << "Remove degree 3 vertices" << std::endl;
+
+  ASSERT_GOOD_STATE(p);
+
 
   log(dolfin::TRACE, "  Collapsing short edges");
   const bool collapsed = collapse_short_edges(p, tolerance);
