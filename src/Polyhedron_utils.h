@@ -340,6 +340,12 @@ class PolyhedronUtils
           if (v == Vertex_handle())
             continue;
 
+          // Ensure h is not one of the halfedges that will be removed
+          if (h->vertex() == v)
+            h = h->next();
+
+          if (h->prev()->vertex() == v)
+            h = h->next();
 
           std::cout << "Removing vertex: " << v->point() << std::endl;
           remove_vertex<Polyhedron>(P, v);
