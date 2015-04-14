@@ -165,7 +165,7 @@ class PolyhedronUtils
       typename Polyhedron::Halfedge_handle current = h;
       do
       {
-        std::cout << " " << h->vertex()->point() << ",";
+        std::cout << " " << current->vertex()->point() << ",";
 
         current = current->next();
       } while(current != h);
@@ -259,29 +259,7 @@ class PolyhedronUtils
     typedef typename Polyhedron::Vertex_handle Vertex_handle;
     typedef typename Polyhedron::Traits Polyhedron_traits;
     typedef typename Polyhedron_traits::Vector_3 Vector_3;
-
-    // typedef typename Polyhedron::Traits::Triangle_3 Triangle_3;
-
-    /* { */
-      
-    /*   double min_dist = std::numeric_limits<double>::max(); */
-    /*   Halfedge_handle closest_halfedge; */
-    /*   Halfedge_handle current = h; */
-    /*   do */
-    /*   { */
-    /*     double dist = CGAL::to_double((current->vertex()->point() -  */
-    /*                                    current->prev()->vertex()->point()).squared_length()); */
-    /*     if (dist < min_dist) */
-    /*     { */
-    /*       min_dist = dist; */
-    /*       closest_halfedge = current; */
-    /*     } */
-      
-    /*     current = current->next(); */
-    /*   } while (current != h); */
-
-    /*   std::cout << "Closest vertices (squared): " << min_dist << std::endl; */
-    /* } */
+    typedef typename Polyhedron_traits::Triangle_3 Triangle_3;
 
     while (h->next()->next()->next() != h)
     {
@@ -293,11 +271,13 @@ class PolyhedronUtils
       Halfedge_handle max_cos_theta_edge;
       //Halfedge_handle min_facet_angle_edge = h;
       Halfedge_handle start = h;
+
       do
       {
-        if (h->vertex()->vertex_degree() > 2 
-            && !facets_intersect<Polyhedron>(h, h->opposite()) 
-            && !facets_intersect<Polyhedron>(h->next(), h->next()->opposite()))
+        dolfin_assert(h->is_border());
+        // std::cout << "Vertex degree: " << h->vertex()->vertex_degree() << std::endl;
+
+        if (h->vertex()->vertex_degree() > 2)
         {
           Vector_3 v1(h->vertex()->point(),
                       h->next()->vertex()->point());
@@ -305,6 +285,7 @@ class PolyhedronUtils
                       h->prev()->vertex()->point());
 
           const double cos_theta = CGAL::to_double((v1*v2)/std::sqrt(CGAL::to_double(v1.squared_length()*v2.squared_length())));
+          // std::cout << "Cos theta: " << cos_theta << ", " << max_cos_theta << std::endl;
           if (cos_theta > max_cos_theta)
           {
             max_cos_theta = cos_theta;
@@ -315,15 +296,37 @@ class PolyhedronUtils
         h = h->next();
       } while (h != start);
 
+      if (max_cos_theta_edge == Halfedge_handle())
+      {
+        std::cout << "Couldn't find vertex candidate without introducing self intersections" << std::endl;
+      }
+
       std::cout << "  Add facet to border, angle: " << max_cos_theta << std::endl;
+
+      Triangle_3 t(max_cos_theta_edge->prev()->vertex()->point(),
+                   max_cos_theta_edge->vertex()->point(),
+                   max_cos_theta_edge->next()->vertex()->point());
+
+      std::cout << "Candidate: Triangle " << t[0] << ", " << t[1] << ", " << t[2] << std::endl;
+      const bool intersects_simple = facets_intersect<Polyhedron>(max_cos_theta_edge->prev()->vertex(),
+                                                                  max_cos_theta_edge->vertex(),
+                                                                  max_cos_theta_edge->next()->vertex()) ||
+                                     facets_intersect<Polyhedron>(max_cos_theta_edge->vertex(),
+                                                                  max_cos_theta_edge->next()->vertex(),
+                                                                  max_cos_theta_edge->prev()->vertex()) ||
+                                     facets_intersect<Polyhedron>(max_cos_theta_edge->next()->vertex(),
+                                                                  max_cos_theta_edge->prev()->vertex(),
+                                                                  max_cos_theta_edge->vertex());
+
 
       // Set h to a halfedge not affected by the ear clipping to ensure h is still
       // a border halfedge in the next iteration
       h = max_cos_theta_edge->next()->next();
 
       print_triangle<Polyhedron>(max_cos_theta_edge);
+      dolfin_assert(max_cos_theta_edge->prev()->is_border());
+      dolfin_assert(max_cos_theta_edge->next()->is_border());
       P.add_facet_to_border(max_cos_theta_edge->prev(), max_cos_theta_edge->next());
-
 
       std::vector<std::pair<Facet_handle, Facet_handle> > intersections;
       CGAL::self_intersect<Polyhedron_traits>(P, std::back_inserter(intersections));
@@ -332,6 +335,8 @@ class PolyhedronUtils
       {
         std::cout << "Self intersects (" << intersections.size() << "), remove common vertex" << std::endl;
         list_self_intersections(P);
+
+        dolfin_assert(intersects_simple);
 
         for (auto iit = intersections.begin(); iit != intersections.end(); iit++)
         {
@@ -352,9 +357,11 @@ class PolyhedronUtils
           break;
         }
       }
+      else
+      {
+        dolfin_assert(!intersects_simple);
+      }
       
-      /* int tmp; */
-      /* std::cin >> tmp; */
     }
 
     dolfin_assert(h->next()->next()->next() == h);
@@ -652,135 +659,121 @@ class PolyhedronUtils
   }
   //-----------------------------------------------------------------------------
   template<typename Polyhedron>
-  static bool facets_intersect(typename Polyhedron::Halfedge_handle h1,
-                               typename Polyhedron::Halfedge_handle h2)
+  static bool facets_intersect(typename Polyhedron::Vertex_handle v,
+                               typename Polyhedron::Vertex_handle v2,
+                               typename Polyhedron::Vertex_handle v3)
   {
     typedef typename Polyhedron::Traits::Point_3 Point_3;
     typedef typename Polyhedron::Traits::Triangle_3 Triangle_3;
-
-    Triangle_3 t1(h1->prev()->vertex()->point(),
-                  h1->vertex()->point(),
-                  h1->next()->vertex()->point());
-
-    Triangle_3 t2(h2->prev()->vertex()->point(),
-                  h2->vertex()->point(),
-                  h2->next()->vertex()->point());
-
-    auto result = CGAL::intersection(t1, t2);
-
-    if (result)
-    {
-      if (const Point_3* p = boost::get<Point_3>(&*result))
-      {
-        if (*p == h1->vertex()->point() || 
-            *p == h1->next()->vertex()->point() || 
-            *p == h1->next()->next()->vertex()->point())
-        {
-          return false;
-        }
-        else
-        {
-          return true;
-        }
-      }
-      else return false;
-    }
-    else
-    {
-      return false;
-    }
-  }
-  //-----------------------------------------------------------------------------
-
-
-  template<typename Polyhedron>
-    static bool triangle_intersects_vertex_neighbors(typename Polyhedron::Traits::Triangle_3 t,
-                                                     typename Polyhedron::Halfedge_handle h1)
-  {
+    typedef typename Polyhedron::Traits::Segment_3 Segment_3;
+    typedef typename Polyhedron::Halfedge_handle Halfedge_handle;
+    typedef typename Polyhedron::Vertex_handle Vertex_handle;
     typedef typename Polyhedron::Halfedge_around_vertex_circulator Vertex_circulator;
-    typedef typename Polyhedron::Traits::Triangle_3 Triangle_3;
-    typedef typename Polyhedron::Traits::Point_3 Point_3;
-    
-    Vertex_circulator start = h1->vertex()->vertex_begin();
-    Vertex_circulator current = start;
+
+    Triangle_3 t(v->point(), v2->point(), v3->point());
+
+    std::cout << "Facets_intersect()" << std::endl;
+    std::cout << "--Vertex: " << v->point() << std::endl;
+    std::cout << "--Trial triangle: " << t[0] << ", " << t[1] << ", " << t[2] << std::endl;
+
+    dolfin_assert(v->point() == t[0] || v->point() == t[1] || v->point() == t[2]);
+
+    Vertex_circulator start = v->vertex_begin();
+    Vertex_circulator c = start;
 
     do
     {
-      if (current->is_border())
-        continue;
-
-      dolfin_assert(current->facet()->is_triangle());
-      
-      Triangle_3 t_current(current->vertex()->point(),
-                           current->next()->vertex()->point(),
-                           current->prev()->vertex()->point());
-      
-      auto result = CGAL::intersection(t, t_current);
-
-      if (result)
+      Halfedge_handle current = c;
+      c++;
+      // std::cout << "  Checking" << std::endl;
+      if (!current->is_border())
       {
-        if (const Point_3* p = boost::get<Point_3>(&*result))
+        dolfin_assert(current->facet()->is_triangle());
+
+        Triangle_3 t_current(current->vertex()->point(),
+                             current->next()->vertex()->point(),
+                             current->next()->next()->vertex()->point());
+        std::cout << "  Test triangle: " << t_current[0] << ", " << t_current[1] << ", " << t_current[2] << std::endl;
+
+        auto result = CGAL::intersection(t, t_current);
+
+        if (result)
         {
-          if (*p != h1->vertex()->point())
+          if (const Point_3* p = boost::get<Point_3>(&*result))
           {
-            std::cout << "Intersects neighbor" << std::endl;
+            dolfin_assert(*p == v->point());
+            std::cout << "  Vertex point" << std::endl;
+            std::cout << *p << std::endl;
+            continue;
+          }
+          else if (const Segment_3* s = boost::get<Segment_3>(&*result))
+          {
+            std::cout << "  Segment intersection" << std::endl;
+
+            // Check that they share a halfedge
+            dolfin_assert(s->source() == v->point() || s->target() == v->point());
+            std::array<Vertex_handle, 3> v_facet{v, v2, v3};
+            std::array<Vertex_handle, 3> u_facet{current->vertex(), current->next()->vertex(), current->next()->next()->vertex()};
+
+            bool neighbors_detected = false;
+            for (std::size_t i = 0; i < 3; i++)
+            {
+              for (std::size_t j = 0; j < 3; j++)
+              {
+                if (v_facet[i] == u_facet[(j+1)%3] && v_facet[(i+1)%3] == u_facet[j])
+                {
+                  std::cout << "  Neighbors" << std::endl;
+                  neighbors_detected = true;
+                  break;
+                }
+              }
+            }
+
+            if (neighbors_detected)
+              continue;
+            /* if ( (s->source() == t_current[0] || s->source() == t_current[1] || s->source() == t_current[2]) && */
+            /*      (s->target() == t_current[0] || s->target() == t_current[1] || s->target() == t_current[2]) ) */
+            /* { */
+            /*   std::cout << "  Edge segment" << std::endl; */
+            /*   std::cout << s->source() << " " << s->target() << std::endl; */
+            /*   continue; */
+            /* } */
+          }
+
+
+          std::cout << "Facets intersect" << std::endl;
+
+          if (const Point_3* p = boost::get<Point_3>(&*result))
+          {
+            std::cout << "    Intersection point: " << *p << std::endl;
+            return true;
+          }
+          else if (const Segment_3* s = boost::get<Segment_3>(&*result))
+          {
+            std::cout << "    Intersection segment: " << s->source() << ", " << s->target() << std::endl;
+            return true;
+          }
+          else if (const Triangle_3* tt = boost::get<Triangle_3>(&*result))
+          {
+            std::cout << "    Intersection triangle: " << (*tt)[0] << ", " << (*tt)[1] << ", " << (*tt)[2] << std::endl;
+          }
+          else if (const std::vector<Point_3>* v = boost::get<std::vector<Point_3> >(&*result))
+          {
+            std::cout << "    Intersection vector of points" << std::endl;
+          }
+          else
+          {
+            std::cout << "    Unknown intersection type" << std::endl;
             return true;
           }
         }
-        else
-        {
-          std::cout << "Intersects neighbor" << std::endl;
-          return true;
-        }
       }
 
-      current++;
-    } while(current != start);
+
+    } while (c != start);
 
     return false;
   }
-  //-----------------------------------------------------------------------------  
-  /* template<typename Polyhedron> */
-  /*   static bool facets_intersect_neighbors(typename Polyhedron::Halfedge_handle h1) */
-  /* { */
-  /*   typedef typename Polyhedron::Traits::Point_3 Point_3; */
-  /*   typedef typename Polyhedron::Traits::Triangle_3 Triangle_3; */
-
-  /*   dolfin_assert(h1->is_border()); */
-
-    
-  /*   Triangle_3 t1(h1->prev()->vertex()->point(), */
-  /*                 h1->vertex()->point(), */
-  /*                 h1->next()->vertex()->point()); */
-
-  /*   Triangle_3 t2(h2->prev()->vertex()->point(), */
-  /*                 h2->vertex()->point(), */
-  /*                 h2->next()->vertex()->point()); */
-
-  /*   auto result = CGAL::intersection(t1, t2); */
-
-  /*   if (result) */
-  /*   { */
-  /*     if (const Point_3* p = boost::get<Point_3>(&*result)) */
-  /*     { */
-  /*       if (*p == h1->vertex()->point() ||  */
-  /*           *p == h1->next()->vertex()->point() ||  */
-  /*           *p == h1->next()->next()->vertex()->point()) */
-  /*       { */
-  /*         return false; */
-  /*       } */
-  /*       else */
-  /*       { */
-  /*         return true; */
-  /*       } */
-  /*     } */
-  /*     else return false; */
-  /*   } */
-  /*   else */
-  /*   { */
-  /*     return false; */
-  /*   } */
-  /* } */
   //-----------------------------------------------------------------------------
   template<typename Polyhedron>
   static void list_self_intersections(Polyhedron& p)
