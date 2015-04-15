@@ -101,6 +101,29 @@ class PolyhedronUtils
     }
   }
   //-----------------------------------------------------------------------------
+  template<typename Polyhedron>
+  static typename Polyhedron::Traits::Triangle_3 get_facet_triangle(typename Polyhedron::Halfedge_handle h)
+  {
+    typedef typename Polyhedron::Traits::Triangle_3 Triangle_3;
+
+    dolfin_assert(h->facet()->is_triangle());
+
+    return Triangle_3(h->vertex()->point(),
+                      h->next()->vertex()->point(),
+                      h->next()->next()->vertex()->point());
+  }
+  //-----------------------------------------------------------------------------
+  template<typename Polyhedron>
+    static double get_triangle_cos_angle(typename Polyhedron::Traits::Triangle_3 t1, 
+                                         typename Polyhedron::Traits::Triangle_3 t2)
+  {
+    typedef typename Polyhedron::Traits::Vector_3 Vector_3;
+    const Vector_3 v1 = t1.supporting_plane().orthogonal_vector();
+    const Vector_3 v2 = t2.supporting_plane().orthogonal_vector();
+
+    return CGAL::to_double((v1*v2)/std::sqrt(CGAL::to_double(v1.squared_length()*v2.squared_length())));  
+  }
+  //-----------------------------------------------------------------------------
   /* template <typename Polyhedron> */
   /* void min_vertex_degree(const Polyhedron& p) */
   /* { */
@@ -258,7 +281,7 @@ class PolyhedronUtils
     typedef typename Polyhedron::Facet_handle Facet_handle;
     typedef typename Polyhedron::Vertex_handle Vertex_handle;
     typedef typename Polyhedron::Traits Polyhedron_traits;
-    typedef typename Polyhedron_traits::Vector_3 Vector_3;
+    // typedef typename Polyhedron_traits::Vector_3 Vector_3;
     typedef typename Polyhedron_traits::Triangle_3 Triangle_3;
 
     while (h->next()->next()->next() != h)
@@ -266,9 +289,15 @@ class PolyhedronUtils
       std::cout << "Closing hole" << std::endl;
       list_hole<Polyhedron>(h);
       
-      double max_cos_theta = std::numeric_limits<double>::lowest();
-      //double min_facet_angle = std::numeric_limits<double>::max();
-      Halfedge_handle max_cos_theta_edge;
+      // double max_cos_theta = std::numeric_limits<double>::lowest();
+      // Halfedge_handle max_cos_theta_edge;
+
+      // double max_cos_theta_intersections = std::numeric_limits<double>::lowest();
+      // Halfedge_handle max_cos_theta_edge_intersections;
+
+      double max_facet_cos_angle = std::numeric_limits<double>::lowest();
+      Halfedge_handle max_facet_cos_angle_edge;
+
       //Halfedge_handle min_facet_angle_edge = h;
       Halfedge_handle start = h;
 
@@ -277,91 +306,121 @@ class PolyhedronUtils
         dolfin_assert(h->is_border());
         // std::cout << "Vertex degree: " << h->vertex()->vertex_degree() << std::endl;
 
-        if (h->vertex()->vertex_degree() > 2)
+        if (h->vertex()->vertex_degree() > 2) 
         {
-          Vector_3 v1(h->vertex()->point(),
-                      h->next()->vertex()->point());
-          Vector_3 v2(h->vertex()->point(),
-                      h->prev()->vertex()->point());
+          /* Vector_3 v1(h->vertex()->point(), */
+          /*             h->next()->vertex()->point()); */
+          /* Vector_3 v2(h->vertex()->point(), */
+          /*             h->prev()->vertex()->point()); */
 
-          const double cos_theta = CGAL::to_double((v1*v2)/std::sqrt(CGAL::to_double(v1.squared_length()*v2.squared_length())));
-          // std::cout << "Cos theta: " << cos_theta << ", " << max_cos_theta << std::endl;
-          if (cos_theta > max_cos_theta)
+          /* const double cos_theta = CGAL::to_double((v1*v2)/std::sqrt(CGAL::to_double(v1.squared_length()*v2.squared_length()))); */
+          /* // std::cout << "Cos theta: " << cos_theta << ", " << max_cos_theta << std::endl; */
+          /* if (cos_theta > max_cos_theta_intersections) */
+          /* { */
+          /*   max_cos_theta_intersections = cos_theta; */
+          /*   max_cos_theta_edge_intersections = h; */
+          /* } */
+
+        Triangle_3 current(h->prev()->vertex()->point(),
+                           h->vertex()->point(),
+                           h->next()->vertex()->point());
+
+        const double min_cos_angle = std::min(get_triangle_cos_angle<Polyhedron>(current, get_facet_triangle<Polyhedron>(h->opposite())),
+                                              get_triangle_cos_angle<Polyhedron>(current, get_facet_triangle<Polyhedron>(h->next()->opposite())));
+
+          
+        if (min_cos_angle > max_facet_cos_angle &&
+            !facets_intersect<Polyhedron>(h->prev()->vertex(),
+                                          h->vertex(),
+                                          h->next()->vertex()) &&
+            !facets_intersect<Polyhedron>(h->vertex(),
+                                          h->next()->vertex(),
+                                          h->prev()->vertex()) &&
+            !facets_intersect<Polyhedron>(h->next()->vertex(),
+                                          h->prev()->vertex(),
+                                          h->vertex()))
           {
-            max_cos_theta = cos_theta;
-            max_cos_theta_edge = h;
+            max_facet_cos_angle = min_cos_angle;
+            max_facet_cos_angle_edge = h;
           }
         }
+
 
         h = h->next();
       } while (h != start);
 
-      if (max_cos_theta_edge == Halfedge_handle())
+      if (max_facet_cos_angle_edge == Halfedge_handle())
       {
         std::cout << "Couldn't find vertex candidate without introducing self intersections" << std::endl;
-      }
 
-      std::cout << "  Add facet to border, angle: " << max_cos_theta << std::endl;
-
-      Triangle_3 t(max_cos_theta_edge->prev()->vertex()->point(),
-                   max_cos_theta_edge->vertex()->point(),
-                   max_cos_theta_edge->next()->vertex()->point());
-
-      std::cout << "Candidate: Triangle " << t[0] << ", " << t[1] << ", " << t[2] << std::endl;
-      const bool intersects_simple = facets_intersect<Polyhedron>(max_cos_theta_edge->prev()->vertex(),
-                                                                  max_cos_theta_edge->vertex(),
-                                                                  max_cos_theta_edge->next()->vertex()) ||
-                                     facets_intersect<Polyhedron>(max_cos_theta_edge->vertex(),
-                                                                  max_cos_theta_edge->next()->vertex(),
-                                                                  max_cos_theta_edge->prev()->vertex()) ||
-                                     facets_intersect<Polyhedron>(max_cos_theta_edge->next()->vertex(),
-                                                                  max_cos_theta_edge->prev()->vertex(),
-                                                                  max_cos_theta_edge->vertex());
-
-
-      // Set h to a halfedge not affected by the ear clipping to ensure h is still
-      // a border halfedge in the next iteration
-      h = max_cos_theta_edge->next()->next();
-
-      print_triangle<Polyhedron>(max_cos_theta_edge);
-      dolfin_assert(max_cos_theta_edge->prev()->is_border());
-      dolfin_assert(max_cos_theta_edge->next()->is_border());
-      P.add_facet_to_border(max_cos_theta_edge->prev(), max_cos_theta_edge->next());
-
-      std::vector<std::pair<Facet_handle, Facet_handle> > intersections;
-      CGAL::self_intersect<Polyhedron_traits>(P, std::back_inserter(intersections));
-
-      if (intersections.size() > 0)
-      {
-        std::cout << "Self intersects (" << intersections.size() << "), remove common vertex" << std::endl;
-        list_self_intersections(P);
-
-        dolfin_assert(intersects_simple);
-
-        for (auto iit = intersections.begin(); iit != intersections.end(); iit++)
-        {
-          Vertex_handle v = get_common_vertex<Polyhedron>(iit->first, iit->second);
-
-          if (v == Vertex_handle())
-            continue;
-
-          // Ensure h is not one of the halfedges that will be removed
-          if (h->vertex() == v)
-            h = h->next();
-
-          if (h->prev()->vertex() == v)
-            h = h->next();
-
-          std::cout << "Removing vertex: " << v->point() << std::endl;
-          remove_vertex<Polyhedron>(P, v);
-          break;
-        }
+        // FIXME: Pick the vertex more cleverly
+        remove_vertex<Polyhedron>(P, h->vertex());
       }
       else
       {
-        dolfin_assert(!intersects_simple);
+
+        std::cout << "  Add facet to border, angle: " << max_facet_cos_angle << std::endl;
+
+        Triangle_3 t(max_facet_cos_angle_edge->prev()->vertex()->point(),
+                     max_facet_cos_angle_edge->vertex()->point(),
+                     max_facet_cos_angle_edge->next()->vertex()->point());
+
+        std::cout << "Candidate: Triangle " << t[0] << ", " << t[1] << ", " << t[2] << std::endl;
+        const bool intersects_simple = facets_intersect<Polyhedron>(max_facet_cos_angle_edge->prev()->vertex(),
+                                                                    max_facet_cos_angle_edge->vertex(),
+                                                                    max_facet_cos_angle_edge->next()->vertex()) ||
+                                       facets_intersect<Polyhedron>(max_facet_cos_angle_edge->vertex(),
+                                                                    max_facet_cos_angle_edge->next()->vertex(),
+                                                                    max_facet_cos_angle_edge->prev()->vertex()) ||
+                                       facets_intersect<Polyhedron>(max_facet_cos_angle_edge->next()->vertex(),
+                                                                    max_facet_cos_angle_edge->prev()->vertex(),
+                                                                    max_facet_cos_angle_edge->vertex());
+
+
+        // Set h to a halfedge not affected by the ear clipping to ensure h is still
+        // a border halfedge in the next iteration
+        h = max_facet_cos_angle_edge->next()->next();
+
+        print_triangle<Polyhedron>(max_facet_cos_angle_edge);
+        dolfin_assert(max_facet_cos_angle_edge->prev()->is_border());
+        dolfin_assert(max_facet_cos_angle_edge->next()->is_border());
+        P.add_facet_to_border(max_facet_cos_angle_edge->prev(), max_facet_cos_angle_edge->next());
+
+        std::vector<std::pair<Facet_handle, Facet_handle> > intersections;
+        // CGAL::self_intersect<Polyhedron_traits>(P, std::back_inserter(intersections));
+
+        if (intersections.size() > 0)
+        {
+          std::cout << "Self intersects (" << intersections.size() << "), remove common vertex" << std::endl;
+          list_self_intersections(P);
+          
+          dolfin_assert(intersects_simple);
+          dolfin_assert(false);
+
+          for (auto iit = intersections.begin(); iit != intersections.end(); iit++)
+          {
+            Vertex_handle v = get_common_vertex<Polyhedron>(iit->first, iit->second);
+
+            if (v == Vertex_handle())
+              continue;
+
+            // Ensure h is not one of the halfedges that will be removed
+            if (h->vertex() == v)
+              h = h->next();
+
+            if (h->prev()->vertex() == v)
+              h = h->next();
+
+            std::cout << "Removing vertex: " << v->point() << std::endl;
+            remove_vertex<Polyhedron>(P, v);
+            break;
+          }
+        }
+        else
+        {
+          dolfin_assert(!intersects_simple);
+        }
       }
-      
     }
 
     dolfin_assert(h->next()->next()->next() == h);
@@ -375,15 +434,18 @@ class PolyhedronUtils
   template<typename Polyhedron>
   static void close_holes(Polyhedron& P)
   {
+    typedef typename Polyhedron::Traits Kernel;
     std::cout << "Closing holes" << std::endl;
     std::cout << "Min vertex degree: " << min_vertex_degree(P) << std::endl;
     P.normalize_border();
 
     while (!P.is_closed())
     {
-      P.normalize_border();
       close_hole(P, P.border_halfedges_begin()->opposite());
       dolfin_assert(P.is_pure_triangle());
+      const bool self_intersects = CGAL::self_intersect<Kernel, Polyhedron>(P);
+      dolfin_assert(!self_intersects);
+      P.normalize_border();
     }
 
     dolfin_assert(P.is_closed());
