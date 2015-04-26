@@ -193,6 +193,8 @@ namespace mshr
     // @brief Read only one connected_component. Only relevant if repair==true
     bool single_connected_component;
 
+    int sharp_features_filter;
+    
     /// @brief First facet, when reading only one connect component.
     std::size_t first_facet;
   };

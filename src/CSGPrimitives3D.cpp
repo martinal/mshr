@@ -174,7 +174,8 @@ Surface3D::Surface3D(std::string filename)
   degenerate_tolerance(1e-12), 
   repair(false),
   single_connected_component(false),
-  first_facet(0)
+  first_facet(0),
+  sharp_features_filter(-1) 
 {
   // Do nothing
 }

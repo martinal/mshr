@@ -21,7 +21,7 @@
 #include <mshr/CSGPrimitives3D.h>
 #include <mshr/STLFileReader.h>
 #include <mshr/VTPFileReader.h>
-#include <mshr/PLYFileReader.h>
+//#include <mshr/PLYFileReader.h>
 #include <mshr/SurfaceConsistency.h>
 
 #include "meshclean.h"
@@ -588,7 +588,7 @@ void make_surface3D(const Surface3D* s, Exact_Polyhedron_3& P)
     else if (fpath.extension() == ".ply")
     {
       // TODO: Only if vtk is installed
-      PLYFileReader::read(s->_filename, vertices, facets);
+      //PLYFileReader::read(s->_filename, vertices, facets);
     }
     else
     {
@@ -665,6 +665,11 @@ void make_surface3D(const Surface3D* s, Exact_Polyhedron_3& P)
   // remove self-intersecting facets
   if (s->repair)
   {
+    if (s->sharp_features_filter >= 0)
+    {
+      tanganyika::PolyhedronUtils::filter_sharp_features(P, s->sharp_features_filter, DOLFIN_PI/6.0);
+    }
+
     tanganyika::PolyhedronUtils::remove_self_intersections(P);
     tanganyika::PolyhedronUtils::close_holes(P);
   }
