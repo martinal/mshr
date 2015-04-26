@@ -1,4 +1,4 @@
-// Copyright (C) 2012 Benjamin Kehlet
+// Copyright (C) 2012-2015 Benjamin Kehlet
 //
 // This file is part of mshr.
 //
@@ -31,9 +31,6 @@ namespace mshr
   // Forward declaration
   class CSGGeometry;
 
-  /// Mesh generator for Constructive Solid Geometry (CSG)
-  /// utilizing CGALs boolean operation on Nef_polyhedrons.
-
   class TetgenMeshGenerator3D : public dolfin::Variable
   {
   public :
@@ -50,7 +47,8 @@ namespace mshr
       p.add("mesh_resolution", 64.0);
 
       p.add("disable_quality_improvement", false);
-      p.add("max_radius_edge_ratio", 2.0);
+      p.add("preserve_surface", false);
+      p.add("max_radius_edge_ratio", 2.);
       p.add("min_dihedral_angle", 12.);
 
       // If set to a positive value, this will override "mesh_resolution"

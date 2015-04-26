@@ -201,6 +201,7 @@ void TetgenMeshGenerator3D::generate(std::shared_ptr<const CSGCGALDomain3D> doma
 
   // set tetgen parameters
   std::stringstream tetgenparams;
+  tetgenparams << std::fixed << std::setprecision(16);
 
   // tetrahedralize a plc
   tetgenparams << "p";
@@ -208,9 +209,9 @@ void TetgenMeshGenerator3D::generate(std::shared_ptr<const CSGCGALDomain3D> doma
   if (!parameters["disable_quality_improvement"])
   {
     // set quality constraints
-    tetgenparams << "q"
-                 << double(parameters["max_radius_edge_ratio"]) << "/"
-                 << double(parameters["min_dihedral_angle"]);
+    const double ratio = parameters["max_radius_edge_ratio"];
+    const double angle = parameters["min_dihedral_angle"];
+    tetgenparams << "q" << ratio << "/" << angle;
 
     tetgenparams << "a";
     if (double(parameters["max_tet_volume"]) > 0)
@@ -226,6 +227,11 @@ void TetgenMeshGenerator3D::generate(std::shared_ptr<const CSGCGALDomain3D> doma
       const double r = bounding_sphere_radius(vertices);
       const double cell_size = r/static_cast<double>(resolution)*2.0;
       tetgenparams << cell_size;
+    }
+
+    if (parameters["preserve_surface"])
+    {
+      tetgenparams << "Y";
     }
   }
 
