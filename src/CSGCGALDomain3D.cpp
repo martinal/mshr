@@ -265,7 +265,7 @@ void make_tetrahedron(const Tetrahedron* b, Exact_Polyhedron_3& P)
                      Exact_Point_3(b->d.x(), b->d.y(), b->d.z()));
 }
 //-----------------------------------------------------------------------------
-// Return some vector orthogonal to a
+// Return some unit vector orthogonal to a
 dolfin::Point generate_orthogonal(const dolfin::Point& a)
 {
   const dolfin::Point b(0, 1, 0);
