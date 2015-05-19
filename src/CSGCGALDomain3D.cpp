@@ -273,7 +273,8 @@ dolfin::Point generate_orthogonal(const dolfin::Point& a)
 
   // Find a vector not parallel to a.
   const dolfin::Point d = (fabs(a.dot(b)) < fabs(a.dot(c))) ? b : c;
-  return a.cross(d);
+  const dolfin::Point orthogonal = a.cross(d);
+  return orthogonal/orthogonal.norm();
 }
 //-----------------------------------------------------------------------------
 class Build_cylinder : public CGAL::Modifier_base<Exact_HalfedgeDS>
