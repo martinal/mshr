@@ -286,6 +286,7 @@ class Build_cylinder : public CGAL::Modifier_base<Exact_HalfedgeDS>
   {
     const dolfin::Point axis = (_cylinder->_top - _cylinder->_bottom)/(_cylinder->_top - _cylinder->_bottom).norm();
     dolfin::Point initial = generate_orthogonal(axis);
+    dolfin_assert(dolfin::near(initial.norm(), 1.0));
 
     CGAL::Polyhedron_incremental_builder_3<Exact_HalfedgeDS> builder(hds, true);
 
