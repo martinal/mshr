@@ -34,14 +34,17 @@ namespace mshr
     }
 
     Sphere s(dolfin::Point(0,0,0), 1.0, resolution);
+    std::shared_ptr<CSGCGALDomain3D> polyhedral_domain(new CSGCGALDomain3D(s));
 
     TetgenMeshGenerator3D generator;
-    const double max_volume = 1.0/std::pow(3.0, resolution);
-    generator.parameters["max_tet_volume"] = max_volume;
-    generator.parameters["max_radius_edge_ratio"] = 2.0;
-    generator.parameters["min_dihedral_angle"] = 0.0;
+    const double facet_area = 4.*DOLFIN_PI/polyhedral_domain->num_facets();
+    // compute edge length assuming perfect regular tetrahedrons
+    const double edge_length = 1.51967*std::sqrt(facet_area);
+    const double max_cell_volume = std::sqrt(2.)/12.*edge_length*edge_length*edge_length;
+    generator.parameters["max_tet_volume"] = max_cell_volume;
+    generator.parameters["preserve_surface"] = true;
 
-    generator.generate(s, *this);
+    generator.generate(polyhedral_domain, *this);
 
     // Broadcast mesh according to parallel policy
     if (dolfin::MPI::is_broadcaster(this->mpi_comm()))

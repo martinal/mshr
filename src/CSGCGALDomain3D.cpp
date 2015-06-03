@@ -265,7 +265,7 @@ void make_tetrahedron(const Tetrahedron* b, Exact_Polyhedron_3& P)
                      Exact_Point_3(b->d.x(), b->d.y(), b->d.z()));
 }
 //-----------------------------------------------------------------------------
-// Return some vector orthogonal to a
+// Return some unit vector orthogonal to a
 dolfin::Point generate_orthogonal(const dolfin::Point& a)
 {
   const dolfin::Point b(0, 1, 0);
@@ -273,7 +273,8 @@ dolfin::Point generate_orthogonal(const dolfin::Point& a)
 
   // Find a vector not parallel to a.
   const dolfin::Point d = (fabs(a.dot(b)) < fabs(a.dot(c))) ? b : c;
-  return a.cross(d);
+  const dolfin::Point orthogonal = a.cross(d);
+  return orthogonal/orthogonal.norm();
 }
 //-----------------------------------------------------------------------------
 class Build_cylinder : public CGAL::Modifier_base<Exact_HalfedgeDS>
@@ -285,6 +286,7 @@ class Build_cylinder : public CGAL::Modifier_base<Exact_HalfedgeDS>
   {
     const dolfin::Point axis = (_cylinder->_top - _cylinder->_bottom)/(_cylinder->_top - _cylinder->_bottom).norm();
     dolfin::Point initial = generate_orthogonal(axis);
+    dolfin_assert(dolfin::near(initial.norm(), 1.0));
 
     CGAL::Polyhedron_incremental_builder_3<Exact_HalfedgeDS> builder(hds, true);
 

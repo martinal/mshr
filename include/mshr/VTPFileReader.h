@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Benjamin Kehlet
+// Copyright (C) 2014-2015 Benjamin Kehlet
 //
 // This file is part of mshr.
 //
@@ -34,8 +34,8 @@ public:
   /// @param vertices A vector of points to be read into
   /// @param facets A vector of facets given as indices to the vertex array.
   static void read(const std::string filename, 
-                   std::vector<std::array<double, 3> > vertices,
-                   std::vector<std::array<std::size_t, 3> > facets);
+                   std::vector<std::array<double, 3> >& vertices,
+                   std::vector<std::vector<std::size_t> >& facets);
 };
 
 }
