@@ -601,31 +601,44 @@ void make_surface3D(const Surface3D* s, Exact_Polyhedron_3& P)
 
     log(dolfin::TRACE, "Done reading file");
 
-    //tanganyika::closest_vertices(vertices);
+
+    // std::pair<std::unique_ptr<std::vector<std::array<double, 3> > >,
+    //           std::unique_ptr<std::vector<std::array<std::size_t, 3> > > > filtered =
+    //   SurfaceConsistency::merge_close_vertices(facets, vertices);
 
     std::set<std::size_t> skip;
-    //std::vector<std::size_t> start_facets = { 0, 70000 };
-    std::size_t start_facet = s->first_facet;
-    std::cout << "Starting facet: " << start_facet << std::endl;
 
-    SurfaceConsistency::filterFacets(facets, 
-                                     vertices, 
-                                     start_facet,
-                                     skip);
+    log(dolfin::TRACE, "Checking connectivity");
+    std::set<std::size_t> duplicating;
+    SurfaceConsistency::checkConnectivity(facets, duplicating, false);
+    log(dolfin::TRACE, "%u facets filtered out", duplicating.size());
 
-    std::vector<std::array<std::size_t, 3> > filtered_facets;
-    filtered_facets.reserve(facets.size()-skip.size());
-    for (std::size_t i = 0; i < facets.size(); i++)
+    SurfaceConsistency::orient_component(facets, 0);
+
+    skip.insert(duplicating.begin(), duplicating.end());
+
+    //tanganyika::closest_vertices(vertices);
+
+    if (s->repair)
     {
-      if (skip.count(i) == 0)
-        filtered_facets.push_back(facets[i]);
+      log(dolfin::TRACE, "Keep only connected component");
+      std::size_t start_facet = s->first_facet;
+      std::cout << "Starting facet: " << start_facet << std::endl;
+
+      SurfaceConsistency::filterFacets(facets, 
+                                       vertices, 
+                                       start_facet,
+                                       skip);
+
+      std::vector<std::array<std::size_t, 3> > filtered_facets;
+      filtered_facets.reserve(facets.size()-skip.size());
+      for (std::size_t i = 0; i < facets.size(); i++)
+      {
+        if (skip.count(i) == 0)
+          filtered_facets.push_back(facets[i]);
+      }
     }
 
-    // std::set<std::size_t> duplicating;
-    // SurfaceConsistency::checkConnectivity(filtered_facets, duplicating, false);
-    // skip.insert(duplicating.begin(), duplicating.end());
-
-    // log(dolfin::TRACE, "Done checking connectivity");
 
     // std::cout << "Duplicating: " << duplicating.size() << std::endl;
     // for (auto it = duplicating.begin(); it != duplicating.end(); it++)
