@@ -34,7 +34,7 @@
 #include <deque>
 #include <fstream>
 
-#define TOLERANCE 1e-3
+#define TOLERANCE 1e-14
 
 /* typedef CGAL::Exact_predicates_exact_constructions_kernel _K; */
 
@@ -199,7 +199,8 @@ class PolyhedronUtils
   // Compute the fit quality of the vertices from h1 to h2 both included
   template<typename Polyhedron>
   static double get_plane_fit(typename Polyhedron::Halfedge_handle h1,
-                              typename Polyhedron::Halfedge_handle h2)
+                              typename Polyhedron::Halfedge_handle h2,
+                              CGAL::Exact_predicates_inexact_constructions_kernel::Plane_3* p=NULL)
   {
     typedef CGAL::Exact_predicates_inexact_constructions_kernel InexactKernel;
     typedef typename InexactKernel::Plane_3 InexactPlane_3;
@@ -233,7 +234,7 @@ class PolyhedronUtils
     InexactPlane_3 fitting_plane;
     const double fit_quality = CGAL::linear_least_squares_fitting_3(points.begin(),
                                                                     points.end(),
-                                                                    fitting_plane,
+                                                                    p == NULL ? fitting_plane : *p,
                                                                     CGAL::Dimension_tag<0>());
     // std::cout << "Fit quality: " << fit_quality << std::endl;
     return fit_quality;
@@ -244,25 +245,8 @@ class PolyhedronUtils
   /// Return the new added edges.
   /// If the triangulation is not possible (the boundary self intersects in this 2d plane) then
   /// the return vector is empty
-  /* template<typename Kernel> */
-  /* static inline typename Kernel::Point_2 axis_project(typename Kernel::Point_3 p, std::size_t axis) */
-  /* { */
-  /*   typedef typename Kernel::Point_2 Point_2; */
-
-  /*   dolfin_assert(axis < 3); */
-    
-  /*   if (axis == 0) */
-  /*     return Point_2(p[1], p[2]); */
-  /*   else if (axis == 1) */
-  /*     return Point_2(p[0], p[2]); */
-  /*   else */
-  /*     return Point_2(p[0], p[1]); */
-  /* } */
-  //-----------------------------------------------------------------------------
   template <typename Polyhedron>
-    static bool triangulate_polygon_3d(Polyhedron& P, typename Polyhedron::Halfedge_handle h)
-    //const std::vector<std::array<double, 3> >& vertices,
-    //std::vector<std::pair<std::size_t, std::size_t> >& new_edges)
+  static bool triangulate_polygon_3d(Polyhedron& P, typename Polyhedron::Halfedge_handle h)
   {
     std::cout << "Triangulating hole as 2d polygon" << std::endl;
     list_hole<Polyhedron>(h);
@@ -270,7 +254,7 @@ class PolyhedronUtils
     typedef typename Polyhedron::Halfedge_handle Halfedge_handle;
     typedef typename Polyhedron::Vertex_handle Vertex_handle;
     typedef typename Polyhedron::Traits::Point_3 Point_3;
-    //typedef typename Polyhedron::Traits::Segment_3 Segment_3;
+    typedef typename Polyhedron::Traits::Segment_3 Segment_3;
     
     //typedef CGAL::Simple_cartesian<double> InexactKernel;
     typedef CGAL::Exact_predicates_inexact_constructions_kernel InexactKernel;
@@ -279,6 +263,7 @@ class PolyhedronUtils
     // typedef typename SimpleCartesianKernel::Vector_3 InexactVector_3;
     typedef typename InexactKernel::Point_2 InexactPoint_2;
     typedef typename InexactKernel::Segment_2 InexactSegment_2;
+    typedef typename InexactKernel::Segment_3 InexactSegment_3;
 
     typedef CGAL::Triangulation_vertex_base_with_info_2<Vertex_handle, InexactKernel> Vb;
     typedef CGAL::Constrained_triangulation_face_base_2<InexactKernel> Fb;
@@ -302,10 +287,11 @@ class PolyhedronUtils
         current = current->next();
       } while (current != h);
 
-      /* fit_quality = */ CGAL::linear_least_squares_fitting_3(boundary.begin(),
-                                                               boundary.end(),
-                                                               fitting_plane,
-                                                               CGAL::Dimension_tag<0>());
+      const double fit_quality = CGAL::linear_least_squares_fitting_3(boundary.begin(),
+                                                                      boundary.end(),
+                                                                      fitting_plane,
+                                                                      CGAL::Dimension_tag<0>());
+      std::cout << "Plane quality: " << (1-fit_quality) << std::endl;
     }
 
     CDT cdt;
@@ -322,6 +308,7 @@ class PolyhedronUtils
       const InexactPoint_2 p_2d = fitting_plane.to_2d(InexactPoint_3(CGAL::to_double(p[0]),
                                                                      CGAL::to_double(p[1]), 
                                                                      CGAL::to_double(p[2])));
+      
       std::cout << " " << p_2d << ", ";
       v.push_back(cdt.insert(p_2d));
       v.back()->info() = current->vertex();
@@ -335,20 +322,26 @@ class PolyhedronUtils
 
     // Check if any of the edges intersect (before actually adding the
     // constrained edges to the triangulation
-    /* for (std::size_t i = 0; i < v.size()-1; i++) */
-    /* { */
-    /*   InexactSegment_2 s(v[i]->point(), v[i+1]->point()); */
-    /*   if (s.squared_length() < TOLERANCE) */
-    /*     return false; */
+    for (std::size_t i = 0; i < v.size()-1; i++)
+    {
+      const Point_3& a = v[i]->info()->point(), b = v[+1]->info()->point();
+      const InexactSegment_2 s(v[i]->point(), v[i+1]->point());
+      const Segment_3 original(a, b);
+
+      const InexactSegment_3 s2(fitting_plane.projection(InexactPoint_3(CGAL::to_double(a[0]), CGAL::to_double(a[1]), CGAL::to_double(a[2]))),
+                                fitting_plane.projection(InexactPoint_3(CGAL::to_double(b[0]), CGAL::to_double(b[1]), CGAL::to_double(b[2]))));
+      std::cout << "Length (squared): " << s.squared_length() << ", projected: " << s2.squared_length() << ", original: " << original.squared_length() << ", relative: " << CGAL::to_double(s.squared_length()/original.squared_length()) << ", relative (proj): " << CGAL::to_double(s2.squared_length()/original.squared_length()) << std::endl;
+      if (s.squared_length() < TOLERANCE)
+        return false;
 
     /*   // std::cout << "Outer " << i << ": " << s << ", length: " << s.squared_length() << std::endl; */
 
-    /*   for (std::size_t j = i+1; j < v.size(); j++) */
-    /*   { */
-    /*     InexactSegment_2 s2(v[j]->point(), v[(j+1)%v.size()]->point()); */
-    /*     // std::cout << "  Inner " << j << ": " << s2 << ", length: " << s2.squared_length() << std::endl; */
-    /*     if (s2.squared_length() < TOLERANCE) */
-    /*       return false; */
+      for (std::size_t j = i+1; j < v.size(); j++)
+      {
+        InexactSegment_2 s2(v[j]->point(), v[(j+1)%v.size()]->point());
+        // std::cout << "  Inner " << j << ": " << s2 << ", length: " << s2.squared_length() << std::endl;
+        if (s2.squared_length() < TOLERANCE)
+          return false;
 
     /*     // If neighbor segments, check angle */
     /*     if (j == i+1 || (j+1)%v.size() == i) */
@@ -370,31 +363,41 @@ class PolyhedronUtils
 
     /*     // std::cout << "  Intersecting " << j << ": Segment " << s2 << std::endl; */
 
-    /*     auto intersection = CGAL::intersection(s, s2); */
+        const auto intersection = CGAL::intersection(s, s2);
 
-    /*     if (intersection) */
-    /*     { */
-    /*       if (const InexactPoint_2* intersection_point = boost::get<InexactPoint_2>(&*intersection)) */
-    /*       { */
-    /*         // std::cout << "Intersects in non-endpoint" << std::endl; */
-    /*         return false; */
-    /*       } */
-    /*       else if (const InexactSegment_2* intersection_segment = boost::get<InexactSegment_2>(&*intersection)) */
-    /*       { */
-    /*         // std::cout << "Intersects in segment" << std::endl; */
-    /*         return false; */
-    /*       } */
-    /*       else if (CGAL::squared_distance(s, s2) < TOLERANCE) */
-    /*       { */
-    /*         return false; */
-    /*       } */
-    /*     } // end if intersection */
-    /*   } // end inner loop */
-    /* } // end outer loop */
+        if (intersection)
+        {
+          if (const InexactPoint_2* intersection_point = boost::get<InexactPoint_2>(&*intersection))
+          {
+            if (j != i+1 && i != (j+1)%v.size())
+            {
+              std::cout << "Non-neighbors (" << i << ", " << j << ")/" << v.size() << " intersect in single point" << std::endl;
+              
+              return false;
+            }
+          }
+          else if (const InexactSegment_2* intersection_segment = boost::get<InexactSegment_2>(&*intersection))
+          {
+            std::cout << "Intersects in segment" << std::endl;
+            return false;
+          }
+          else
+          {
+            dolfin_assert(false);
+            return false;
+          }
+        } // end if intersection
+      } // end inner loop
+    } // end outer loop
 
     std::cout << "Triangulate in 2D" << std::endl;
+
+    // DEBUG!!!
+    if (v.size() == 145)
+      return false;
     
-    // No edges intersect, so we can insert then as constraints to the triangulation
+    // No edges intersect, so we can safely insert then as constraints to the
+    // triangulation
     for (std::size_t i = 0; i < v.size(); i++)
     {
       cdt.insert_constraint(v[i], v[(i+1)%v.size()]);
@@ -402,7 +405,7 @@ class PolyhedronUtils
 
     std::cout << "Done triangulating" << std::endl;
     std::cout << "Num vertices: " << cdt.number_of_vertices() << std::endl;
-    std::set<typename CDT::Edge> edges_inside;
+    std::set<std::pair<Vertex_handle, Vertex_handle> > edges_inside;
     {
       // Find an edge inside the polygon, starting from the infinite vertex
       typename CDT::Face_handle inside;
@@ -480,9 +483,18 @@ class PolyhedronUtils
                 << " "  << vertex_map[current->vertex(1)]
                 << " "  << vertex_map[current->vertex(2)] << "\n";
 
-        edges_inside.insert(typename CDT::Edge(current, 0));
-        edges_inside.insert(typename CDT::Edge(current, 1));
-        edges_inside.insert(typename CDT::Edge(current, 2));
+        for (std::size_t i = 0; i < 3; i++)
+        {
+          typename CDT::Edge e(current, i);
+          if (!cdt.is_constrained(e))
+          {
+            const Vertex_handle a = e.first->vertex(cdt.cw(e.second))->info();
+            const Vertex_handle b = e.first->vertex(cdt.ccw(e.second))->info();
+
+            if (edges_inside.count(std::make_pair(b, a)) == 0)
+              edges_inside.insert(std::make_pair(a,b));
+          }
+        }
       }
     }
     
@@ -495,11 +507,9 @@ class PolyhedronUtils
     std::size_t count = 0;
     for (auto eit = edges_inside.begin(); eit != edges_inside.end(); eit++)
     {
-        const Vertex_handle a = eit->first->vertex(cdt.cw(eit->second))->info();
-        const Vertex_handle b = eit->first->vertex(cdt.ccw(eit->second))->info();
-        std::cout << "Adding edge: Segment " << a->point() << ", " << b->point() << std::endl;
+        std::cout << "Adding edge: Segment " << eit->first->point() << ", " << eit->second->point() << std::endl;
         count++;
-        insert_edge(P, a, b);
+        insert_edge(P, eit->first, eit->second);
     }
 
     std::cout << "Added " << count << " edges by triangulation" << std::endl;
@@ -934,14 +944,20 @@ class PolyhedronUtils
   {
     typedef typename Polyhedron::Traits::Triangle_3 Triangle_3;
     typedef typename Polyhedron::Traits::Vector_3 Vector_3;
-    
+    typedef CGAL::Exact_predicates_inexact_constructions_kernel InexactKernel;
+    typedef typename InexactKernel::Plane_3 InexactPlane_3;
+
+
+    const double distance_to_plane_weight = 1.0;
     const double planarity_weight = 1.0;
     const double dihedral_weight  = 1.0;
     const double ear_angle_weight = 1.0;
 
     // Compute the planarity of the points excluding the current point
+    InexactPlane_3 p;
     const double plane_fit_quality = get_plane_fit<Polyhedron>(h->next(),
-                                                               h->prev());
+                                                               h->prev(),
+                                                               &p);
     // Compute the maximum of the dihedral angle to the neighbors
     const Triangle_3 candidate_triangle(h->prev()->vertex()->point(),
                                         h->vertex()->point(),
@@ -958,6 +974,7 @@ class PolyhedronUtils
                       h->next()->vertex()->point());
 
     const double cos_ear_angle = (CGAL::to_double((v1*v2)/std::sqrt(CGAL::to_double(v1.squared_length()*v2.squared_length())))+1)/2.0;
+    const double ear_angle_quality = cos_ear_angle;
 
     std::cout << "Triangle " << candidate_triangle[0]
               << ", " << candidate_triangle[1] 
@@ -965,13 +982,13 @@ class PolyhedronUtils
 
     std::cout << "Evaluate: planarity: " << (plane_fit_quality/plane_fit)
               << ", dihedral: " << cos_dihedral
-              << ", ear angle: " << (1-std::exp(-ear_angle_weight*cos_ear_angle)) << std::endl;
+              << ", ear angle: " << ear_angle_quality << std::endl;
 
-    //return planarity_weight*plane_fit_quality + 
+    return planarity_weight*plane_fit_quality + dihedral_weight*cos_dihedral + ear_angle_quality*ear_angle_weight;
     
-    return planarity_weight*plane_fit_quality/plane_fit +
-      dihedral_weight*cos_dihedral +
-      (1-std::exp(-ear_angle_weight*cos_ear_angle))*cos_dihedral;
+    /* return planarity_weight*plane_fit_quality/plane_fit + */
+    /*   dihedral_weight*cos_dihedral + */
+    /*   (1-std::exp(-ear_angle_weight*cos_ear_angle))*cos_dihedral; */
   }
   //-----------------------------------------------------------------------------
   template<typename Polyhedron>
@@ -1189,12 +1206,15 @@ class PolyhedronUtils
 
     while (!P.is_closed())
     {
-      // close_hole_advancing_front(P, P.border_halfedges_begin()->opposite());
-      // close_hole3(P, P.border_halfedges_begin()->opposite());
-      if (!triangulate_polygon_3d(P, P.border_halfedges_begin()->opposite()))
       {
-        std::cout << "Couldn't triangulate by 2d projection" << std::endl;
+        std::ofstream outfile("not-closed.off");
+        outfile << P;
       }
+
+      // close_hole_advancing_front(P, P.border_halfedges_begin()->opposite());
+      close_hole3(P, P.border_halfedges_begin()->opposite());
+      //const bool success = triangulate_polygon_3d(P, P.border_halfedges_begin()->opposite());
+
       dolfin_assert(P.is_pure_triangle());
 
       {
@@ -1202,13 +1222,23 @@ class PolyhedronUtils
         outfile << P;
       }
 
-      const bool self_intersects = CGAL::self_intersect<Kernel, Polyhedron>(P);
-      dolfin_assert(!self_intersects);
-      P.normalize_border();
-
-      {int tmp; std::cout << "Closed hole. Pausing..."; std::cin >> tmp;}
-
+      /* if (!success) */
+      /* { */
+      /*   std::cout << "Couldn't triangulate by 2d projection" << std::endl; */
+      /*   exit(1); */
+                
+      /* } */
       
+      P.normalize_border();
+      std::cout << "Closed hole" << std::endl;
+      //const bool self_intersects = CGAL::self_intersect<Kernel, Polyhedron>(P);
+      /* if (self_intersects) */
+      /* { */
+      /*   list_self_intersections(P); */
+      /*   exit(1); */
+      /* } */
+      //dolfin_assert(!self_intersects);
+
     }
 
     dolfin_assert(P.is_closed());
