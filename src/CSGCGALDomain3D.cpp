@@ -594,7 +594,7 @@ void make_surface3D(const Surface3D* s, Exact_Polyhedron_3& P)
     }
     else
     {
-      dolfin::dolfin_error("PolyhedronUtils.cpp",
+      dolfin::dolfin_error("CSGCGALDomain3D.cpp",
                            "open file to read 3D surface",
                            "Unknown file type");
     }
@@ -609,34 +609,34 @@ void make_surface3D(const Surface3D* s, Exact_Polyhedron_3& P)
     std::set<std::size_t> skip;
 
     log(dolfin::TRACE, "Checking connectivity");
-    std::set<std::size_t> duplicating;
-    SurfaceConsistency::checkConnectivity(facets, duplicating, false);
-    log(dolfin::TRACE, "%u facets filtered out", duplicating.size());
-
-    SurfaceConsistency::orient_component(facets, 0);
-
-    skip.insert(duplicating.begin(), duplicating.end());
 
     //tanganyika::closest_vertices(vertices);
 
     if (s->repair)
-    {
+    {      
       log(dolfin::TRACE, "Keep only connected component");
+      SurfaceConsistency::orient_component(facets, 0);
       std::size_t start_facet = s->first_facet;
       std::cout << "Starting facet: " << start_facet << std::endl;
 
-      SurfaceConsistency::filterFacets(facets, 
-                                       vertices, 
-                                       start_facet,
-                                       skip);
+      std::set<std::size_t> duplicating;
+      SurfaceConsistency::checkConnectivity(facets, duplicating, false);
+      log(dolfin::TRACE, "%u facets filtered out", duplicating.size());
+      skip.insert(duplicating.begin(), duplicating.end());
 
-      std::vector<std::array<std::size_t, 3> > filtered_facets;
-      filtered_facets.reserve(facets.size()-skip.size());
-      for (std::size_t i = 0; i < facets.size(); i++)
-      {
-        if (skip.count(i) == 0)
-          filtered_facets.push_back(facets[i]);
-      }
+      
+      // SurfaceConsistency::filterFacets(facets, 
+                                       // vertices, 
+                                       // start_facet,
+                                       // skip);
+      
+      // std::vector<std::array<std::size_t, 3> > filtered_facets;
+      // filtered_facets.reserve(facets.size()-skip.size());
+      // for (std::size_t i = 0; i < facets.size(); i++)
+      // {
+      //   if (skip.count(i) == 0)
+      //     filtered_facets.push_back(facets[i]);
+      // }
     }
 
 
@@ -689,7 +689,7 @@ void make_surface3D(const Surface3D* s, Exact_Polyhedron_3& P)
     tanganyika::PolyhedronUtils::close_holes(P);
   }
 
-    tanganyika::PolyhedronUtils::list_self_intersections(P);
+  tanganyika::PolyhedronUtils::list_self_intersections(P);
 
   // if (s->degenerate_tolerance > 0)
   // {
@@ -1425,9 +1425,12 @@ bool CSGCGALDomain3D::is_insideout() const
   return points.size() % 2 != 0;
 }
 //-----------------------------------------------------------------------------
-bool CSGCGALDomain3D::is_selfintersecting() const
+bool CSGCGALDomain3D::is_selfintersecting(bool verbose) const
 {
-  return CGAL::self_intersect<Exact_Kernel, Exact_Polyhedron_3>(impl->p);
+  const bool selfintersects = CGAL::self_intersect<Exact_Kernel, Exact_Polyhedron_3>(impl->p);
+  if (selfintersects && verbose)
+    tanganyika::PolyhedronUtils::list_self_intersections(impl->p);
+  return selfintersects;
 }
 //-----------------------------------------------------------------------------
 std::size_t CSGCGALDomain3D::num_degenerate_facets(double threshold) const
@@ -1489,6 +1492,19 @@ double CSGCGALDomain3D::shortest_edge() const
   }
 
   return CGAL::to_double(shortest);
+}
+//-----------------------------------------------------------------------------
+std::size_t CSGCGALDomain3D::num_short_edges(double tolerance) const
+{
+  std::size_t count = 0;
+  for (Exact_Polyhedron_3::Edge_const_iterator it = impl->p.edges_begin(); it != impl->p.edges_end(); it++)
+  {
+    const Exact_Kernel::FT l = (it->vertex()->point() - it->opposite()->vertex()->point()).squared_length();
+    if (l < tolerance)
+      count++;
+  }
+
+  return count;
 }
 //-----------------------------------------------------------------------------
 std::string CSGCGALDomain3D::str(bool verbose) const

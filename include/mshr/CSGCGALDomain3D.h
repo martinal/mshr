@@ -78,8 +78,11 @@ class CSGCGALDomain3D : public dolfin::Variable
   /// @brief get length of shortest edge
   double shortest_edge() const;
 
+  /// @brief count edges with squared length shorter than tolerance
+  std::size_t num_short_edges(double tolerance) const;
+
   /// @brief Test if any facets intersects
-  bool is_selfintersecting() const;
+  bool is_selfintersecting(bool verbose=false) const;
 
   /// @brief Save polyhedron to off file
   /// @param filename Filename to write to
@@ -117,7 +120,7 @@ class CSGCGALDomain3D : public dolfin::Variable
   {
     dolfin::Parameters p("csg_cgal_domain_3d");
     p.add("remove_degenerate", true);
-    p.add("degenerate_tolerance", 1e-12);
+    p.add("degenerate_tolerance", 1e-10);
 
     return p;
   }
