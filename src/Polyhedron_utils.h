@@ -58,28 +58,6 @@ class PolyhedronUtils
 {
  public:
 
-  template<typename Polyhedron>
-  static void recursive_remove(std::set<typename Polyhedron::Vertex_const_handle>& s,
-                               typename Polyhedron::Vertex_const_handle h)
-  {
-    typedef typename Polyhedron::Halfedge_around_vertex_const_circulator HV_const_circulator;
-    typedef typename Polyhedron::Vertex_const_handle Vertex_const_handle;
-    typedef Polyhedron Polyhedron_type;
-
-    const HV_const_circulator start = h->vertex_begin();
-    HV_const_circulator current = start;
-    do
-    {
-      Vertex_const_handle current_vertex = current->opposite()->vertex();
-      assert(current_vertex != h);
-      if (s.count(current_vertex))
-      {
-        s.erase(current_vertex);
-        recursive_remove<Polyhedron_type>(s, current_vertex);
-      }
-      current++;
-    } while (current != start);
-  }
   //-----------------------------------------------------------------------------
   // Scans the vertices of the polyhedron the polyhedron and returns a
   // Polyhedron::Vertex_const_handle for each disconnected component.
@@ -87,6 +65,7 @@ class PolyhedronUtils
   static void get_disconnected_components(const Polyhedron& p, OutputIterator it)
   {
     //typedef Polyhedron Polyhedron_t;
+    typedef typename Polyhedron::Halfedge_around_vertex_const_circulator HV_const_circulator;
     typedef typename Polyhedron::Vertex_const_handle Vertex_const_handle;
 
     // store all vertices in a set
@@ -113,22 +92,18 @@ class PolyhedronUtils
         Vertex_const_handle current = queue.front();
         queue.pop_front();
 
-        v.erase(current);
-
-        const HV_const_circulator start = h->vertex_begin();
-        HV_const_circulator current = start;
-        do
+        if (v.count(current) > 0)
         {
-          Vertex_const_handle current_vertex = current->opposite()->vertex();
-          assert(current_vertex != h);
-          if (s.count(current_vertex))
-          {
-            s.erase(current_vertex);
-          }
-          current++;
-        } while (current != start);
+          v.erase(current);
 
-        
+          const HV_const_circulator h_start = current->vertex_begin();
+          HV_const_circulator h_current = h_start;
+          do
+          {
+            queue.push_back(h_current->opposite()->vertex());
+            h_current++;
+          } while (h_current != h_start);
+        }
       }
     }
   }
@@ -971,7 +946,7 @@ class PolyhedronUtils
     typedef typename InexactKernel::Plane_3 InexactPlane_3;
 
 
-    const double distance_to_plane_weight = 1.0;
+    // const double distance_to_plane_weight = 1.0;
     const double planarity_weight = 1.0;
     const double dihedral_weight  = 1.0;
     const double ear_angle_weight = 1.0;
@@ -1222,7 +1197,7 @@ class PolyhedronUtils
   template<typename Polyhedron>
   static void close_holes(Polyhedron& P)
   {
-    typedef typename Polyhedron::Traits Kernel;
+    //typedef typename Polyhedron::Traits Kernel;
     std::cout << "Closing holes" << std::endl;
     std::cout << "Min vertex degree: " << min_vertex_degree(P) << std::endl;
     P.normalize_border();
