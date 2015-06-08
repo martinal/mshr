@@ -116,7 +116,7 @@ void TetgenMeshGenerator3D::generate(const CSGGeometry& geometry, dolfin::Mesh& 
   std::shared_ptr<CSGCGALDomain3D> exact_domain( new CSGCGALDomain3D(geometry) );
   exact_domain->ensure_meshing_preconditions();
 
-  generate(std::move(exact_domain), mesh);
+  generate(exact_domain, mesh);
 }
 
 //-----------------------------------------------------------------------------

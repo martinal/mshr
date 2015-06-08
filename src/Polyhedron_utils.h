@@ -58,9 +58,9 @@ class PolyhedronUtils
 {
  public:
 
-    template<typename Polyhedron>
-    static void recursive_remove(std::set<typename Polyhedron::Vertex_const_handle>& s,
-                          typename Polyhedron::Vertex_const_handle h)
+  template<typename Polyhedron>
+  static void recursive_remove(std::set<typename Polyhedron::Vertex_const_handle>& s,
+                               typename Polyhedron::Vertex_const_handle h)
   {
     typedef typename Polyhedron::Halfedge_around_vertex_const_circulator HV_const_circulator;
     typedef typename Polyhedron::Vertex_const_handle Vertex_const_handle;
@@ -86,12 +86,12 @@ class PolyhedronUtils
   template <typename Polyhedron, typename OutputIterator>
   static void get_disconnected_components(const Polyhedron& p, OutputIterator it)
   {
-    typedef Polyhedron Polyhedron_t;
-    typedef typename Polyhedron_t::Vertex_const_handle Vertex_const_handle;
+    //typedef Polyhedron Polyhedron_t;
+    typedef typename Polyhedron::Vertex_const_handle Vertex_const_handle;
 
     // store all vertices in a set
     std::set<Vertex_const_handle> v;
-    for (typename Polyhedron_t::Vertex_const_iterator vit = p.vertices_begin();
+    for (typename Polyhedron::Vertex_const_iterator vit = p.vertices_begin();
          vit != p.vertices_end(); vit++)
       v.insert(vit);
 
@@ -106,7 +106,30 @@ class PolyhedronUtils
       it++;
 
       // Remove rest of component
-      recursive_remove<Polyhedron_t>(v, start);
+      std::deque<Vertex_const_handle> queue;
+      queue.push_back(start);
+      while (!queue.empty())
+      {
+        Vertex_const_handle current = queue.front();
+        queue.pop_front();
+
+        v.erase(current);
+
+        const HV_const_circulator start = h->vertex_begin();
+        HV_const_circulator current = start;
+        do
+        {
+          Vertex_const_handle current_vertex = current->opposite()->vertex();
+          assert(current_vertex != h);
+          if (s.count(current_vertex))
+          {
+            s.erase(current_vertex);
+          }
+          current++;
+        } while (current != start);
+
+        
+      }
     }
   }
   //-----------------------------------------------------------------------------
@@ -1684,7 +1707,7 @@ class PolyhedronUtils
 
     for (auto iit = intersections.begin(); iit != intersections.end(); iit++)
     {
-      std::cout << "Intersection " << (facets_are_neighbors<Polyhedron>(iit->first, iit->second) ? "True" : "False") << std::endl;
+      std::cout << "Intersection (neigbors: " << (facets_are_neighbors<Polyhedron>(iit->first, iit->second) ? "Yes" : "No") << ")" << std::endl;
       print_triangle<Polyhedron>(iit->first->halfedge());
       print_triangle<Polyhedron>(iit->second->halfedge());
     }
