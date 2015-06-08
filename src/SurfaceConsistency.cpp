@@ -79,38 +79,35 @@ void SurfaceConsistency::checkConnectivity(std::vector<std::array<std::size_t, 3
                                            std::set<std::size_t>& duplicating,
                                            bool error)
 {
-  // Store all halfedges
+  log(dolfin::TRACE, "Checking connectivity");
+
+  // Store halfedges
   std::map<std::pair<std::size_t, std::size_t>, std::size_t> halfedges;
 
-  std::size_t facet_no = 0;
-  for (auto it = facets.begin(); it != facets.end(); ++it)
+  for (std::size_t facet_no = 0; facet_no < facets.size(); facet_no++)
   {
-    std::array<std::size_t, 3>& f = *it;
+    std::array<std::size_t, 3>& f = facets[facet_no];
     // Check for (topologically) degenerate facets
     if ( f[0] == f[1] || f[0] == f[2] || f[1] == f[2] )
       dolfin::dolfin_error("SurfaceConsistency.cpp",
                            "confirm surface connectivity",
-                           "Facet %d is degenerate", facet_no);
+                           "Facet %d is topologically degenerate", facet_no);
 
-    if (halfedges.count(std::make_pair(std::min(f[0], f[1]), std::max(f[0], f[1]))) > 1 ||
-        halfedges.count(std::make_pair(std::min(f[1], f[2]), std::max(f[1], f[2]))) > 1 ||
-        halfedges.count(std::make_pair(std::min(f[2], f[0]), std::max(f[2], f[0]))) > 1)
+    if (halfedges.count(std::make_pair(f[0], f[1])) > 0 ||
+        halfedges.count(std::make_pair(f[1], f[2])) > 0 ||
+        halfedges.count(std::make_pair(f[2], f[0])) > 0)
     {
       duplicating.insert(facet_no);
     }
     else
     {
-      auto e1 = std::make_pair(std::min(f[0], f[1]), std::max(f[0], f[1]));
-      if (halfedges.count(e1) > 0)
-        halfedges[e1] = 1;
-      else
-        halfedges[e1]++;
+      halfedges[std::make_pair(f[0], f[1])] = facet_no;
+      halfedges[std::make_pair(f[1], f[2])] = facet_no;
+      halfedges[std::make_pair(f[2], f[0])] = facet_no;
     }
-
-    facet_no++;
   }
 }
-
+//-----------------------------------------------------------------------------
 void SurfaceConsistency::filterFacets(const std::vector<std::array<std::size_t, 3> >& facets,
                                       const std::vector<std::array<double, 3> >& vertices,
                                       std::size_t start, std::set<std::size_t>& skip)
@@ -132,7 +129,6 @@ void SurfaceConsistency::filterFacets(const std::vector<std::array<std::size_t, 
     skip.insert(i);
   }
 
-  std::cout << "Size of skip: " << skip.size() << std::endl;
   const std::size_t global_max = skip.size();
 
   std::set<std::size_t> visited;
@@ -203,7 +199,7 @@ void SurfaceConsistency::filterFacets(const std::vector<std::array<std::size_t, 
     }
   }
 }
-
+//-----------------------------------------------------------------------------
 std::pair<std::unique_ptr<std::vector<std::array<double, 3> > >,
           std::unique_ptr<std::vector<std::array<std::size_t, 3> > > >
 SurfaceConsistency::merge_close_vertices(const std::vector<std::array<std::size_t, 3> >& facets,
@@ -236,10 +232,12 @@ SurfaceConsistency::merge_close_vertices(const std::vector<std::array<std::size_
 
   return std::make_pair(std::move(new_vertices), std::move(new_facets));
 }
-
+//-----------------------------------------------------------------------------
 void SurfaceConsistency::orient_component(std::vector<std::array<std::size_t, 3> >& facets,
                                           std::size_t start)
 {
+  log(dolfin::TRACE, "Checking facet orientation");
+
   // Map from edge (pair of vertices) to two triangles
   std::map<std::pair<std::size_t, std::size_t>, std::pair<std::size_t, std::size_t> > edge_map;
   for (std::size_t i = 0; i < facets.size(); i++)
@@ -303,6 +301,7 @@ void SurfaceConsistency::orient_component(std::vector<std::array<std::size_t, 3>
       }
     }
   }
+  log(dolfin::TRACE, "Flipped %u triangles", flipped);
 }
 }
 
