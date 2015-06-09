@@ -18,7 +18,7 @@
 #ifndef __MSHR_CSGCGAL_DOMAIN3D_H
 #define __MSHR_CSGCGAL_DOMAIN3D_H
 
-#include <mshr/CSGGeometry.h>
+#include <mshr/CSGPrimitives3D.h>
 #include <dolfin/geometry/Point.h>
 
 #include <memory>
@@ -45,7 +45,7 @@ class CSGCGALDomain3DQueryStructure
 /// This class represents a polyhedral meshing domain which implements boolean
 /// operations. It uses CGAL Polyhedron_3 as backend and utilizes CGAL
 //  Nef_polyhedron for boolean operations.
-class CSGCGALDomain3D : public dolfin::Variable
+class CSGCGALDomain3D : public CSGPrimitive3D
 {
  public:
   /// @brief Create empty polyhedron
@@ -56,6 +56,9 @@ class CSGCGALDomain3D : public dolfin::Variable
 
   /// @brief Destructor
   ~CSGCGALDomain3D();
+
+  Type getType() const
+  { return CSGGeometry::TriPolyhedron; }
 
   /// @brief Number of vertices in polyhedron
   std::size_t num_vertices() const;

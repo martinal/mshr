@@ -348,27 +348,4 @@ void CSGCGALMeshGenerator3D::generate(std::shared_ptr<const CSGCGALDomain3D> csg
   // Distribute the mesh (if in parallel)
   dolfin::MeshPartitioning::build_distributed_mesh(mesh);
 }
-//-----------------------------------------------------------------------------
-void CSGCGALMeshGenerator3D::generate(const CSGGeometry& geometry,
-                                      dolfin::Mesh& mesh) const
-{
-  std::shared_ptr<CSGCGALDomain3D> exact_domain( new CSGCGALDomain3D(geometry) );
-  exact_domain->ensure_meshing_preconditions();
-
-  // Use move semantics, so the callee can delete the object as early as possible
-  generate(std::move(exact_domain), mesh);
-}
-//-----------------------------------------------------------------------------
-void CSGCGALMeshGenerator3D::generate(std::shared_ptr<const CSGGeometry> geometry,
-                                      dolfin::Mesh& mesh) const
-{
-  std::shared_ptr<CSGCGALDomain3D> exact_domain( new CSGCGALDomain3D(*geometry) );
-  geometry.reset();
-  exact_domain->ensure_meshing_preconditions();
-
-  // Use move semantics, so the callee can delete the object as early as possible
-  generate(std::move(exact_domain), mesh);
-}
-//-----------------------------------------------------------------------------
-
 }
