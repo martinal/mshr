@@ -132,6 +132,10 @@ class CSGCGALDomain3D : public CSGPrimitive3D
   /// @param verbose The verbosity level
   std::string str(bool verbose) const;
 
+  /// @brief
+  static std::shared_ptr<CSGCGALDomain3D>
+    convex_hull(const CSGCGALDomain3D& c);
+
  private :
   std::unique_ptr<CSGCGALDomain3DImpl> impl;
 };

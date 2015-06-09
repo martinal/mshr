@@ -50,6 +50,7 @@
 #include <CGAL/boost/graph/graph_traits_Polyhedron_3.h>
 #include <CGAL/AABB_face_graph_triangle_primitive.h>
 
+#include <CGAL/convex_hull_3.h>
 
 #define BOOST_FILESYSTEM_NO_DEPRECATED
 #include <boost/filesystem.hpp>
@@ -1525,5 +1526,13 @@ std::string CSGCGALDomain3D::str(bool verbose) const
   }
 
   return ss.str();
+}
+//-----------------------------------------------------------------------------
+std::shared_ptr<CSGCGALDomain3D> CSGCGALDomain3D::convex_hull(const CSGCGALDomain3D& c)
+{
+  std::shared_ptr<CSGCGALDomain3D> res(new CSGCGALDomain3D);
+  CGAL::convex_hull_3(c.impl->p.points_begin(), c.impl->p.points_end(), res->impl->p);
+
+  return res;
 }
 } // end namespace mshr
