@@ -30,6 +30,7 @@
 #include <CGAL/Triangulation_vertex_base_with_info_2.h>
 #include <CGAL/Polyhedron_incremental_builder_3.h>
 #include <CGAL/convex_hull_3.h>
+#include <CGAL/corefinement_operations.h>
 
 #include <cmath>
 #include <deque>
@@ -245,7 +246,9 @@ class PolyhedronUtils
   /// If the triangulation is not possible (the boundary self intersects in this 2d plane) then
   /// the return vector is empty
   template <typename Polyhedron>
-  static bool triangulate_polygon_3d(Polyhedron& P, typename Polyhedron::Halfedge_handle h)
+    static bool triangulate_polygon_3d(Polyhedron& P,
+                                       typename Polyhedron::Halfedge_handle h,
+                                       bool check_for_intersections = true)
   {
     std::cout << "Triangulating hole as 2d polygon" << std::endl;
     list_hole<Polyhedron>(h);
@@ -290,7 +293,7 @@ class PolyhedronUtils
                                                                       boundary.end(),
                                                                       fitting_plane,
                                                                       CGAL::Dimension_tag<0>());
-      std::cout << "Plane quality: " << (1-fit_quality) << std::endl;
+      std::cout << "Plane quality: " << fit_quality << std::endl;
     }
 
     CDT cdt;
@@ -321,82 +324,80 @@ class PolyhedronUtils
 
     // Check if any of the edges intersect (before actually adding the
     // constrained edges to the triangulation
-    for (std::size_t i = 0; i < v.size()-1; i++)
+    if (check_for_intersections)
     {
-      const Point_3& a = v[i]->info()->point(), b = v[+1]->info()->point();
-      const InexactSegment_2 s(v[i]->point(), v[i+1]->point());
-      const Segment_3 original(a, b);
-
-      const InexactSegment_3 s2(fitting_plane.projection(InexactPoint_3(CGAL::to_double(a[0]), CGAL::to_double(a[1]), CGAL::to_double(a[2]))),
-                                fitting_plane.projection(InexactPoint_3(CGAL::to_double(b[0]), CGAL::to_double(b[1]), CGAL::to_double(b[2]))));
-      std::cout << "Length (squared): " << s.squared_length() << ", projected: " << s2.squared_length() << ", original: " << original.squared_length() << ", relative: " << CGAL::to_double(s.squared_length()/original.squared_length()) << ", relative (proj): " << CGAL::to_double(s2.squared_length()/original.squared_length()) << std::endl;
-      if (s.squared_length() < TOLERANCE)
-        return false;
-
-    /*   // std::cout << "Outer " << i << ": " << s << ", length: " << s.squared_length() << std::endl; */
-
-      for (std::size_t j = i+1; j < v.size(); j++)
+      for (std::size_t i = 0; i < v.size()-1; i++)
       {
-        InexactSegment_2 s2(v[j]->point(), v[(j+1)%v.size()]->point());
-        // std::cout << "  Inner " << j << ": " << s2 << ", length: " << s2.squared_length() << std::endl;
-        if (s2.squared_length() < TOLERANCE)
-          return false;
+        const Point_3& a = v[i]->info()->point(), b = v[+1]->info()->point();
+        const InexactSegment_2 s(v[i]->point(), v[i+1]->point());
+        const Segment_3 original(a, b);
 
-    /*     // If neighbor segments, check angle */
-    /*     if (j == i+1 || (j+1)%v.size() == i) */
-    /*     { */
+        const InexactSegment_3 s2(fitting_plane.projection(InexactPoint_3(CGAL::to_double(a[0]), CGAL::to_double(a[1]), CGAL::to_double(a[2]))),
+                                  fitting_plane.projection(InexactPoint_3(CGAL::to_double(b[0]), CGAL::to_double(b[1]), CGAL::to_double(b[2]))));
+        //std::cout << "Length (squared): " << s.squared_length() << ", projected: " << s2.squared_length() << ", original: " << original.squared_length() << ", relative: " << CGAL::to_double(s.squared_length()/original.squared_length()) << ", relative (proj): " << CGAL::to_double(s2.squared_length()/original.squared_length()) << std::endl;
+      /* if (s.squared_length() < TOLERANCE) */
+      /*   return false; */
 
-    /*       const double cos_angle = (s.to_vector()*s2.to_vector())/std::sqrt(s.squared_length()*s2.squared_length()); */
+        /*   // std::cout << "Outer " << i << ": " << s << ", length: " << s.squared_length() << std::endl; */
 
-    /*       /\* std::cout << "Angle: "  *\/ */
-    /*       /\*           << (cos_angle+1) *\/ */
-    /*       /\*           << std::endl; *\/ */
-    /*       /\* std::cout << "\"Segment " << s.source() << ", " << s.target() << "\" \"Segment "  *\/ */
-    /*       /\*           << s2.source() << ", " << s2.target() << "\"" << std::endl; *\/ */
-
-    /*       if (cos_angle+1 < TOLERANCE) */
-    /*         return false; */
-    /*       else */
-    /*         continue; */
-    /*     } */
-
-    /*     // std::cout << "  Intersecting " << j << ": Segment " << s2 << std::endl; */
-
-        const auto intersection = CGAL::intersection(s, s2);
-
-        if (intersection)
+        for (std::size_t j = i+1; j < v.size(); j++)
         {
-          if (const InexactPoint_2* intersection_point = boost::get<InexactPoint_2>(&*intersection))
+          InexactSegment_2 s2(v[j]->point(), v[(j+1)%v.size()]->point());
+          // std::cout << "  Inner " << j << ": " << s2 << ", length: " << s2.squared_length() << std::endl;
+          /* if (s2.squared_length() < TOLERANCE) */
+          /*   return false; */
+
+          /*     // If neighbor segments, check angle */
+          /*     if (j == i+1 || (j+1)%v.size() == i) */
+          /*     { */
+
+          /*       const double cos_angle = (s.to_vector()*s2.to_vector())/std::sqrt(s.squared_length()*s2.squared_length()); */
+
+          /*       /\* std::cout << "Angle: "  *\/ */
+          /*       /\*           << (cos_angle+1) *\/ */
+          /*       /\*           << std::endl; *\/ */
+          /*       /\* std::cout << "\"Segment " << s.source() << ", " << s.target() << "\" \"Segment "  *\/ */
+          /*       /\*           << s2.source() << ", " << s2.target() << "\"" << std::endl; *\/ */
+          
+          /*       if (cos_angle+1 < TOLERANCE) */
+          /*         return false; */
+          /*       else */
+          /*         continue; */
+          /*     } */
+
+          /*     // std::cout << "  Intersecting " << j << ": Segment " << s2 << std::endl; */
+          
+          const auto intersection = CGAL::intersection(s, s2);
+          
+          if (intersection)
           {
-            if (j != i+1 && i != (j+1)%v.size())
+            if (const InexactPoint_2* intersection_point = boost::get<InexactPoint_2>(&*intersection))
             {
-              std::cout << "Non-neighbors (" << i << ", " << j << ")/" << v.size() << " intersect in single point" << std::endl;
-              
+              if (j != i+1 && i != (j+1)%v.size())
+              {
+                std::cout << "Non-neighbors (" << i << ", " << j << ")/" << v.size() << " intersect in single point" << std::endl;
+                
+                return false;
+              }
+            }
+            else if (const InexactSegment_2* intersection_segment = boost::get<InexactSegment_2>(&*intersection))
+            {
+              std::cout << "Intersects in segment" << std::endl;
               return false;
             }
-          }
-          else if (const InexactSegment_2* intersection_segment = boost::get<InexactSegment_2>(&*intersection))
-          {
-            std::cout << "Intersects in segment" << std::endl;
-            return false;
-          }
-          else
-          {
-            dolfin_assert(false);
-            return false;
-          }
-        } // end if intersection
-      } // end inner loop
-    } // end outer loop
-
-    std::cout << "Triangulate in 2D" << std::endl;
-
-    // DEBUG!!!
-    if (v.size() == 145)
-      return false;
+            else
+            {
+              dolfin_assert(false);
+              return false;
+            }
+          } // end if intersection
+        } // end inner loop
+      } // end outer loop
+      
+      // No edges intersect, so we can safely insert then as constraints to the
+      // triangulation
+    }
     
-    // No edges intersect, so we can safely insert then as constraints to the
-    // triangulation
     for (std::size_t i = 0; i < v.size(); i++)
     {
       cdt.insert_constraint(v[i], v[(i+1)%v.size()]);
@@ -669,16 +670,69 @@ class PolyhedronUtils
                                    typename Polyhedron::Halfedge_handle h)
   {
     typedef typename Polyhedron::Traits::Point_3 Point_3;
-    std::vector<Point_3> p;
+    typedef typename Polyhedron::Halfedge_handle Halfedge_handle;
+    
+    typedef CGAL::Polyhedron_corefinement<Polyhedron> CGALCSGOperator;
+    std::vector<Point_3> points;
     typename Polyhedron::Halfedge_handle current = h;
+
+    bool coplanar = true;
     do
     {
-      p.push_back(current->vertex()->point());
+      if (!CGAL::coplanar(h->vertex()->point(),
+                          h->next()->vertex()->point(),
+                          h->next()->next()->vertex()->point(),
+                          h->next()->next()->next()->vertex()->point()))
+        coplanar = false;
+
+
+      points.push_back(current->vertex()->point());
       current = current->next();
     } while (current != h);
 
-    Polyhedron hole;
-    CGAL::convex_hull_3(p.begin(), p.end(), hole);
+    // Debug
+    coplanar = true;
+    
+    std::cout << "Size of hole: " << points.size() << std::endl;
+    
+    if (points.size() > 3)
+    {
+      if (coplanar)
+      {
+        std::cout << "Points are coplanar" << std::endl;
+        triangulate_polygon_3d(P, h);
+      }
+      else
+      {
+        std::cout << "Points are not coplanar" << std::endl;
+        Polyhedron hole;
+        std::cout << "Compute convex hull" << std::endl;
+        CGAL::convex_hull_3(points.begin(), points.end(), hole);
+        {std::ofstream f("convex_hull.off"); f << hole; }
+
+        // Find intersection polyline
+        std::list<std::vector<Point_3> > intersection_polylines;
+
+        // Search for a common vertex
+        /* bool found; */
+        /* Halfedge_handle current = h; */
+        /* do */
+        /* { */
+          
+        /*   current = current->next(); */
+        /* } while (current != h); */
+        
+        CGALCSGOperator op;
+
+        std::cout << "Computing union" << std::endl;
+        op(P, hole, std::back_inserter(intersection_polylines), CGALCSGOperator::Join_tag);
+        std::cout << "Done computing union" << std::endl;
+      }
+    }
+    else if (points.size() == 3)
+    {
+      P.fill_hole(h);
+    }
   }
   //-----------------------------------------------------------------------------
   template<typename Polyhedron>

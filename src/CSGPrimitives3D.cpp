@@ -170,12 +170,12 @@ std::string Tetrahedron::str(bool verbose) const
 //-----------------------------------------------------------------------------
 Surface3D::Surface3D(std::string filename)
  : _filename(filename), 
-  vertex_tolerance(.0), 
-  degenerate_tolerance(1e-12), 
-  repair(false),
-  single_connected_component(false),
-  first_facet(0),
-  sharp_features_filter(-1) 
+   vertex_tolerance(.0),
+   degenerate_tolerance(1e-12),
+   repair(false),
+   single_connected_component(false),
+   sharp_features_filter(-1),
+   first_facet(0)
 {
   // Do nothing
 }

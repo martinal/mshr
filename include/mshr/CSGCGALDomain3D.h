@@ -143,7 +143,7 @@ class CSGCGALDomain3D : public CSGPrimitive3D
                      std::shared_ptr<CSGCGALDomain3DQueryStructure> q);
 
   void inside_out();
-  void close_holes();
+  void close_holes(std::size_t max=0);
 
   /// @brief
   static std::shared_ptr<CSGCGALDomain3D>

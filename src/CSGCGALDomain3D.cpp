@@ -578,10 +578,10 @@ void make_surface3D(const mshr::Surface3D* s, Exact_Polyhedron_3& P)
     infile >> P;
     infile.close();
 
-    if (P.size_of_vertices() == 0 || P.size_of_facets() == 0)
+    if (infile.bad())
     {
       std::stringstream ss;
-      ss << "File '" << s->_filename << "' was empty or contained syntactical errors";
+      ss << "Could not read polyhedral surface from '" << s->_filename << "'";
       dolfin::dolfin_error("CSGCGALDomain3D.cpp",
                            "read surface from off file",
                            ss.str());
@@ -1691,13 +1691,18 @@ void CSGCGALDomain3D::inside_out()
   impl->p.inside_out();
 }
 //-----------------------------------------------------------------------------
-void CSGCGALDomain3D::close_holes()
+void CSGCGALDomain3D::close_holes(std::size_t max)
 {
   impl->p.normalize_border();
-  while (!impl->p.is_closed())
+
+  std::size_t counter = 0;
+  while (!impl->p.is_closed() && (max == 0 || counter < max))
   {
-    PolyhedronUtils::close_hole_agressive(impl->p, impl->p.border_halfedges_begin());
+    PolyhedronUtils::close_hole_agressive(impl->p,
+                                          impl->p.border_halfedges_begin()->opposite());
     impl->p.normalize_border();
+    
+    counter++;
   }
 }
 } // end namespace mshr
