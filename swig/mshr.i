@@ -81,6 +81,7 @@
 %ignore mshr::PSLG;
 %ignore mshr::CSGCGALDomain3DQueryStructure::CSGCGALDomain3DQueryStructure;
 %ignore mshr::CSGCGALDomain3DQueryStructure::impl;
+%ignore mshr::CSGCGALDomain3D::impl;
 
 %shared_ptr(mshr::CSGGeometry)
 %shared_ptr(mshr::CSGPrimitive)

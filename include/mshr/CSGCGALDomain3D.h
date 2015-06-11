@@ -60,6 +60,10 @@ class CSGCGALDomain3D : public CSGPrimitive3D
   Type getType() const
   { return CSGGeometry::TriPolyhedron; }
 
+  /// @brief Insert polyhedron into this object
+  /// Inserted polyhedron should not intersect
+  void insert(const CSGCGALDomain3D& p);
+
   /// @brief Number of vertices in polyhedron
   std::size_t num_vertices() const;
 
@@ -132,11 +136,20 @@ class CSGCGALDomain3D : public CSGPrimitive3D
   /// @param verbose The verbosity level
   std::string str(bool verbose) const;
 
+  /// @brief Remove facets, starting from the facets closest to to the given
+  /// point
+  void filter_facets(dolfin::Point start,
+                     double threshold,
+                     std::shared_ptr<CSGCGALDomain3DQueryStructure> q);
+
+  void inside_out();
+  void close_holes();
+
   /// @brief
   static std::shared_ptr<CSGCGALDomain3D>
     convex_hull(const CSGCGALDomain3D& c);
 
- private :
+  // private :
   std::unique_ptr<CSGCGALDomain3DImpl> impl;
 };
 

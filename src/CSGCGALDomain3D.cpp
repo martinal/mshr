@@ -37,13 +37,14 @@
 #include <CGAL/Exact_predicates_exact_constructions_kernel.h>
 #include <CGAL/Polyhedron_incremental_builder_3.h>
 #ifndef MSHR_ENABLE_EXPERIMENTAL
-  #include <CGAL/Nef_polyhedron_3.h>
+#include <CGAL/Nef_polyhedron_3.h>
 #else
-  #include <CGAL/corefinement_operations.h>
+#include <CGAL/corefinement_operations.h>
 #endif
 #include <CGAL/IO/Polyhedron_iostream.h>
 #include <CGAL/Origin.h>
 #include <CGAL/Self_intersection_polyhedron_3.h>
+
 
 #include <CGAL/AABB_tree.h>
 #include <CGAL/AABB_traits.h>
@@ -62,8 +63,6 @@
 #include <set>
 #include <cmath>
 #include <memory>
-
-using namespace mshr;
 
 namespace
 {
@@ -87,6 +86,18 @@ typedef CGAL::Nef_polyhedron_3<Exact_Kernel>              Nef_polyhedron_3;
 typedef CGAL::AABB_face_graph_triangle_primitive<Exact_Polyhedron_3> Primitive;
 typedef CGAL::AABB_traits<Exact_Kernel, Primitive> Traits;
 typedef CGAL::AABB_tree<Traits> AABB_Tree;
+}
+
+namespace mshr
+{
+struct CSGCGALDomain3DImpl
+{
+  Exact_Polyhedron_3 p;
+};
+}
+
+namespace
+{
 
 double get_polyline_squared_length(const std::vector<Exact_Point_3>& polyline)
 {
@@ -128,7 +139,7 @@ inline void add_vertex(Builder& builder,
 class Build_sphere : public CGAL::Modifier_base<Exact_HalfedgeDS>
 {
  public:
-  Build_sphere(const Sphere& sphere) : _sphere(sphere) {}
+  Build_sphere(const mshr::Sphere& sphere) : _sphere(sphere) {}
 
   void operator()( Exact_HalfedgeDS& hds )
   {
@@ -190,10 +201,10 @@ class Build_sphere : public CGAL::Modifier_base<Exact_HalfedgeDS>
   }
 
   private:
-  const Sphere& _sphere;
+  const mshr::Sphere& _sphere;
 };
 //-----------------------------------------------------------------------------
-void make_sphere(const Sphere* s, Exact_Polyhedron_3& P)
+void make_sphere(const mshr::Sphere* s, Exact_Polyhedron_3& P)
 {
   Build_sphere builder(*s);
   P.delegate(builder);
@@ -204,7 +215,7 @@ void make_sphere(const Sphere* s, Exact_Polyhedron_3& P)
 class Build_box : public CGAL::Modifier_base<Exact_HalfedgeDS>
 {
  public:
-  Build_box(const Box* box) : _box(box) {}
+  Build_box(const mshr::Box* box) : _box(box) {}
 
   void operator()( Exact_HalfedgeDS& hds )
   {
@@ -247,10 +258,10 @@ class Build_box : public CGAL::Modifier_base<Exact_HalfedgeDS>
     builder.end_surface();
   }
 
-  const Box* _box;
+  const mshr::Box* _box;
 };
 //-----------------------------------------------------------------------------
-void make_box(const Box* b, Exact_Polyhedron_3& P)
+void make_box(const mshr::Box* b, Exact_Polyhedron_3& P)
 {
   Build_box builder(b);
   P.delegate(builder);
@@ -258,7 +269,7 @@ void make_box(const Box* b, Exact_Polyhedron_3& P)
   dolfin_assert(P.is_valid());
 }
 //-----------------------------------------------------------------------------
-void make_tetrahedron(const Tetrahedron* b, Exact_Polyhedron_3& P)
+void make_tetrahedron(const mshr::Tetrahedron* b, Exact_Polyhedron_3& P)
 {
   P.make_tetrahedron(Exact_Point_3(b->a.x(), b->a.y(), b->a.z()),
                      Exact_Point_3(b->b.x(), b->b.y(), b->b.z()),
@@ -281,7 +292,7 @@ dolfin::Point generate_orthogonal(const dolfin::Point& a)
 class Build_cylinder : public CGAL::Modifier_base<Exact_HalfedgeDS>
 {
  public:
-  Build_cylinder(const Cylinder* cylinder) : _cylinder(cylinder) {}
+  Build_cylinder(const mshr::Cylinder* cylinder) : _cylinder(cylinder) {}
 
   void operator()(Exact_HalfedgeDS& hds)
   {
@@ -386,10 +397,10 @@ class Build_cylinder : public CGAL::Modifier_base<Exact_HalfedgeDS>
     builder.end_surface();
   }
 private:
-  const Cylinder* _cylinder;
+  const mshr::Cylinder* _cylinder;
 };
 //-----------------------------------------------------------------------------
- void make_cylinder(const Cylinder* c, Exact_Polyhedron_3& P)
+void make_cylinder(const mshr::Cylinder* c, Exact_Polyhedron_3& P)
 {
   Build_cylinder builder(c);
   P.delegate(builder);
@@ -400,7 +411,7 @@ private:
 class Build_ellipsoid : public CGAL::Modifier_base<Exact_HalfedgeDS>
 {
  public:
-  Build_ellipsoid(const Ellipsoid& ellipsoid) : _ellipsoid(ellipsoid) {}
+  Build_ellipsoid(const mshr::Ellipsoid& ellipsoid) : _ellipsoid(ellipsoid) {}
 
   void operator()(Exact_HalfedgeDS& hds)
   {
@@ -464,10 +475,10 @@ class Build_ellipsoid : public CGAL::Modifier_base<Exact_HalfedgeDS>
     builder.end_surface();
   }
 
-  const Ellipsoid& _ellipsoid;
+  const mshr::Ellipsoid& _ellipsoid;
 };
 //-----------------------------------------------------------------------------
-void make_ellipsoid(const Ellipsoid* e, Exact_Polyhedron_3& P)
+void make_ellipsoid(const mshr::Ellipsoid* e, Exact_Polyhedron_3& P)
 {
   Build_ellipsoid builder(*e);
   P.delegate(builder);
@@ -553,7 +564,7 @@ public:
   const std::set<std::size_t>& facets_to_be_skipped;
 };
 //-----------------------------------------------------------------------------
-void make_surface3D(const Surface3D* s, Exact_Polyhedron_3& P)
+void make_surface3D(const mshr::Surface3D* s, Exact_Polyhedron_3& P)
 {
   dolfin_assert(s);
 
@@ -581,12 +592,12 @@ void make_surface3D(const Surface3D* s, Exact_Polyhedron_3& P)
 
     if (fpath.extension() == ".stl")
     {
-      STLFileReader::read(s->_filename, vertices, facets);
+      mshr::STLFileReader::read(s->_filename, vertices, facets);
     }
     else if (fpath.extension() == ".vtp")
     {
       // TODO: Only if vtk is installed
-      VTPFileReader::read(s->_filename, vertices, facets);
+      mshr::VTPFileReader::read(s->_filename, vertices, facets);
     }
     else if (fpath.extension() == ".ply")
     {
@@ -611,17 +622,17 @@ void make_surface3D(const Surface3D* s, Exact_Polyhedron_3& P)
 
     log(dolfin::TRACE, "Checking connectivity");
 
-    //tanganyika::closest_vertices(vertices);
+    //mshr::closest_vertices(vertices);
 
     if (s->repair)
     {      
       log(dolfin::TRACE, "Keep only connected component");
-      SurfaceConsistency::orient_component(facets, 0);
+      mshr::SurfaceConsistency::orient_component(facets, 0);
       std::size_t start_facet = s->first_facet;
       std::cout << "Starting facet: " << start_facet << std::endl;
 
       std::set<std::size_t> duplicating;
-      SurfaceConsistency::checkConnectivity(facets, duplicating, false);
+      mshr::SurfaceConsistency::checkConnectivity(facets, duplicating, false);
       log(dolfin::TRACE, "%u facets filtered out", duplicating.size());
       skip.insert(duplicating.begin(), duplicating.end());
 
@@ -664,18 +675,18 @@ void make_surface3D(const Surface3D* s, Exact_Polyhedron_3& P)
   // {
   //   std::size_t num_vertices = P.size_of_vertices();
   //   std::list<typename Exact_Polyhedron_3::Vertex_const_handle> components;
-  //   tanganyika::PolyhedronUtils::get_disconnected_components(P, std::back_inserter(components));
+  //   mshr::PolyhedronUtils::get_disconnected_components(P, std::back_inserter(components));
   //   std::cout << "Number of components: " << components.size() << std::endl;
   //   const unsigned int deleted = P.keep_largest_connected_components(1);
   //   std::cout << "Deleted " << deleted << " disconnected components with " << num_vertices-P.size_of_vertices() << " vertices" << std::endl;
-  //   std::cout << "Min vertex degree before closing: " << tanganyika::PolyhedronUtils::min_vertex_degree(P) << std::endl;
+  //   std::cout << "Min vertex degree before closing: " << mshr::PolyhedronUtils::min_vertex_degree(P) << std::endl;
   //   std::cout << "Is pure triangular: " << (P.is_pure_triangle() ? "True" : "False") << std::endl;
   //   int tmp;
   //   std::cin >> tmp;
   // }
   
   // Triangulate polyhedron
-  //tanganyika::PolyhedronUtils::triangulate_polyhedron(P);
+  //mshr::PolyhedronUtils::triangulate_polyhedron(P);
   dolfin_assert (P.is_pure_triangle());
 
   // remove self-intersecting facets
@@ -683,14 +694,16 @@ void make_surface3D(const Surface3D* s, Exact_Polyhedron_3& P)
   {
     if (s->sharp_features_filter >= 0)
     {
-      tanganyika::PolyhedronUtils::filter_sharp_features(P, s->sharp_features_filter, DOLFIN_PI/6.0);
+      mshr::PolyhedronUtils::filter_sharp_features(P,
+                                                   s->sharp_features_filter,
+                                                   DOLFIN_PI/6.0);
     }
 
-    tanganyika::PolyhedronUtils::remove_self_intersections(P);
-    tanganyika::PolyhedronUtils::close_holes(P);
+    mshr::PolyhedronUtils::remove_self_intersections(P);
+    mshr::PolyhedronUtils::close_holes(P);
   }
 
-  tanganyika::PolyhedronUtils::list_self_intersections(P);
+  mshr::PolyhedronUtils::list_self_intersections(P);
 
   // if (s->degenerate_tolerance > 0)
   // {
@@ -703,7 +716,7 @@ void make_surface3D(const Surface3D* s, Exact_Polyhedron_3& P)
   // {
   //   if (s->repair)
   //   {
-  //     tanganyika::PolyhedronUtils::cut_holes(P);
+  //     mshr::PolyhedronUtils::cut_holes(P);
 
   //     dolfin_assert(P.is_closed());
   //     dolfin_assert(P.is_pure_triangle());
@@ -718,7 +731,62 @@ void make_surface3D(const Surface3D* s, Exact_Polyhedron_3& P)
   // }
 }
 //-----------------------------------------------------------------------------
-Aff_transformation_3 get_scaling(const CSGScaling& s)
+template <class Polyhedron>
+struct Insert_polyhedron_to
+  : public CGAL::Modifier_base<typename Polyhedron::HalfedgeDS>
+{
+  Insert_polyhedron_to(const Polyhedron& in_poly)
+    : _in_poly(in_poly) {}
+
+  void operator()(typename Polyhedron::HalfedgeDS& hds)
+  {
+    std::cout << "Copying polyhedron" << std::endl;
+    typedef typename Polyhedron::HalfedgeDS HDS;
+
+    CGAL::Polyhedron_incremental_builder_3<HDS> builder(hds);
+
+    typedef typename Polyhedron::Vertex_const_iterator Vertex_const_iterator;
+    typedef typename Polyhedron::Facet_const_iterator  Facet_const_iterator;
+    typedef typename Polyhedron::Halfedge_around_facet_const_circulator HFCC;
+
+    builder.begin_surface(_in_poly.size_of_vertices(),
+      _in_poly.size_of_facets(),
+      _in_poly.size_of_halfedges());
+
+    for(Vertex_const_iterator
+      vi = _in_poly.vertices_begin(), end = _in_poly.vertices_end();
+      vi != end ; ++vi)
+    {
+      builder.add_vertex(vi->point());
+    }
+
+    typedef CGAL::Inverse_index<Vertex_const_iterator> Index;
+    Index index(_in_poly.vertices_begin(), _in_poly.vertices_end());
+
+    for(Facet_const_iterator
+      fi = _in_poly.facets_begin(), end = _in_poly.facets_end();
+      fi != end; ++fi)
+    {
+      HFCC hc = fi->facet_begin();
+      HFCC hc_end = hc;
+      //     std::size_t n = circulator_size( hc);
+      //     CGAL_assertion( n >= 3);
+      builder.begin_facet ();
+      do
+      {
+        builder.add_vertex_to_facet(index[hc->vertex()]);
+        ++hc;
+      } while( hc != hc_end);
+      builder.end_facet();
+    }
+    builder.end_surface();
+    std::cout << "Done copying" << std::endl;
+  } // end operator()(..)
+private:
+  const Polyhedron& _in_poly;
+}; // end Copy_polyhedron_to<>
+//-----------------------------------------------------------------------------
+Aff_transformation_3 get_scaling(const mshr::CSGScaling& s)
 {
   Aff_transformation_3 transformation(CGAL::IDENTITY);
   if (s.translate)
@@ -745,7 +813,7 @@ Aff_transformation_3 get_scaling(const CSGScaling& s)
   return transformation;
 }
 //-----------------------------------------------------------------------------
-Aff_transformation_3 get_rotation(const CSGRotation& r)
+Aff_transformation_3 get_rotation(const mshr::CSGRotation& r)
 {
   // Normalize rotation axis vector
   dolfin::Point axis = r.rot_axis/(r.rot_axis.norm());
@@ -793,13 +861,13 @@ Aff_transformation_3 get_rotation(const CSGRotation& r)
 #ifdef MSHR_ENABLE_EXPERIMENTAL
 typedef CGAL::Polyhedron_corefinement<Exact_Polyhedron_3> CGALCSGOperator;
   
-void convertSubTree(const CSGGeometry* geometry, Exact_Polyhedron_3& P)
+void convertSubTree(const mshr::CSGGeometry* geometry, Exact_Polyhedron_3& P)
 {
   switch (geometry->getType())
   {
-    case CSGGeometry::Union :
+    case mshr::CSGGeometry::Union :
     {
-      const CSGUnion* u = dynamic_cast<const CSGUnion*>(geometry);
+      const mshr::CSGUnion* u = dynamic_cast<const mshr::CSGUnion*>(geometry);
       dolfin_assert(u);
       convertSubTree(u->_g0.get(), P);
       Exact_Polyhedron_3 P2;
@@ -822,9 +890,9 @@ void convertSubTree(const CSGGeometry* geometry, Exact_Polyhedron_3& P)
       }
       break;
     }
-    case CSGGeometry::Intersection :
+    case mshr::CSGGeometry::Intersection :
     {
-      const CSGIntersection* u = dynamic_cast<const CSGIntersection*>(geometry);
+      const mshr::CSGIntersection* u = dynamic_cast<const mshr::CSGIntersection*>(geometry);
       dolfin_assert(u);
       convertSubTree(u->_g0.get(), P);
       Exact_Polyhedron_3 P2;
@@ -848,9 +916,10 @@ void convertSubTree(const CSGGeometry* geometry, Exact_Polyhedron_3& P)
 
       break;
     }
-    case CSGGeometry::Difference :
+    case mshr::CSGGeometry::Difference :
     {
-      const CSGDifference* u = dynamic_cast<const CSGDifference*>(geometry);
+      std::cout << "Difference operator" << std::endl;
+      const mshr::CSGDifference* u = dynamic_cast<const mshr::CSGDifference*>(geometry);
       dolfin_assert(u);
       convertSubTree(u->_g0.get(), P);
       Exact_Polyhedron_3 P2;
@@ -860,6 +929,7 @@ void convertSubTree(const CSGGeometry* geometry, Exact_Polyhedron_3& P)
       CGALCSGOperator op;
       op(P, P2, std::back_inserter(intersection_polylines), CGALCSGOperator::P_minus_Q_tag);
 
+      std::cout << "Checking polyline" << std::endl;
       // Check that intersection is not degenerate
       for (std::list<std::vector<Exact_Point_3> >::iterator it=intersection_polylines.begin();
            it != intersection_polylines.end(); it++)
@@ -872,21 +942,20 @@ void convertSubTree(const CSGGeometry* geometry, Exact_Polyhedron_3& P)
 	}
       }
 
-
       break;
     }
-    case CSGGeometry::Translation :
+    case mshr::CSGGeometry::Translation :
     {
-      const CSGTranslation* t = dynamic_cast<const CSGTranslation*>(geometry);
+      const mshr::CSGTranslation* t = dynamic_cast<const mshr::CSGTranslation*>(geometry);
       dolfin_assert(t);
       convertSubTree(t->g.get(), P);
       Aff_transformation_3 translation(CGAL::TRANSLATION, Vector_3(t->t.x(), t->t.y(), t->t.z()));
       std::transform(P.points_begin(), P.points_end(), P.points_begin(), translation);
       break;
     }
-    case CSGGeometry::Scaling :
+    case mshr::CSGGeometry::Scaling :
     {
-      const CSGScaling* t = dynamic_cast<const CSGScaling*>(geometry);
+      const mshr::CSGScaling* t = dynamic_cast<const mshr::CSGScaling*>(geometry);
       dolfin_assert(t);
       convertSubTree(t->g.get(), P);
 
@@ -894,9 +963,9 @@ void convertSubTree(const CSGGeometry* geometry, Exact_Polyhedron_3& P)
       std::transform(P.points_begin(), P.points_end(), P.points_begin(), scaling);
       break;
     }
-    case CSGGeometry::Rotation :
+    case mshr::CSGGeometry::Rotation :
     {
-      const CSGRotation* t = dynamic_cast<const CSGRotation*>(geometry);
+      const mshr::CSGRotation* t = dynamic_cast<const mshr::CSGRotation*>(geometry);
       dolfin_assert(t);
 
       convertSubTree(t->g.get(), P);
@@ -904,46 +973,56 @@ void convertSubTree(const CSGGeometry* geometry, Exact_Polyhedron_3& P)
       std::transform(P.points_begin(), P.points_end(), P.points_begin(), rotation);
       break;
     }
-    case CSGGeometry::Cylinder :
+  case mshr::CSGGeometry::Cylinder :
     {
-      const Cylinder* c = dynamic_cast<const Cylinder*>(geometry);
+      const mshr::Cylinder* c = dynamic_cast<const mshr::Cylinder*>(geometry);
       dolfin_assert(c);
       make_cylinder(c, P);
       break;
     }
-    case CSGGeometry::Sphere :
+    case mshr::CSGGeometry::Sphere :
     {
-      const Sphere* s = dynamic_cast<const Sphere*>(geometry);
+      const mshr::Sphere* s = dynamic_cast<const mshr::Sphere*>(geometry);
       dolfin_assert(s);
       make_sphere(s, P);
       break;
     }
-    case CSGGeometry::Box :
+    case mshr::CSGGeometry::Box :
     {
-      const Box* b = dynamic_cast<const Box*>(geometry);
+      const mshr::Box* b = dynamic_cast<const mshr::Box*>(geometry);
       dolfin_assert(b);
       make_box(b, P);
       break;
     }
-    case CSGGeometry::Tetrahedron :
+    case mshr::CSGGeometry::Tetrahedron :
     {
-      const Tetrahedron* b = dynamic_cast<const Tetrahedron*>(geometry);
+      const mshr::Tetrahedron* b = dynamic_cast<const mshr::Tetrahedron*>(geometry);
       dolfin_assert(b);
       make_tetrahedron(b, P);
       break;
     }
-    case CSGGeometry::Ellipsoid :
+    case mshr::CSGGeometry::Ellipsoid :
     {
-      const Ellipsoid* b = dynamic_cast<const Ellipsoid*>(geometry);
+      const mshr::Ellipsoid* b = dynamic_cast<const mshr::Ellipsoid*>(geometry);
       dolfin_assert(b);
       make_ellipsoid(b, P);
       break;
     }
-    case CSGGeometry::Surface3D :
+    case mshr::CSGGeometry::Surface3D :
     {
-      const Surface3D* b = dynamic_cast<const Surface3D*>(geometry);
+      const mshr::Surface3D* b = dynamic_cast<const mshr::Surface3D*>(geometry);
       dolfin_assert(b);
       make_surface3D(b, P);
+      break;
+    }
+    case mshr::CSGGeometry::TriPolyhedron :
+    {
+      const mshr::CSGCGALDomain3D* b = dynamic_cast<const mshr::CSGCGALDomain3D*>(geometry);
+      dolfin_assert(b);
+      Insert_polyhedron_to<Exact_Polyhedron_3> inserter(b->impl->p);
+      P.delegate(inserter);
+      CGAL_assertion(P.is_valid());
+
       break;
     }
     default:
@@ -954,7 +1033,7 @@ void convertSubTree(const CSGGeometry* geometry, Exact_Polyhedron_3& P)
 }
 #else
 std::shared_ptr<Nef_polyhedron_3>
-convertSubTree(const CSGGeometry *geometry)
+convertSubTree(const mshr::CSGGeometry *geometry)
 {
   switch (geometry->getType())
   {
@@ -1074,18 +1153,24 @@ convertSubTree(const CSGGeometry *geometry)
       return std::shared_ptr<Nef_polyhedron_3>(new Nef_polyhedron_3(P));
       break;
     }
+    case CSGGeometry::TriPolyhedron :
+    {
+      const CSGCGALDomain3D* b = dynamic_cast<const CSGCGALDomain3D*>(geometry);
+      dolfin_assert(b);
+      return std::shared_ptr<Nef_polyhedron_3>(new Nef_polyhedron_3(b->impl.p));
+      break;
+    }
     default:
       dolfin::dolfin_error("CSGCGALDomain.cpp",
                            "converting geometry to cgal polyhedron",
                            "Unhandled primitive type");
   }
-
   // Make compiler happy.
   return std::shared_ptr<Nef_polyhedron_3>(new Nef_polyhedron_3);
 }
 #endif
 //-----------------------------------------------------------------------------
-void convert(const CSGGeometry& geometry,
+void convert(const mshr::CSGGeometry& geometry,
              Exact_Polyhedron_3 &P)
 {
   // If the tree has only one node, we don't have to convert to Nef
@@ -1095,53 +1180,53 @@ void convert(const CSGGeometry& geometry,
     switch (geometry.getType())
     {
 
-    case CSGGeometry::Cylinder :
+    case mshr::CSGGeometry::Cylinder :
     {
-      const Cylinder* c = dynamic_cast<const Cylinder*>(&geometry);
+      const mshr::Cylinder* c = dynamic_cast<const mshr::Cylinder*>(&geometry);
       dolfin_assert(c);
       make_cylinder(c, P);
       break;
     }
-    case CSGGeometry::Sphere :
+    case mshr::CSGGeometry::Sphere :
     {
-      const Sphere* s = dynamic_cast<const Sphere*>(&geometry);
+      const mshr::Sphere* s = dynamic_cast<const mshr::Sphere*>(&geometry);
       dolfin_assert(s);
       make_sphere(s, P);
       break;
     }
-    case CSGGeometry::Box :
+    case mshr::CSGGeometry::Box :
     {
-      const Box* b = dynamic_cast<const Box*>(&geometry);
+      const mshr::Box* b = dynamic_cast<const mshr::Box*>(&geometry);
       dolfin_assert(b);
       make_box(b, P);
       break;
     }
 
-    case CSGGeometry::Tetrahedron :
+    case mshr::CSGGeometry::Tetrahedron :
     {
-      const Tetrahedron* b = dynamic_cast<const Tetrahedron*>(&geometry);
+      const mshr::Tetrahedron* b = dynamic_cast<const mshr::Tetrahedron*>(&geometry);
       dolfin_assert(b);
       make_tetrahedron(b, P);
       break;
     }
-    case CSGGeometry::Ellipsoid :
+    case mshr::CSGGeometry::Ellipsoid :
     {
-      const Ellipsoid* b = dynamic_cast<const Ellipsoid*>(&geometry);
+      const mshr::Ellipsoid* b = dynamic_cast<const mshr::Ellipsoid*>(&geometry);
       dolfin_assert(b);
       make_ellipsoid(b, P);
       break;
     }
-    case CSGGeometry::Surface3D :
+    case mshr::CSGGeometry::Surface3D :
     {
-      const Surface3D* b = dynamic_cast<const Surface3D*>(&geometry);
+      const mshr::Surface3D* b = dynamic_cast<const mshr::Surface3D*>(&geometry);
       dolfin_assert(b);
       make_surface3D(b, P);
       break;
     }
     default:
       dolfin::dolfin_error("CSGCGALDomain3D.cpp",
-                   "converting geometry to cgal polyhedron",
-                   "Unhandled primitive type");
+                           "converting geometry to cgal polyhedron",
+                           "Unhandled primitive type");
     }
   }
   else
@@ -1171,11 +1256,6 @@ void convert(const CSGGeometry& geometry,
 
 namespace mshr
 {
-
-struct CSGCGALDomain3DImpl
-{
-  Exact_Polyhedron_3 p;
-};
 //-----------------------------------------------------------------------------
 struct CSGCGALDomain3DQueryStructureImpl
 {
@@ -1214,6 +1294,13 @@ CSGCGALDomain3D::CSGCGALDomain3D(const mshr::CSGGeometry &csg)
 }
 //-----------------------------------------------------------------------------
 CSGCGALDomain3D::~CSGCGALDomain3D(){}
+//-----------------------------------------------------------------------------
+void CSGCGALDomain3D::insert(const CSGCGALDomain3D& p)
+{
+  Insert_polyhedron_to<Exact_Polyhedron_3> inserter(p.impl->p);
+  impl->p.delegate(inserter);
+  CGAL_assertion(impl->p.is_valid());
+}
 //-----------------------------------------------------------------------------
 std::size_t CSGCGALDomain3D::num_vertices() const 
 { return impl->p.size_of_vertices(); }
@@ -1286,7 +1373,7 @@ void CSGCGALDomain3D::get_points_in_holes(std::vector<dolfin::Point>& holes,
                                           std::shared_ptr<CSGCGALDomain3DQueryStructure> q) const
 {
   std::vector<typename Exact_Polyhedron_3::Vertex_const_handle> parts;
-  tanganyika::PolyhedronUtils::get_disconnected_components(impl->p,std::back_inserter(parts));
+  mshr::PolyhedronUtils::get_disconnected_components(impl->p,std::back_inserter(parts));
 
   for (std::vector<typename Exact_Polyhedron_3::Vertex_const_handle>::const_iterator it = parts.begin();
        it != parts.end(); it++)
@@ -1430,7 +1517,7 @@ bool CSGCGALDomain3D::is_selfintersecting(bool verbose) const
 {
   const bool selfintersects = CGAL::self_intersect<Exact_Kernel, Exact_Polyhedron_3>(impl->p);
   if (selfintersects && verbose)
-    tanganyika::PolyhedronUtils::list_self_intersections(impl->p);
+    mshr::PolyhedronUtils::list_self_intersections(impl->p);
   return selfintersects;
 }
 //-----------------------------------------------------------------------------
@@ -1534,5 +1621,81 @@ std::shared_ptr<CSGCGALDomain3D> CSGCGALDomain3D::convex_hull(const CSGCGALDomai
   CGAL::convex_hull_3(c.impl->p.points_begin(), c.impl->p.points_end(), res->impl->p);
 
   return res;
+}
+//-----------------------------------------------------------------------------
+void CSGCGALDomain3D::filter_facets(dolfin::Point start,
+                                    double threshold,
+                                    std::shared_ptr<CSGCGALDomain3DQueryStructure> q)
+{
+  std::cout << "Filtering facets" << std::endl;
+  
+  typedef AABB_Tree::Point_and_primitive_id Point_and_primitive_id;
+  typedef Exact_Polyhedron_3::Face_handle Face_handle;
+  typedef Exact_Polyhedron_3::Halfedge_handle Halfedge_handle;
+  Exact_Point_3 query_point(start[0], start[1], start[2]);
+  Point_and_primitive_id pp = q->impl->aabb_tree.closest_point_and_primitive(query_point);
+  std::cout << "Closest point: " << pp.first << std::endl;
+
+  const double cos_threshold = cos(threshold);
+
+  std::set<Face_handle> to_be_removed;
+  {
+    std::deque<Face_handle> queue;
+    queue.push_back(pp.second);
+
+    while (!queue.empty())
+    {
+      Face_handle f = queue.front();
+      queue.pop_front();
+
+      if (to_be_removed.count(f) > 0)
+        continue;
+    
+      to_be_removed.insert(f);
+    
+      const Halfedge_handle start = f->halfedge();
+      Halfedge_handle c = start;
+      const Exact_Triangle_3 f_triangle = PolyhedronUtils::get_facet_triangle<Exact_Polyhedron_3>(f->halfedge());
+      do
+      {
+        Halfedge_handle current = c;
+        c = c->next();
+
+        if (current->is_border_edge())
+          continue;
+        
+        Face_handle f2 = current->opposite()->facet();
+        if (PolyhedronUtils::get_triangle_cos_angle<Exact_Triangle_3>(f_triangle,
+                                                                      PolyhedronUtils::get_facet_triangle<Exact_Polyhedron_3>(f2->halfedge())) > cos_threshold &&
+            to_be_removed.count(f2) == 0)
+        {
+          queue.push_back(f2);
+        }
+
+      } while (c != start);
+    }
+  }
+  
+  std::cout << "Removing " << to_be_removed.size() << " facets" << std::endl;
+
+  for (auto fit = to_be_removed.begin(); fit != to_be_removed.end(); fit++)
+  {
+    impl->p.erase_facet((*fit)->halfedge());
+  }
+}
+//-----------------------------------------------------------------------------
+void CSGCGALDomain3D::inside_out()
+{
+  impl->p.inside_out();
+}
+//-----------------------------------------------------------------------------
+void CSGCGALDomain3D::close_holes()
+{
+  impl->p.normalize_border();
+  while (!impl->p.is_closed())
+  {
+    PolyhedronUtils::close_hole_agressive(impl->p, impl->p.border_halfedges_begin());
+    impl->p.normalize_border();
+  }
 }
 } // end namespace mshr
