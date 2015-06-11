@@ -1037,9 +1037,9 @@ convertSubTree(const mshr::CSGGeometry *geometry)
 {
   switch (geometry->getType())
   {
-    case CSGGeometry::Union :
+    case mshr::CSGGeometry::Union :
     {
-      const CSGUnion* u = dynamic_cast<const CSGUnion*>(geometry);
+      const mshr::CSGUnion* u = dynamic_cast<const mshr::CSGUnion*>(geometry);
       dolfin_assert(u);
       std::shared_ptr<Nef_polyhedron_3> g0 = convertSubTree(u->_g0.get());
       std::shared_ptr<Nef_polyhedron_3> g1 = convertSubTree(u->_g1.get());
@@ -1048,9 +1048,9 @@ convertSubTree(const mshr::CSGGeometry *geometry)
 
       break;
     }
-    case CSGGeometry::Intersection :
+    case mshr::CSGGeometry::Intersection :
     {
-      const CSGIntersection* u = dynamic_cast<const CSGIntersection*>(geometry);
+      const mshr::CSGIntersection* u = dynamic_cast<const mshr::CSGIntersection*>(geometry);
       dolfin_assert(u);
       std::shared_ptr<Nef_polyhedron_3> g0 = convertSubTree(u->_g0.get());
       std::shared_ptr<Nef_polyhedron_3> g1 = convertSubTree(u->_g1.get());
@@ -1058,9 +1058,9 @@ convertSubTree(const mshr::CSGGeometry *geometry)
       return g0;
       break;
     }
-    case CSGGeometry::Difference :
+    case mshr::CSGGeometry::Difference :
     {
-      const CSGDifference* u = dynamic_cast<const CSGDifference*>(geometry);
+      const mshr::CSGDifference* u = dynamic_cast<const mshr::CSGDifference*>(geometry);
       dolfin_assert(u);
       std::shared_ptr<Nef_polyhedron_3> g0 = convertSubTree(u->_g0.get());
       std::shared_ptr<Nef_polyhedron_3> g1 = convertSubTree(u->_g1.get());
@@ -1068,9 +1068,9 @@ convertSubTree(const mshr::CSGGeometry *geometry)
       return g0;
       break;
     }
-    case CSGGeometry::Translation :
+    case mshr::CSGGeometry::Translation :
     {
-      const CSGTranslation* t = dynamic_cast<const CSGTranslation*>(geometry);
+      const mshr::CSGTranslation* t = dynamic_cast<const mshr::CSGTranslation*>(geometry);
       dolfin_assert(t);
       std::shared_ptr<Nef_polyhedron_3> g = convertSubTree(t->g.get());
       Aff_transformation_3 translation(CGAL::TRANSLATION, Vector_3(t->t.x(), t->t.y(), t->t.z()));
@@ -1078,9 +1078,9 @@ convertSubTree(const mshr::CSGGeometry *geometry)
       return g;
       break;
     }
-    case CSGGeometry::Scaling :
+    case mshr::CSGGeometry::Scaling :
     {
-      const CSGScaling* t = dynamic_cast<const CSGScaling*>(geometry);
+      const mshr::CSGScaling* t = dynamic_cast<const mshr::CSGScaling*>(geometry);
       dolfin_assert(t);
       std::shared_ptr<Nef_polyhedron_3> g = convertSubTree(t->g.get());
       Aff_transformation_3 scaling = get_scaling(*t);
@@ -1088,9 +1088,9 @@ convertSubTree(const mshr::CSGGeometry *geometry)
       return g;
       break;
     }
-    case CSGGeometry::Rotation :
+    case mshr::CSGGeometry::Rotation :
     {
-      const CSGRotation* t = dynamic_cast<const CSGRotation*>(geometry);
+      const mshr::CSGRotation* t = dynamic_cast<const mshr::CSGRotation*>(geometry);
       dolfin_assert(t);
 
       std::shared_ptr<Nef_polyhedron_3> g = convertSubTree(t->g.get());
@@ -1099,65 +1099,65 @@ convertSubTree(const mshr::CSGGeometry *geometry)
       return g;
       break;
     }
-    case CSGGeometry::Cylinder :
+    case mshr::CSGGeometry::Cylinder :
     {
-      const Cylinder* c = dynamic_cast<const Cylinder*>(geometry);
+      const mshr::Cylinder* c = dynamic_cast<const mshr::Cylinder*>(geometry);
       dolfin_assert(c);
       Exact_Polyhedron_3 P;
       make_cylinder(c, P);
       return std::shared_ptr<Nef_polyhedron_3>(new Nef_polyhedron_3(P));
       break;
     }
-    case CSGGeometry::Sphere :
+    case mshr::CSGGeometry::Sphere :
     {
-      const Sphere* s = dynamic_cast<const Sphere*>(geometry);
+      const mshr::Sphere* s = dynamic_cast<const mshr::Sphere*>(geometry);
       dolfin_assert(s);
       Exact_Polyhedron_3 P;
       make_sphere(s, P);
       return std::shared_ptr<Nef_polyhedron_3>(new Nef_polyhedron_3(P));
       break;
     }
-    case CSGGeometry::Box :
+    case mshr::CSGGeometry::Box :
     {
-      const Box* b = dynamic_cast<const Box*>(geometry);
+      const mshr::Box* b = dynamic_cast<const mshr::Box*>(geometry);
       dolfin_assert(b);
       Exact_Polyhedron_3 P;
       make_box(b, P);
       return std::shared_ptr<Nef_polyhedron_3>(new Nef_polyhedron_3(P));
       break;
     }
-    case CSGGeometry::Tetrahedron :
+    case mshr::CSGGeometry::Tetrahedron :
     {
-      const Tetrahedron* b = dynamic_cast<const Tetrahedron*>(geometry);
+      const mshr::Tetrahedron* b = dynamic_cast<const mshr::Tetrahedron*>(geometry);
       dolfin_assert(b);
       Exact_Polyhedron_3 P;
       make_tetrahedron(b, P);
       return std::shared_ptr<Nef_polyhedron_3>(new Nef_polyhedron_3(P));
       break;
     }
-    case CSGGeometry::Ellipsoid :
+    case mshr::CSGGeometry::Ellipsoid :
     {
-      const Ellipsoid* b = dynamic_cast<const Ellipsoid*>(geometry);
+      const mshr::Ellipsoid* b = dynamic_cast<const mshr::Ellipsoid*>(geometry);
       dolfin_assert(b);
       Exact_Polyhedron_3 P;
       make_ellipsoid(b, P);
       return std::shared_ptr<Nef_polyhedron_3>(new Nef_polyhedron_3(P));
       break;
     }
-    case CSGGeometry::Surface3D :
+    case mshr::CSGGeometry::Surface3D :
     {
-      const Surface3D* b = dynamic_cast<const Surface3D*>(geometry);
+      const mshr::Surface3D* b = dynamic_cast<const mshr::Surface3D*>(geometry);
       dolfin_assert(b);
       Exact_Polyhedron_3 P;
       make_surface3D(b, P);
       return std::shared_ptr<Nef_polyhedron_3>(new Nef_polyhedron_3(P));
       break;
     }
-    case CSGGeometry::TriPolyhedron :
+    case mshr::CSGGeometry::TriPolyhedron :
     {
-      const CSGCGALDomain3D* b = dynamic_cast<const CSGCGALDomain3D*>(geometry);
+      const mshr::CSGCGALDomain3D* b = dynamic_cast<const mshr::CSGCGALDomain3D*>(geometry);
       dolfin_assert(b);
-      return std::shared_ptr<Nef_polyhedron_3>(new Nef_polyhedron_3(b->impl.p));
+      return std::shared_ptr<Nef_polyhedron_3>(new Nef_polyhedron_3(b->impl->p));
       break;
     }
     default:
