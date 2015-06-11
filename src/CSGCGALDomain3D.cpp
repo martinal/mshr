@@ -1682,6 +1682,8 @@ void CSGCGALDomain3D::filter_facets(dolfin::Point start,
   {
     impl->p.erase_facet((*fit)->halfedge());
   }
+
+  dolfin_assert(impl->p.is_valid());
 }
 //-----------------------------------------------------------------------------
 void CSGCGALDomain3D::inside_out()
