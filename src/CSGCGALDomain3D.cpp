@@ -632,9 +632,11 @@ void make_surface3D(const mshr::Surface3D* s, Exact_Polyhedron_3& P)
       std::cout << "Starting facet: " << start_facet << std::endl;
 
       std::set<std::size_t> duplicating;
-      mshr::SurfaceConsistency::checkConnectivity(facets, duplicating, false);
-      log(dolfin::TRACE, "%u facets filtered out", duplicating.size());
-      skip.insert(duplicating.begin(), duplicating.end());
+
+      // FIXME: Commented out for now. Reintroduct before pushing
+      // mshr::SurfaceConsistency::checkConnectivity(facets, duplicating, false);
+      // log(dolfin::TRACE, "%u facets filtered out", duplicating.size());
+      // skip.insert(duplicating.begin(), duplicating.end());
 
       
       // SurfaceConsistency::filterFacets(facets, 
@@ -699,8 +701,9 @@ void make_surface3D(const mshr::Surface3D* s, Exact_Polyhedron_3& P)
                                                    DOLFIN_PI/6.0);
     }
 
-    mshr::PolyhedronUtils::remove_self_intersections(P);
-    mshr::PolyhedronUtils::close_holes(P);
+    // FIXME: Should this be enabled?
+    // mshr::PolyhedronUtils::remove_self_intersections(P);
+    // mshr::PolyhedronUtils::close_holes(P);
   }
 
   mshr::PolyhedronUtils::list_self_intersections(P);
@@ -1694,18 +1697,21 @@ void CSGCGALDomain3D::inside_out()
 void CSGCGALDomain3D::close_holes(std::size_t max)
 {
   impl->p.normalize_border();
-
+  
   std::size_t counter = 0;
   while (!impl->p.is_closed() && (max == 0 || counter < max))
   {
+    save_off("not_intersecting.off");
     PolyhedronUtils::close_hole_agressive(impl->p,
                                           impl->p.border_halfedges_begin()->opposite());
     impl->p.normalize_border();
     
     counter++;
-  }
 
-  dolfin_assert(impl->p.is_valid());
-  dolfin_assert(impl->p.is_pure_triangle());
+    dolfin_assert(impl->p.is_valid());
+    dolfin_assert(impl->p.is_pure_triangle());
+    save_off("closed_hole_intersecting.off");
+    dolfin_assert(!is_selfintersecting());
+  }
 }
 } // end namespace mshr

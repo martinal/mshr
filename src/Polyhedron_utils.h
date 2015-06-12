@@ -246,9 +246,9 @@ class PolyhedronUtils
   /// If the triangulation is not possible (the boundary self intersects in this 2d plane) then
   /// the return vector is empty
   template <typename Polyhedron>
-    static bool triangulate_polygon_3d(Polyhedron& P,
-                                       typename Polyhedron::Halfedge_handle h,
-                                       bool check_for_intersections = true)
+  static bool triangulate_polygon_3d(Polyhedron& P,
+                                     typename Polyhedron::Halfedge_handle h,
+                                     bool check_for_intersections = true)
   {
     std::cout << "Triangulating hole as 2d polygon" << std::endl;
     list_hole<Polyhedron>(h);
@@ -507,9 +507,9 @@ class PolyhedronUtils
     std::size_t count = 0;
     for (auto eit = edges_inside.begin(); eit != edges_inside.end(); eit++)
     {
-        std::cout << "Adding edge: Segment " << eit->first->point() << ", " << eit->second->point() << std::endl;
-        count++;
-        insert_edge(P, eit->first, eit->second);
+      // std::cout << "Adding edge: Segment " << eit->first->point() << ", " << eit->second->point() << std::endl;
+      count++;
+      insert_edge(P, eit->first, eit->second);
     }
 
     std::cout << "Added " << count << " edges by triangulation" << std::endl;
@@ -665,24 +665,253 @@ class PolyhedronUtils
     return CGAL::to_double((v1*v2)/std::sqrt(CGAL::to_double(v1.squared_length()*v2.squared_length())));
   }
   //-----------------------------------------------------------------------------
+  template<typename Segment_3>
+  static bool segment_intersects_triangle(const Segment_3& s,
+                                          const typename CGAL::Kernel_traits<Segment_3>::Kernel::Triangle_3& t)
+  {
+    typedef typename CGAL::Kernel_traits<Segment_3>::Kernel::Point_3 Point_3;
+    
+    auto result = CGAL::intersection(s, t);
+    if (!result)
+      return false;
+
+    if (const Point_3* p = boost::get<Point_3>(&*result))
+    {
+      if (*p == t[0] || *p == t[1] || *p == t[2])
+        return false;
+      else
+        return true;
+    }
+    else if (const Segment_3* s_ = boost::get<Segment_3>(&*result))
+    {
+      if ( (s.source() == t[0] || s.source() == t[1] || s.source() == t[2]) &&
+           (s.target() == t[0] || s.target() == t[1] || s.target() == t[2]) )
+        return false;
+      else
+        return true;
+    }
+
+    dolfin_assert(false);
+    return false;
+  }
+  //-----------------------------------------------------------------------------
+  template<typename Triangle_3>
+  static bool triangles_intersect(const Triangle_3& t1, const Triangle_3& t2)
+  {
+    typedef typename CGAL::Kernel_traits<Triangle_3>::Kernel::Point_3 Point_3;
+    typedef typename CGAL::Kernel_traits<Triangle_3>::Kernel::Segment_3 Segment_3;
+    
+    auto result = CGAL::intersection(t1, t2);
+
+    if (!result)
+      return false;
+    
+    if (const Point_3* p = boost::get<Point_3>(&*result))
+    {
+      if (t1[0] == t2[0] || t1[0] == t2[1] || t1[0] == t2[2] ||
+          t1[1] == t2[0] || t1[1] == t2[1] || t1[1] == t2[2] ||
+          t1[2] == t2[0] || t1[2] == t2[1] || t1[2] == t2[2])
+        return false;
+      else
+        return true;
+    }
+    else if (const Segment_3* s = boost::get<Segment_3>(&*result))
+    {
+      std::size_t common_vertices = 0;
+      if (t1[0] == t2[0] || t1[0] == t2[1] || t1[0] == t2[2])
+        common_vertices++;
+
+      if (t1[1] == t2[0] || t1[1] == t2[1] || t1[1] == t2[2])
+        common_vertices++;
+
+      if (t1[2] == t2[0] || t1[2] == t2[1] || t1[2] == t2[2])
+        common_vertices++;
+
+      if (common_vertices > 1)
+        return false;
+      else
+        return true;
+    }
+    else if (const Triangle_3* t = boost::get<Triangle_3>(&*result))
+      return true;
+    else if (const std::vector<Point_3>* v = boost::get<std::vector<Point_3> >(&*result))
+      return true;
+
+    dolfin_assert(false);
+    return false;
+  }
+  //-----------------------------------------------------------------------------
+  template<typename Triangle_3>
+  static bool triangle_set_intersects(const std::vector<Triangle_3>& t)
+  {
+    for (std::size_t i = 0; i < t.size(); i++)
+    {
+      for (std::size_t j = i+1; j < t.size(); j++)
+      {
+        if (triangles_intersect<Triangle_3>(t[i], t[j]))
+          return true;
+      }
+    }
+    return false;
+  }
+  //-----------------------------------------------------------------------------
+  template<typename Triangle_3>
+  static bool triangle_set_intersect_triangle(Triangle_3 t,
+                                              const std::vector<Triangle_3>& triangle_set)
+  {
+    for (auto tit = triangle_set.begin(); tit != triangle_set.end(); tit++)
+    {
+      if (triangles_intersect(*tit, t))
+        return true;
+    }
+    return false;
+  }
+  //-----------------------------------------------------------------------------
+  template<typename Segment_3>
+    static bool segment_intersects_triangle_set(const Segment_3& s,
+                                                const std::vector<typename CGAL::Kernel_traits<Segment_3>::Kernel::Triangle_3>& triangle_set)
+  {
+    for (auto tit = triangle_set.begin(); tit != triangle_set.end(); tit++)
+    {
+      if (segment_intersects_triangle(s, *tit))
+        return true;
+    }
+    return false;
+  }
+  //-----------------------------------------------------------------------------
+  template<typename Polyhedron>
+    static bool triangulate_center_vertex(Polyhedron& P,
+                                          typename Polyhedron::Halfedge_handle h)
+  {
+    std::cout << "Triangulating with center vertex" << std::endl;
+    typedef typename Polyhedron::Traits::Point_3 Point_3;
+    typedef typename Polyhedron::Traits::Triangle_3 Triangle_3;
+    typedef typename Polyhedron::Halfedge_handle Halfedge_handle;
+    
+    // Compute centroid
+    std::cout << "Checking if center vertex can be introduced safely" << std::endl;
+    Point_3 centroid = h->vertex()->point();
+    {
+      Halfedge_handle current = h->next();
+      std::size_t counter = 1;
+      do
+      {
+        centroid = centroid + (current->vertex()->point()-CGAL::ORIGIN);
+        counter++;
+        current = current->next();
+      } while (current != h);
+
+      centroid = CGAL::ORIGIN + (centroid-CGAL::ORIGIN)/counter;
+    }
+
+    std::vector<Triangle_3> triangles;
+    Halfedge_handle current = h;
+    do
+    {
+      triangles.push_back(get_facet_triangle<Polyhedron>(current->opposite()));
+      triangles.push_back(Triangle_3(centroid,
+                                     current->vertex()->point(),
+                                     current->next()->vertex()->point()));
+      current = current->next();
+    } while (current != h);
+
+    if (triangle_set_intersects(triangles))
+    {
+      std::cout << "Couldn't triangulate by center vertex" << std::endl;
+      return false;
+    }
+
+    std::cout << "adding center vertex" << std::endl;
+    Halfedge_handle new_facet = P.fill_hole(h);
+    Halfedge_handle center_vertex = P.create_center_vertex(new_facet);
+    center_vertex->vertex()->point() = centroid;
+
+    return true;
+  }
+  //-----------------------------------------------------------------------------
+  template<typename Polyhedron>
+  static void fill_quad_hole(Polyhedron& P,
+                             typename Polyhedron::Halfedge_handle h)
+  {
+    typedef typename Polyhedron::Traits::Triangle_3 Triangle_3;
+
+    dolfin_assert(h->next()->next()->next()->next() == h);
+    
+    P.fill_hole(h);
+
+    if (get_triangle_cos_angle(Triangle_3(h->vertex()->point(),
+                                          h->next()->vertex()->point(),
+                                          h->next()->next()->vertex()->point()),
+                               Triangle_3(h->vertex()->point(),
+                                          h->next()->next()->vertex()->point(),
+                                          h->prev()->vertex()->point())) <
+        get_triangle_cos_angle(Triangle_3(h->next()->vertex()->point(),
+                                          h->next()->next()->vertex()->point(),
+                                          h->prev()->vertex()->point()),
+                               Triangle_3(h->vertex()->point(),
+                                          h->next()->vertex()->point(),
+                                          h->prev()->vertex()->point())))
+    {
+      // The edge should go from h <--> h->next()->next()
+      P.split_facet(h, h->next()->next());
+    }
+    else
+    {
+      // the edge should ho from h->next() <--> h->prev()
+      P.split_facet(h->next(), h->prev());      
+    }
+  }
+  //-----------------------------------------------------------------------------
+  template<typename Polyhedron>
+  static void fill_5hole(Polyhedron& P,
+                         typename Polyhedron::Halfedge_handle h)
+  {
+    typedef typename Polyhedron::Halfedge_handle Halfedge_handle;
+    typedef typename Polyhedron::Traits::Triangle_3 Triangle_3;
+    
+    double best_quality = 1;
+    Halfedge_handle best_triangle;
+    Halfedge_handle current = h;
+    do
+    {
+      const double candidate_quality = get_triangle_cos_angle(Triangle_3(current->next()->vertex()->point(),
+                                                                   current->next()->next()->vertex()->point(),
+                                                                   current->next()->next()->next()->vertex()->point()),
+                                                        Triangle_3(current->prev()->prev()->vertex()->point(),
+                                                                   current->prev()->vertex()->point(),
+                                                                   current->vertex()->point()));
+      if (candidate_quality < best_quality)
+      {
+        best_triangle = current;
+        best_quality = candidate_quality;
+      }
+      
+      current = current->next();
+    } while (current != h);
+
+    P.fill_hole(h);
+    P.split_facet(best_triangle->next(),
+                  best_triangle->next()->next()->next());
+    P.split_facet(best_triangle->next()->next(), best_triangle);
+  }
+  //-----------------------------------------------------------------------------
   template<typename Polyhedron>
   static void close_hole_agressive(Polyhedron& P,
                                    typename Polyhedron::Halfedge_handle h)
   {
     typedef typename Polyhedron::Traits::Point_3 Point_3;
-    typedef typename Polyhedron::Halfedge_handle Halfedge_handle;
+    // typedef typename Polyhedron::Halfedge_handle Halfedge_handle;
     
-    typedef CGAL::Polyhedron_corefinement<Polyhedron> CGALCSGOperator;
     std::vector<Point_3> points;
     typename Polyhedron::Halfedge_handle current = h;
 
     bool coplanar = true;
     do
     {
-      if (!CGAL::coplanar(h->vertex()->point(),
-                          h->next()->vertex()->point(),
-                          h->next()->next()->vertex()->point(),
-                          h->next()->next()->next()->vertex()->point()))
+      if (!CGAL::coplanar(current->vertex()->point(),
+                          current->next()->vertex()->point(),
+                          current->next()->next()->vertex()->point(),
+                          current->next()->next()->next()->vertex()->point()))
         coplanar = false;
 
 
@@ -691,8 +920,28 @@ class PolyhedronUtils
     } while (current != h);
 
     std::cout << "Size of hole: " << points.size() << std::endl;
-    
-    if (points.size() > 3)
+    list_hole<Polyhedron>(h);
+
+    dolfin_assert(points.size() > 2);
+    if (points.size() == 3)
+    {
+      P.fill_hole(h);
+      dolfin_assert(!triangles_intersect(get_facet_triangle<Polyhedron>(h),
+                                         get_facet_triangle<Polyhedron>(h->opposite())));
+      dolfin_assert(!triangles_intersect(get_facet_triangle<Polyhedron>(h),
+                                         get_facet_triangle<Polyhedron>(h->next()->opposite())));
+      dolfin_assert(!triangles_intersect(get_facet_triangle<Polyhedron>(h),
+                                         get_facet_triangle<Polyhedron>(h->prev()->opposite())));
+    }
+    else if (points.size() == 4)
+    {
+      fill_quad_hole(P, h);
+    }
+    else if (points.size() == 5)
+    {
+      fill_5hole(P, h);
+    }
+    else
     {
       if (coplanar)
       {
@@ -702,29 +951,10 @@ class PolyhedronUtils
       else
       {
         // Try a center vertex
-        std::cout << "Triangulatig with center vertex" << std::endl;
-        Halfedge_handle new_facet = P.fill_hole(h);
-        Point_3 centroid = new_facet->vertex()->point();
-        Halfedge_handle current = new_facet->next();
-        std::size_t counter = 1;
-        do
+        if (!triangulate_center_vertex(P, h))
         {
-          centroid = centroid + (current->vertex()->point()-CGAL::ORIGIN);
-          //centroid[1] += current->vertex()->point()[1];
-          //centroid[2] += current->vertex()->point()[2];
-
-          counter++;
-          current = current->next();
-        } while (current != new_facet);
-
-        // centroid[0] = centroid[0]/static_cast<double>(counter);
-        //centroid[1] = centroid[1]/static_cast<double>(counter);
-        //centroid[2] = centroid[2]/static_cast<double>(counter);
-        Point_3 p(centroid.x()/(1.0*counter), centroid.y()/(1.0*counter), centroid.z()/(1.0*counter));
-
-        Halfedge_handle center_vertex = P.create_center_vertex(new_facet);
-        center_vertex->vertex()->point() = p;
-
+          subdivide_hole(P, h);
+        }
         /* std::cout << "Points are not coplanar" << std::endl; */
         /* Polyhedron hole; */
         /* std::cout << "Compute convex hull" << std::endl; */
@@ -750,86 +980,69 @@ class PolyhedronUtils
         /* std::cout << "Done computing union" << std::endl; */
       }
     }
-    else if (points.size() == 3)
-    {
-      P.fill_hole(h);
-    }
   }
   //-----------------------------------------------------------------------------
   template<typename Polyhedron>
-  static void subdivide_hole(Polyhedron& P, typename Polyhedron::Halfedge_handle h)
+  static bool subdivide_hole(Polyhedron& P, typename Polyhedron::Halfedge_handle h)
   {
     typedef typename Polyhedron::Halfedge_handle Halfedge_handle;
     typedef typename Polyhedron::Traits::Triangle_3 Triangle_3;
-    typedef typename Polyhedron::Traits::Point_3 Point_3;
+    // typedef typename Polyhedron::Traits::Point_3 Point_3;
     typedef typename Polyhedron::Traits::Segment_3 Segment_3;
 
     // Search for triangles that divide the hole, such that the dividing triangle
     // does not intersect triangles next to the hole
-    double best_quality;
+
+    // Store all triangles around the hole
+    std::vector<Triangle_3> border_triangles;
+    {
+      Halfedge_handle current = h;
+      do
+      {
+        border_triangles.push_back(get_facet_triangle<Polyhedron>(current->opposite()));
+        current = current->next();
+      } while (current != h);
+    }
+
+    std::cout << "Number of border triangles: " << border_triangles.size() << std::endl;
+    dolfin_assert(border_triangles.size() > 4);
+
+    // Search for the best dividing segment
+    double best_quality = 0;
     Halfedge_handle best_outer;
     Halfedge_handle best_inner;
 
     Halfedge_handle current_outer = h;
+
+    // FIXME: This loop should run to h->prev()->prev(), but need
+    // handle the specially
+    const Halfedge_handle outer_end = h->prev()->prev();
     do
     {
-      Halfedge_handle current_inner = current_inner->next()->next()->next();
-      const Halfedge_handle inner_end = current_outer->prev()->prev()->prev()->prev();
+      Halfedge_handle current_inner = current_outer->next()->next();
+      const Halfedge_handle inner_end = h;
       do
       {
-        Triangle_3 current_triangle(current_outer->vertex()->point(),
-                                    current_inner->vertex()->point(),
-                                    current_inner->next()->vertex()->point());
-        bool intersects = false;
-        Halfedge_handle intersects_current = h;
-        do
+        if (current_inner->next() != current_outer &&
+            current_inner->prev() != current_outer)
         {
-          Triangle_3 candidate = get_facet_triangle(intersects_current->opposite());
-          auto result = CGAL::intersection(current_triangle, candidate);
-          dolfin_assert(result);
-
-          if (const Point_3* p = boost::get<Point_3>(&*result))
+        
+          Segment_3 current_segment(current_outer->vertex()->point(),
+                                    current_inner->vertex()->point());
+          //std::cout << "Checking segment: " << current_segment << std::endl;
+        
+          // Check that this does not introduce an intersection
+          if (!segment_intersects_triangle_set(current_segment, border_triangles))
           {
-            if (current_outer->vertex() != intersects_current->opposite()->vertex() &&
-                current_outer->vertex() != intersects_current->opposite()->next()->vertex() &&
-                current_outer->vertex() != intersects_current->opposite()->next()->next()->vertex() &&
-                current_inner->vertex() != intersects_current->opposite()->vertex() &&
-                current_inner->vertex() != intersects_current->opposite()->next()->vertex() &&
-                current_inner->vertex() != intersects_current->opposite()->next()->next()->vertex() &&
-                current_inner->next()->vertex() != intersects_current->opposite()->vertex() &&
-                current_inner->next()->vertex() != intersects_current->opposite()->next()->vertex() &&
-                current_inner->next()->vertex() != intersects_current->opposite()->next()->next()->vertex())
+            const double candidate_quality = std::min(get_plane_fit<Polyhedron>(current_outer, current_inner),
+                                                      get_plane_fit<Polyhedron>(current_inner, current_outer));
+
+            if (candidate_quality > best_quality)
             {
-              intersects = true;
-              break;
+              best_outer = current_outer;
+              best_inner = current_inner;
+              best_quality = candidate_quality;
             }
-          }
-          else if (const Segment_3* s = boost::get<Segment_3>(&*result))
-          {
-            if (current_outer != intersects_current)
-            {
-              intersects = true;
-              break;
-            }
-          }
-          else if (const Triangle_3* t = boost::get<Triangle_3>(&*result))
-            intersects = true;
-            else if (const std::vector<Point_3>* v = boost::get<std::vector<Point_3> >(&*result))
-              intersects = true;
-
-          intersects_current = intersects_current->next();
-        } while (intersects_current != h);
-
-
-        if (!intersects)
-        {
-          const double candidate_quality = std::min(get_plane_fit(current_outer, current_inner),
-                                                    get_plane_fit(current_inner->next(), current_outer));
-          
-          if (candidate_quality > best_quality)
-          {
-            best_outer = current_outer;
-            best_inner = current_inner;
           }
         }
         
@@ -837,7 +1050,88 @@ class PolyhedronUtils
       } while (current_inner != inner_end);
       
       current_outer = current_outer->next();
-    } while(current_outer != h);
+    } while (current_outer != outer_end);
+
+    dolfin_assert(best_outer != Halfedge_handle());
+    dolfin_assert(best_inner != Halfedge_handle());
+
+    std::cout << "Found best subdivision: " << std::endl;
+    std::cout << "Segment " << best_outer->vertex()->point()
+              << ", " << best_inner->vertex()->point() << std::endl;
+
+    Halfedge_handle v1, v2;
+    best_quality = 0;
+
+    {
+      // Candidate 1: best_inner, best_inner->next(), best_outer
+      std::cout << "Candidate 1" << std::endl;
+      // Check the four candidates where the chosen segment is an edge
+      const double candidate_quality= std::min(get_plane_fit<Polyhedron>(best_outer, best_inner),
+                                               get_plane_fit<Polyhedron>(best_inner->next(), best_outer));
+      if (best_inner->next()->next() != best_outer &&
+          candidate_quality > best_quality)
+      {
+        v1 = best_outer;
+        v2 = best_inner;
+        best_quality = candidate_quality;
+      }
+    }
+
+    {
+      // Candidate 2: best_inner, best_outer, best_outer->next()
+      double candidate_quality = std::min(get_plane_fit<Polyhedron>(best_outer->next(), best_inner),
+                                          get_plane_fit<Polyhedron>(best_inner, best_outer));
+      if (best_outer->next()->next() != best_inner &&
+          candidate_quality > best_quality)
+      {
+        std::cout << "Candidate 2" << std::endl;
+        v1 = best_inner;
+        v2 = best_outer;
+        best_quality = candidate_quality;
+      }
+    }
+
+    {
+      // Candidate 3: best_inner->prev(), best_inner, best_outer
+      const double candidate_quality = std::min(get_plane_fit<Polyhedron>(best_outer, best_inner->prev()),
+                                                get_plane_fit<Polyhedron>(best_inner, best_outer));
+      if (best_outer->next()->next() != best_inner &&
+          candidate_quality > best_quality)
+      {
+        std::cout << "Candidate 3" << std::endl;
+        v1 = best_outer;
+        v2 = best_inner->prev();
+        best_quality = candidate_quality;
+      }
+    }
+
+    {
+      // Candidate 4: best_inner, best_outer->prev(), best_outer
+      const double candidate_quality = std::min(get_plane_fit<Polyhedron>(best_outer, best_inner),
+                                                get_plane_fit<Polyhedron>(best_inner, best_outer->prev()));
+
+      if (best_inner->next()->next() != best_outer &&
+          candidate_quality > best_quality)
+      {
+        std::cout << "Candidate 4" << std::endl;
+        v1 = best_inner;
+        v2 = best_outer->prev();
+      }
+    }
+
+    dolfin_assert(v1 != Halfedge_handle());
+    dolfin_assert(v2 != Halfedge_handle());
+
+    // Divide hole by chosen triangle (v1, v2, v2->next())
+    Halfedge_handle f = P.fill_hole(h);
+    dolfin_assert(v1->facet() == v2->facet());
+
+    Halfedge_handle hole1 = P.split_facet(v1, v2->next());
+    Halfedge_handle hole2 = P.split_facet(v2, hole1->opposite());
+    P.make_hole(hole1);
+    P.make_hole(hole2);
+    
+    return true;
   }
   //-----------------------------------------------------------------------------
   template<typename Polyhedron>
