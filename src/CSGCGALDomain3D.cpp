@@ -1704,5 +1704,8 @@ void CSGCGALDomain3D::close_holes(std::size_t max)
     
     counter++;
   }
+
+  dolfin_assert(impl->p.is_valid());
+  dolfin_assert(impl->p.is_pure_triangle());
 }
 } // end namespace mshr

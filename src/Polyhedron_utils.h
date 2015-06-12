@@ -690,9 +690,6 @@ class PolyhedronUtils
       current = current->next();
     } while (current != h);
 
-    // Debug
-    coplanar = true;
-    
     std::cout << "Size of hole: " << points.size() << std::endl;
     
     if (points.size() > 3)
@@ -704,35 +701,143 @@ class PolyhedronUtils
       }
       else
       {
-        std::cout << "Points are not coplanar" << std::endl;
-        Polyhedron hole;
-        std::cout << "Compute convex hull" << std::endl;
-        CGAL::convex_hull_3(points.begin(), points.end(), hole);
-        {std::ofstream f("convex_hull.off"); f << hole; }
+        // Try a center vertex
+        std::cout << "Triangulatig with center vertex" << std::endl;
+        Halfedge_handle new_facet = P.fill_hole(h);
+        Point_3 centroid = new_facet->vertex()->point();
+        Halfedge_handle current = new_facet->next();
+        std::size_t counter = 1;
+        do
+        {
+          centroid = centroid + (current->vertex()->point()-CGAL::ORIGIN);
+          //centroid[1] += current->vertex()->point()[1];
+          //centroid[2] += current->vertex()->point()[2];
 
-        // Find intersection polyline
-        std::list<std::vector<Point_3> > intersection_polylines;
+          counter++;
+          current = current->next();
+        } while (current != new_facet);
 
-        // Search for a common vertex
-        /* bool found; */
-        /* Halfedge_handle current = h; */
-        /* do */
-        /* { */
+        // centroid[0] = centroid[0]/static_cast<double>(counter);
+        //centroid[1] = centroid[1]/static_cast<double>(counter);
+        //centroid[2] = centroid[2]/static_cast<double>(counter);
+        Point_3 p(centroid.x()/(1.0*counter), centroid.y()/(1.0*counter), centroid.z()/(1.0*counter));
+
+        Halfedge_handle center_vertex = P.create_center_vertex(new_facet);
+        center_vertex->vertex()->point() = p;
+
+        /* std::cout << "Points are not coplanar" << std::endl; */
+        /* Polyhedron hole; */
+        /* std::cout << "Compute convex hull" << std::endl; */
+        /* CGAL::convex_hull_3(points.begin(), points.end(), hole); */
+        /* {std::ofstream f("convex_hull.off"); f << hole; } */
+
+        /* // Find intersection polyline */
+        /* std::list<std::vector<Point_3> > intersection_polylines; */
+
+        /* // Search for a common vertex */
+        /* /\* bool found; *\/ */
+        /* /\* Halfedge_handle current = h; *\/ */
+        /* /\* do *\/ */
+        /* /\* { *\/ */
           
-        /*   current = current->next(); */
-        /* } while (current != h); */
+        /* /\*   current = current->next(); *\/ */
+        /* /\* } while (current != h); *\/ */
         
-        CGALCSGOperator op;
+        /* CGALCSGOperator op; */
 
-        std::cout << "Computing union" << std::endl;
-        op(P, hole, std::back_inserter(intersection_polylines), CGALCSGOperator::Join_tag);
-        std::cout << "Done computing union" << std::endl;
+        /* std::cout << "Computing union" << std::endl; */
+        /* op(P, hole, std::back_inserter(intersection_polylines), CGALCSGOperator::Join_tag); */
+        /* std::cout << "Done computing union" << std::endl; */
       }
     }
     else if (points.size() == 3)
     {
       P.fill_hole(h);
     }
+  }
+  //-----------------------------------------------------------------------------
+  template<typename Polyhedron>
+  static void subdivide_hole(Polyhedron& P, typename Polyhedron::Halfedge_handle h)
+  {
+    typedef typename Polyhedron::Halfedge_handle Halfedge_handle;
+    typedef typename Polyhedron::Traits::Triangle_3 Triangle_3;
+    typedef typename Polyhedron::Traits::Point_3 Point_3;
+    typedef typename Polyhedron::Traits::Segment_3 Segment_3;
+
+    // Search for triangles that divide the hole, such that the dividing triangle
+    // does not intersect triangles next to the hole
+    double best_quality;
+    Halfedge_handle best_outer;
+    Halfedge_handle best_inner;
+
+    Halfedge_handle current_outer = h;
+    do
+    {
+      Halfedge_handle current_inner = current_inner->next()->next()->next();
+      const Halfedge_handle inner_end = current_outer->prev()->prev()->prev()->prev();
+      do
+      {
+        Triangle_3 current_triangle(current_outer->vertex()->point(),
+                                    current_inner->vertex()->point(),
+                                    current_inner->next()->vertex()->point());
+        bool intersects = false;
+        Halfedge_handle intersects_current = h;
+        do
+        {
+          Triangle_3 candidate = get_facet_triangle(intersects_current->opposite());
+          auto result = CGAL::intersection(current_triangle, candidate);
+          dolfin_assert(result);
+
+          if (const Point_3* p = boost::get<Point_3>(&*result))
+          {
+            if (current_outer->vertex() != intersects_current->opposite()->vertex() &&
+                current_outer->vertex() != intersects_current->opposite()->next()->vertex() &&
+                current_outer->vertex() != intersects_current->opposite()->next()->next()->vertex() &&
+                current_inner->vertex() != intersects_current->opposite()->vertex() &&
+                current_inner->vertex() != intersects_current->opposite()->next()->vertex() &&
+                current_inner->vertex() != intersects_current->opposite()->next()->next()->vertex() &&
+                current_inner->next()->vertex() != intersects_current->opposite()->vertex() &&
+                current_inner->next()->vertex() != intersects_current->opposite()->next()->vertex() &&
+                current_inner->next()->vertex() != intersects_current->opposite()->next()->next()->vertex())
+            {
+              intersects = true;
+              break;
+            }
+          }
+          else if (const Segment_3* s = boost::get<Segment_3>(&*result))
+          {
+            if (current_outer != intersects_current)
+            {
+              intersects = true;
+              break;
+            }
+          }
+          else if (const Triangle_3* t = boost::get<Triangle_3>(&*result))
+            intersects = true;
+            else if (const std::vector<Point_3>* v = boost::get<std::vector<Point_3> >(&*result))
+              intersects = true;
+
+          intersects_current = intersects_current->next();
+        } while (intersects_current != h);
+
+
+        if (!intersects)
+        {
+          const double candidate_quality = std::min(get_plane_fit(current_outer, current_inner),
+                                                    get_plane_fit(current_inner->next(), current_outer));
+          
+          if (candidate_quality > best_quality)
+          {
+            best_outer = current_outer;
+            best_inner = current_inner;
+          }
+        }
+        
+        current_inner = current_inner->next();
+      } while (current_inner != inner_end);
+      
+      current_outer = current_outer->next();
+    } while(current_outer != h);
   }
   //-----------------------------------------------------------------------------
   template<typename Polyhedron>
@@ -1571,7 +1676,7 @@ class PolyhedronUtils
       typename Polyhedron::Halfedge_handle start2 = h2;
       do 
       {
-        if (h2->vertex() != h1->vertex())
+        if (h2->vertex() == h1->vertex())
           return true;
 
         h2 = h2->next();
@@ -1754,7 +1859,7 @@ class PolyhedronUtils
 
     for (auto iit = intersections.begin(); iit != intersections.end(); iit++)
     {
-      std::cout << "Intersection (neigbors: " << (facets_are_neighbors<Polyhedron>(iit->first, iit->second) ? "Yes" : "No") << ")" << std::endl;
+      std::cout << "Intersection (neighbors: " << (facets_are_neighbors<Polyhedron>(iit->first, iit->second) ? "Yes" : "No") << ")" << std::endl;
       print_triangle<Polyhedron>(iit->first->halfedge());
       print_triangle<Polyhedron>(iit->second->halfedge());
     }
