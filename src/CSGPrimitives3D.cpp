@@ -169,7 +169,8 @@ std::string Tetrahedron::str(bool verbose) const
 }
 //-----------------------------------------------------------------------------
 Surface3D::Surface3D(std::string filename)
- : _filename(filename), 
+ : _filename(filename),
+   mesh(NULL),
    vertex_tolerance(.0),
    degenerate_tolerance(1e-12),
    repair(false),
@@ -179,6 +180,17 @@ Surface3D::Surface3D(std::string filename)
 {
   // Do nothing
 }
+//-----------------------------------------------------------------------------
+Surface3D::Surface3D(std::shared_ptr<const dolfin::Mesh> m)
+ : _filename(""),
+   mesh(m),
+   vertex_tolerance(.0),
+   degenerate_tolerance(1e-12),
+   repair(false),
+   single_connected_component(false),
+   sharp_features_filter(-1),
+   first_facet(0)
+{}
 //-----------------------------------------------------------------------------
 std::string Surface3D::str(bool verbose) const
 {

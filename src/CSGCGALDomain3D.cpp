@@ -32,6 +32,9 @@
 #include <dolfin/math/basic.h>
 #include <dolfin/log/log.h>
 #include <dolfin/log/LogStream.h>
+#include <dolfin/mesh/BoundaryMesh.h>
+#include <dolfin/mesh/Vertex.h>
+#include <dolfin/mesh/Cell.h>
 
 #include <CGAL/basic.h>
 #include <CGAL/Exact_predicates_exact_constructions_kernel.h>
@@ -570,55 +573,75 @@ void make_surface3D(const mshr::Surface3D* s, Exact_Polyhedron_3& P)
 
   std::vector<std::array<double, 3> > vertices;
   std::vector<std::array<std::size_t, 3> > facets;
+  std::set<std::size_t> skip;
 
-  boost::filesystem::path fpath(s->_filename);
-  if (fpath.extension() == ".off")
+  if (s->_filename == "")
   {
-    std::ifstream infile(s->_filename);
-    infile >> P;
-    infile.close();
+    dolfin_assert(s->mesh);
 
-    if (infile.bad())
+    // Extract global boundary of mesh, order with outward pointing normals
+    dolfin::BoundaryMesh b(*(s->mesh), "exterior", false);
+
+
+    for (dolfin::VertexIterator v(b); !v.end(); ++v)
     {
-      std::stringstream ss;
-      ss << "Could not read polyhedral surface from '" << s->_filename << "'";
-      dolfin::dolfin_error("CSGCGALDomain3D.cpp",
-                           "read surface from off file",
-                           ss.str());
+      const dolfin::Point& p = v->point();
+      vertices.push_back({p[0], p[1], p[2]});
+    }
+
+    for (dolfin::CellIterator c(b); !c.end(); ++c)
+    {
+      const unsigned int* vertices = c->entities(0);
+      facets.push_back({vertices[0], vertices[1], vertices[2]});
     }
   }
   else
   {
+    boost::filesystem::path fpath(s->_filename);
+    if (fpath.extension() == ".off")
+    {
+      std::ifstream infile(s->_filename);
+      infile >> P;
+      infile.close();
 
-    if (fpath.extension() == ".stl")
-    {
-      mshr::STLFileReader::read(s->_filename, vertices, facets);
-    }
-    else if (fpath.extension() == ".vtp")
-    {
-      // TODO: Only if vtk is installed
-      mshr::VTPFileReader::read(s->_filename, vertices, facets);
-    }
-    else if (fpath.extension() == ".ply")
-    {
-      // TODO: Only if vtk is installed
-      //PLYFileReader::read(s->_filename, vertices, facets);
+      if (infile.bad())
+      {
+        std::stringstream ss;
+        ss << "Could not read polyhedral surface from '" << s->_filename << "'";
+        dolfin::dolfin_error("CSGCGALDomain3D.cpp",
+                             "read surface from off file",
+                             ss.str());
+      }
     }
     else
     {
-      dolfin::dolfin_error("CSGCGALDomain3D.cpp",
-                           "open file to read 3D surface",
-                           "Unknown file type");
+      if (fpath.extension() == ".stl")
+      {
+        mshr::STLFileReader::read(s->_filename, vertices, facets);
+      }
+      else if (fpath.extension() == ".vtp")
+      {
+        // TODO: Only if vtk is installed
+        mshr::VTPFileReader::read(s->_filename, vertices, facets);
+      }
+      else if (fpath.extension() == ".ply")
+      {
+        // TODO: Only if vtk is installed
+        //PLYFileReader::read(s->_filename, vertices, facets);
+      }
+      else
+      {
+        dolfin::dolfin_error("CSGCGALDomain3D.cpp",
+                             "open file to read 3D surface",
+                             "Unknown file type");
+      }
+
+      log(dolfin::TRACE, "Done reading file");
     }
-
-    log(dolfin::TRACE, "Done reading file");
-
 
     // std::pair<std::unique_ptr<std::vector<std::array<double, 3> > >,
     //           std::unique_ptr<std::vector<std::array<std::size_t, 3> > > > filtered =
     //   SurfaceConsistency::merge_close_vertices(facets, vertices);
-
-    std::set<std::size_t> skip;
 
     log(dolfin::TRACE, "Checking connectivity");
 
@@ -664,6 +687,11 @@ void make_surface3D(const mshr::Surface3D* s, Exact_Polyhedron_3& P)
     P.delegate(builder);
     log(dolfin::TRACE, "Done creating polyhedron");
   }
+    
+  // Create the polyhedron
+  BuildFromFacetList<Exact_HalfedgeDS> builder(vertices, facets, skip);
+  P.delegate(builder);
+  log(dolfin::TRACE, "Done creating polyhedron");
 
   if (!P.is_valid())
   {

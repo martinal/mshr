@@ -20,9 +20,10 @@
 #ifndef __MSHR_PRIMITIVES_3D_H
 #define __MSHR_PRIMITIVES_3D_H
 
-#include <cstddef>
-#include <dolfin/geometry/Point.h>
 #include "CSGPrimitive.h"
+#include <dolfin/mesh/Mesh.h>
+#include <dolfin/geometry/Point.h>
+#include <cstddef>
 
 namespace mshr
 {
@@ -172,6 +173,9 @@ namespace mshr
   public:
     Surface3D(std::string filename);
 
+    // Create triangulated polyhedron from surface of mesh
+    Surface3D(std::shared_ptr<const dolfin::Mesh> mesh);
+
     /// @brief Informal string representation
     /// @return The description string
     std::string str(bool verbose) const;
@@ -180,6 +184,7 @@ namespace mshr
     { return CSGGeometry::Surface3D; }
 
     const std::string _filename;
+    std::shared_ptr<const dolfin::Mesh> mesh;
 
     /// @brief Tolerance when merging close vertices
     double vertex_tolerance;
