@@ -1730,8 +1730,8 @@ void CSGCGALDomain3D::close_holes(std::size_t max)
   while (!impl->p.is_closed() && (max == 0 || counter < max))
   {
     save_off("not_intersecting.off");
-    PolyhedronUtils::close_hole_agressive(impl->p,
-                                          impl->p.border_halfedges_begin()->opposite());
+    PolyhedronUtils::close_hole(impl->p,
+                                impl->p.border_halfedges_begin()->opposite());
     impl->p.normalize_border();
     
     counter++;
