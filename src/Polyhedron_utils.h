@@ -19,6 +19,8 @@
 #ifndef POLYHEDRON_UTILS_H__
 #define POLYHEDRON_UTILS_H__
 
+#include <dolfin/math/basic.h>
+
 #include <CGAL/basic.h>
 #include <CGAL/Exact_predicates_exact_constructions_kernel.h>
 #include <CGAL/Exact_predicates_inexact_constructions_kernel.h>
@@ -31,6 +33,8 @@
 #include <CGAL/Polyhedron_incremental_builder_3.h>
 #include <CGAL/convex_hull_3.h>
 #include <CGAL/corefinement_operations.h>
+#include <CGAL/Aff_transformation_3.h>
+#include <CGAL/Delaunay_mesher_no_edge_refinement_2.h>
 
 #include <cmath>
 #include <deque>
@@ -132,7 +136,7 @@ class PolyhedronUtils
     dolfin_assert(h != typename Polyhedron::Vertex_handle());
     dolfin_assert(g != typename Polyhedron::Vertex_handle());
     
-    Vertex_circulator h_start = h->vertex_begin();
+    const Vertex_circulator h_start = h->vertex_begin();
     Vertex_circulator h_current = h_start;
 
     Vertex_circulator g_current;
@@ -140,26 +144,28 @@ class PolyhedronUtils
     bool found = false;
     do
     {
-      Vertex_circulator g_start = g->vertex_begin();
-      g_current = g_start;
-      do
+      if (!h_current->is_border())
       {
-
-        if (h_current->facet() == g_current->facet())
+        const Vertex_circulator g_start = g->vertex_begin();
+        g_current = g_start;
+        do
         {
-          found = true;
+          if (!g_current->is_border() && h_current->facet() == g_current->facet())
+          {
+            found = true;
+            break;
+          }
+          g_current++;
+        } while (g_start != g_current);
+
+        if (found)
           break;
-        }
-
-        g_current++;
-      } while (g_start != g_current);
-
-      if (found)
-        break;
-
+      }
       h_current++;
     } while (h_start != h_current);
 
+    dolfin_assert(g_current != Vertex_circulator());
+    dolfin_assert(found);
     dolfin_assert(h_current->facet() == g_current->facet());
 
     P.split_facet(h_current, g_current);
@@ -198,19 +204,34 @@ class PolyhedronUtils
   //-----------------------------------------------------------------------------
   // Compute the fit quality of the vertices from h1 to h2 both included
   template<typename Polyhedron>
-  static double get_plane_fit(typename Polyhedron::Halfedge_handle h1,
-                              typename Polyhedron::Halfedge_handle h2,
-                              CGAL::Exact_predicates_inexact_constructions_kernel::Plane_3* p=NULL)
+  static double get_plane_fit(const typename Polyhedron::Halfedge_handle h1,
+                              const typename Polyhedron::Halfedge_handle h2)
   {
+    typedef typename Polyhedron::Halfedge_handle Halfedge_handle;
+    typedef typename Polyhedron::Traits::Plane_3 Plane_3;
+    typedef typename Polyhedron::Traits::Point_3 Point_3;
+    typedef typename Polyhedron::Traits::Vector_3 Vector_3;
+    typedef typename Polyhedron::Traits::FT FT;
     typedef CGAL::Exact_predicates_inexact_constructions_kernel InexactKernel;
     typedef typename InexactKernel::Plane_3 InexactPlane_3;
     typedef typename InexactKernel::Point_3 InexactPoint_3;
+    //typedef typename InexactKernel::Vector_3 InexactVector_3;
     typedef typename Polyhedron::Traits::Point_3 Point_3;
 
     // std::cout << "Get plane fit" << std::endl;
 
     // std::cout << "Polygon ";
     std::vector<InexactPoint_3> points;
+    Halfedge_handle current = h1;
+    do
+    {
+      const Point_3& p = current->vertex()->point();
+      // std::cout << ", " << p;
+      points.push_back(InexactPoint_3(CGAL::to_double(p[0]),
+                                      CGAL::to_double(p[1]),
+                                      CGAL::to_double(p[2])));
+      current = current->next();
+    } while (current != h2);
 
     {
       const Point_3& p = h2->vertex()->point();
@@ -220,24 +241,159 @@ class PolyhedronUtils
                                       CGAL::to_double(p[2])));
     }
 
+    dolfin_assert(points.size() > 2);
+    std::cout << "Size: " << points.size() << std::endl;
+    //std::cout << std::endl;
+    InexactPlane_3 fitting_plane_inexact;
+    const double fit_quality = CGAL::linear_least_squares_fitting_3(points.begin(),
+                                                                    points.end(),
+                                                                    fitting_plane_inexact,
+                                                                    CGAL::Dimension_tag<0>());
+    Plane_3 fitting_plane(fitting_plane_inexact.a(),
+                          fitting_plane_inexact.b(),
+                          fitting_plane_inexact.c(),
+                          fitting_plane_inexact.d());
+    std::cout << "Plane: " << fitting_plane << std::endl;
+    std::cout << "Length of normal: " << fitting_plane.orthogonal_vector().squared_length() << std::endl;
+    const Vector_3 normal = fitting_plane.orthogonal_vector()/std::sqrt(CGAL::to_double(fitting_plane.orthogonal_vector().squared_length()));
+
+    FT max_distance = (h1->vertex()->point()-fitting_plane.projection(h1->vertex()->point())).squared_length();
+    FT max_angle = 0;
+
+    Halfedge_handle prev = h1;
+    current = h1->next();
     do
     {
+      const Vector_3 v = current->vertex()->point()-prev->vertex()->point();
+      const FT cos_angle = v/std::sqrt(CGAL::to_double(v.squared_length())) * normal;
+      const Point_3 projection = fitting_plane.projection(current->vertex()->point());
+      max_angle = std::max(max_angle, cos_angle);
+      max_distance = std::max(max_distance, (current->vertex()->point()-projection).squared_length());
+
+      prev = current;
+      current = current->next();
+    } while (prev != h2);
+
+    std::cout << "Fit quality: " << fit_quality << ", max distance: " << max_distance << ", cos_angle: " << max_angle << std::endl;
+    //return fit_quality;
+    // return -max_distance;
+    return CGAL::to_double(fit_quality - max_angle);
+  }
+  //-----------------------------------------------------------------------------
+    // Compute the fit quality of the vertices from h1 to h2 both included
+  template<typename Polyhedron>
+  static double evaluate_hole_subdivision(const typename Polyhedron::Halfedge_handle h1,
+                              const typename Polyhedron::Halfedge_handle h2)
+  {
+    typedef typename Polyhedron::Halfedge_handle Halfedge_handle;
+    // typedef typename Polyhedron::Traits::Plane_3 Plane_3;
+    typedef typename Polyhedron::Traits::Point_3 Point_3;
+    // typedef typename Polyhedron::Traits::Vector_3 Vector_3;
+    // typedef typename Polyhedron::Traits::FT FT;
+    typedef CGAL::Exact_predicates_inexact_constructions_kernel InexactKernel;
+    typedef typename InexactKernel::Plane_3 InexactPlane_3;
+    typedef typename InexactKernel::Point_3 InexactPoint_3;
+    //typedef typename InexactKernel::Vector_3 InexactVector_3;
+    typedef typename Polyhedron::Traits::Point_3 Point_3;
+
+    // std::cout << "Get plane fit" << std::endl;
+
+    // std::cout << "Polygon ";
+    double plane1fit;
+    InexactPlane_3 fitting_plane1;
+    double max_distance_squared1 = 0;
+    {
+      std::vector<InexactPoint_3> points;
+      Halfedge_handle current = h1;
+      do
+      {
+        const Point_3& p = current->vertex()->point();
+        // std::cout << ", " << p;
+        points.push_back(InexactPoint_3(CGAL::to_double(p[0]),
+                                        CGAL::to_double(p[1]),
+                                        CGAL::to_double(p[2])));
+        current = current->next();
+      } while (current != h2);
+
+      const Point_3& p = h2->vertex()->point();
+      // std::cout << ", " << p;
+      points.push_back(InexactPoint_3(CGAL::to_double(p[0]),
+                                      CGAL::to_double(p[1]),
+                                      CGAL::to_double(p[2])));
+
+      dolfin_assert(points.size() > 2);
+      std::cout << "  Size: " << points.size() << std::endl;
+      //std::cout << std::endl;
+      plane1fit = CGAL::linear_least_squares_fitting_3(points.begin(),
+                                                       points.end(),
+                                                       fitting_plane1,
+                                                       CGAL::Dimension_tag<0>());
+      std::cout << "  Plane 1: " << fitting_plane1 << ", " << plane1fit << std::endl;
+      std::cout << "  Length of normal: " << fitting_plane1.orthogonal_vector().squared_length() << std::endl;
+      for (auto pit = points.begin(); pit != points.end(); pit++)
+        max_distance_squared1 = std::max(max_distance_squared1, (*pit-fitting_plane1.projection(*pit)).squared_length());
+      std::cout << "  Max squared distance: " << max_distance_squared1 << std::endl;
+    }
+
+    double plane2fit;
+    InexactPlane_3 fitting_plane2;
+    double max_distance_squared2 = 0;
+    {
+      std::vector<InexactPoint_3> points;
+      Halfedge_handle current = h2;
+      do
+      {
+        const Point_3& p = current->vertex()->point();
+        // std::cout << ", " << p;
+        points.push_back(InexactPoint_3(CGAL::to_double(p[0]),
+                                        CGAL::to_double(p[1]),
+                                        CGAL::to_double(p[2])));
+        current = current->next();
+      } while (current != h1);
+
       const Point_3& p = h1->vertex()->point();
       // std::cout << ", " << p;
       points.push_back(InexactPoint_3(CGAL::to_double(p[0]),
                                       CGAL::to_double(p[1]),
                                       CGAL::to_double(p[2])));
-      h1 = h1->next();
-    } while (h1 != h2);
 
-    //std::cout << std::endl;
-    InexactPlane_3 fitting_plane;
-    const double fit_quality = CGAL::linear_least_squares_fitting_3(points.begin(),
-                                                                    points.end(),
-                                                                    p == NULL ? fitting_plane : *p,
-                                                                    CGAL::Dimension_tag<0>());
-    // std::cout << "Fit quality: " << fit_quality << std::endl;
-    return fit_quality;
+      dolfin_assert(points.size() > 2);
+      std::cout << "  Size: " << points.size() << std::endl;
+      //std::cout << std::endl;
+      plane2fit = CGAL::linear_least_squares_fitting_3(points.begin(),
+                                                       points.end(),
+                                                       fitting_plane2,
+                                                       CGAL::Dimension_tag<0>());
+      std::cout << "  Plane 2: " << fitting_plane2 << ", fit: " << plane2fit << std::endl;
+      std::cout << "  Length of normal: " << fitting_plane2.orthogonal_vector().squared_length() << std::endl;
+      InexactPoint_3 max_distance_point;
+      for (auto pit = points.begin(); pit != points.end(); pit++)
+      {
+        if ((*pit-fitting_plane2.projection(*pit)).squared_length() > max_distance_squared2)
+        {
+          max_distance_squared2 = (*pit-fitting_plane2.projection(*pit)).squared_length();
+          max_distance_point = *pit;
+        }
+      }
+      std::cout << "  Max squared segment: Segment " << max_distance_point << ", " << fitting_plane2.projection(max_distance_point) << std::endl;
+      std::cout << "  Max squared distance: " << max_distance_squared2 << std::endl;
+    }
+
+    const double cos_angle = fitting_plane1.orthogonal_vector()*fitting_plane2.orthogonal_vector();
+    std::cout << "  Angle: " << cos_angle << "(" << acos(cos_angle)/(2*DOLFIN_PI)*360 << ")" << std::endl;
+    //return std::min(plane1fit, plane2fit) - cos_angle;
+    return -std::max(max_distance_squared1, max_distance_squared2);
+  }
+  //-----------------------------------------------------------------------------
+  template<typename Vector_3>
+  static CGAL::Aff_transformation_3<typename CGAL::Kernel_traits<Vector_3>::Kernel>
+    rotate_to_xy(Vector_3 a)
+  {
+    const typename CGAL::Kernel_traits<Vector_3>::Kernel::FT den = a[0]*a[0] + a[1]*a[1];
+    return CGAL::Aff_transformation_3<typename CGAL::Kernel_traits<Vector_3>::Kernel>
+      (1 - a[0]*a[0]*(1-a[2])/den, -a[0]*a[1]*(1-a[2])/den,   -a[0],
+       - a[0]*a[1]*(1-a[2])/den,   1 -a[1]*a[1]*(1-a[2])/den, -a[1],
+       a[0],                       a[1],                      1 +(-a[0]*a[0]+a[1]*a[1])*(1-a[2])/den);
   }
   //-----------------------------------------------------------------------------
   /// Attempts to triangulate a polygon in 3d by projecting vertices into the
@@ -296,22 +452,34 @@ class PolyhedronUtils
       std::cout << "Plane quality: " << fit_quality << std::endl;
     }
 
+    const auto rotation = rotate_to_xy(fitting_plane.orthogonal_vector());
+
+    std::cout << "Rotate normal: " << rotation.transform(fitting_plane.orthogonal_vector()) << std::endl;
+    dolfin_assert(dolfin::near(fitting_plane.orthogonal_vector().squared_length(), 1));
+
     CDT cdt;
 
     std::cout << "Projected polygon" << std::endl;
     std::cout << "Polygon";
-    
+
     // Insert vertices into triangulation
     std::vector<typename CDT::Vertex_handle> v;
     Halfedge_handle current = h;
     do
     {
       const Point_3& p = current->vertex()->point();
-      const InexactPoint_2 p_2d = fitting_plane.to_2d(InexactPoint_3(CGAL::to_double(p[0]),
-                                                                     CGAL::to_double(p[1]), 
-                                                                     CGAL::to_double(p[2])));
+      const InexactPoint_3 rotated = rotation.transform(InexactPoint_3(CGAL::to_double(p[0]),
+                                                                       CGAL::to_double(p[1]),
+                                                                       CGAL::to_double(p[2])));
+      std::cout << " " << rotated << ", ";
       
-      std::cout << " " << p_2d << ", ";
+      /* const InexactPoint_2 p_2d = fitting_plane.to_2d(InexactPoint_3(CGAL::to_double(p[0]), */
+      /*                                                                CGAL::to_double(p[1]),  */
+      /*                                                                CGAL::to_double(p[2]))); */
+      const InexactPoint_2 p_2d(rotated[0], rotated[1]);
+
+      // std::cout << " " << p_2d << ", ";
+      
       v.push_back(cdt.insert(p_2d));
       v.back()->info() = current->vertex();
       
@@ -490,7 +658,7 @@ class PolyhedronUtils
           {
             const Vertex_handle a = e.first->vertex(cdt.cw(e.second))->info();
             const Vertex_handle b = e.first->vertex(cdt.ccw(e.second))->info();
-
+            // We need to make sure the same edge (only opposite direction has been inserted already)
             if (edges_inside.count(std::make_pair(b, a)) == 0)
               edges_inside.insert(std::make_pair(a,b));
           }
@@ -500,6 +668,8 @@ class PolyhedronUtils
     
     dolfin_assert(cdt.is_valid());
 
+    std::cout << "Edges to be added: " << edges_inside.size() << std::endl;
+
     // First make the entire hole a facet
     P.fill_hole(h);
 
@@ -507,8 +677,9 @@ class PolyhedronUtils
     std::size_t count = 0;
     for (auto eit = edges_inside.begin(); eit != edges_inside.end(); eit++)
     {
-      // std::cout << "Adding edge: Segment " << eit->first->point() << ", " << eit->second->point() << std::endl;
+      std::cout << "Adding edge: Segment " << eit->first->point() << ", " << eit->second->point() << std::endl;
       count++;
+
       insert_edge(P, eit->first, eit->second);
     }
 
@@ -946,7 +1117,7 @@ class PolyhedronUtils
       if (coplanar)
       {
         std::cout << "Points are coplanar" << std::endl;
-        triangulate_polygon_3d(P, h);
+        triangulate_polygon_3d(P, h, true);
       }
       else
       {
@@ -1005,10 +1176,11 @@ class PolyhedronUtils
     }
 
     std::cout << "Number of border triangles: " << border_triangles.size() << std::endl;
+    std::cout << "Plane fit: " << get_plane_fit<Polyhedron>(h, h) << std::endl;
     dolfin_assert(border_triangles.size() > 4);
 
     // Search for the best dividing segment
-    double best_quality = 0;
+    double best_quality = -1000;
     Halfedge_handle best_outer;
     Halfedge_handle best_inner;
 
@@ -1029,20 +1201,27 @@ class PolyhedronUtils
         
           Segment_3 current_segment(current_outer->vertex()->point(),
                                     current_inner->vertex()->point());
-          //std::cout << "Checking segment: " << current_segment << std::endl;
+          std::cout << "Checking segment: Segment " << current_segment.source() << ", " << current_segment.target()
+                    << " length: " << current_segment.squared_length() << std::endl;
         
           // Check that this does not introduce an intersection
           if (!segment_intersects_triangle_set(current_segment, border_triangles))
           {
-            const double candidate_quality = std::min(get_plane_fit<Polyhedron>(current_outer, current_inner),
-                                                      get_plane_fit<Polyhedron>(current_inner, current_outer));
+            //const double side1_quality = get_plane_fit<Polyhedron>(current_outer, current_inner);
+            //const double side2_quality = get_plane_fit<Polyhedron>(current_inner, current_outer);
+            //const double candidate_quality = std::min(side1_quality, side2_quality);
+            const double candidate_quality = evaluate_hole_subdivision<Polyhedron>(current_inner, current_outer);
+            //std::cout << "Plane qualities: " << side1_quality << ", " << side2_quality << std::endl;
+            std::cout << "Quality: " << candidate_quality << std::endl;
 
             if (candidate_quality > best_quality)
             {
               best_outer = current_outer;
               best_inner = current_inner;
               best_quality = candidate_quality;
+              std::cout << "Currently best" << std::endl;
             }
+            //{ int tmp; std::cin >> tmp; }
           }
         }
         
@@ -1058,31 +1237,36 @@ class PolyhedronUtils
     std::cout << "Found best subdivision: " << std::endl;
     std::cout << "Segment " << best_outer->vertex()->point()
               << ", " << best_inner->vertex()->point() << std::endl;
+    std::cout << "Quality: " << best_quality << std::endl;
 
     Halfedge_handle v1, v2;
-    best_quality = 0;
+    best_quality = -1000;
 
     {
       // Candidate 1: best_inner, best_inner->next(), best_outer
       std::cout << "Candidate 1" << std::endl;
       // Check the four candidates where the chosen segment is an edge
-      const double candidate_quality= std::min(get_plane_fit<Polyhedron>(best_outer, best_inner),
-                                               get_plane_fit<Polyhedron>(best_inner->next(), best_outer));
-      if (best_inner->next()->next() != best_outer &&
-          candidate_quality > best_quality)
+      if (best_inner->next()->next() != best_outer)
       {
-        v1 = best_outer;
-        v2 = best_inner;
-        best_quality = candidate_quality;
+        const double candidate_quality= std::min(get_plane_fit<Polyhedron>(best_outer, best_inner),
+                                                 get_plane_fit<Polyhedron>(best_inner->next(), best_outer));
+
+        if (candidate_quality > best_quality)
+        {
+          v1 = best_outer;
+          v2 = best_inner;
+          best_quality = candidate_quality;
+        }
       }
     }
 
+    if (best_outer->next()->next() != best_inner)
     {
       // Candidate 2: best_inner, best_outer, best_outer->next()
       double candidate_quality = std::min(get_plane_fit<Polyhedron>(best_outer->next(), best_inner),
                                           get_plane_fit<Polyhedron>(best_inner, best_outer));
-      if (best_outer->next()->next() != best_inner &&
-          candidate_quality > best_quality)
+
+      if (candidate_quality > best_quality)
       {
         std::cout << "Candidate 2" << std::endl;
         v1 = best_inner;
@@ -1091,12 +1275,13 @@ class PolyhedronUtils
       }
     }
 
+    if (best_outer->next()->next() != best_inner)
     {
       // Candidate 3: best_inner->prev(), best_inner, best_outer
       const double candidate_quality = std::min(get_plane_fit<Polyhedron>(best_outer, best_inner->prev()),
                                                 get_plane_fit<Polyhedron>(best_inner, best_outer));
-      if (best_outer->next()->next() != best_inner &&
-          candidate_quality > best_quality)
+
+      if (candidate_quality > best_quality)
       {
         std::cout << "Candidate 3" << std::endl;
         v1 = best_outer;
@@ -1105,13 +1290,13 @@ class PolyhedronUtils
       }
     }
 
+    if (best_inner->next()->next() != best_outer)
     {
       // Candidate 4: best_inner, best_outer->prev(), best_outer
       const double candidate_quality = std::min(get_plane_fit<Polyhedron>(best_outer, best_inner),
                                                 get_plane_fit<Polyhedron>(best_inner, best_outer->prev()));
 
-      if (best_inner->next()->next() != best_outer &&
-          candidate_quality > best_quality)
+      if (candidate_quality > best_quality)
       {
         std::cout << "Candidate 4" << std::endl;
         v1 = best_inner;
