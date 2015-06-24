@@ -1725,6 +1725,8 @@ void CSGCGALDomain3D::inside_out()
 void CSGCGALDomain3D::close_holes(std::size_t max)
 {
   impl->p.normalize_border();
+
+  dolfin_assert(impl->p.is_valid(false, 1));
   
   std::size_t counter = 0;
   while (!impl->p.is_closed() && (max == 0 || counter < max))
@@ -1736,7 +1738,7 @@ void CSGCGALDomain3D::close_holes(std::size_t max)
     
     counter++;
 
-    dolfin_assert(impl->p.is_valid());
+    dolfin_assert(impl->p.is_valid(false, 1));
     dolfin_assert(impl->p.is_pure_triangle());
     save_off("closed_hole_intersecting.off");
     dolfin_assert(!is_selfintersecting());
