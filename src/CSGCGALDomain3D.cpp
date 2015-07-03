@@ -1565,7 +1565,7 @@ void CSGCGALDomain3D::save_off(std::string filename) const
   }
 
   std::ofstream outfile(filename.c_str());
-  // outfile.precision(16);
+  outfile << std::setprecision(16);
 
   outfile << impl->p;
 
