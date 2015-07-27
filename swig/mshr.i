@@ -151,8 +151,8 @@
 // Declare the generate function here. The signature must
 // be in sync with mshr/MeshGenerator.h:generate()
 %pythoncode {
-      def generate_mesh(geometry, resolution, backend="cgal") :
-          m = dolfin.Mesh()
-          _generate(m, geometry, resolution, backend)
-          return m
+def generate_mesh(geometry, resolution, backend="cgal") :
+    m = dolfin.Mesh()
+    _generate(m, geometry, resolution, backend)
+    return m
 %}
