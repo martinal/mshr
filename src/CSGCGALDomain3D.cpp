@@ -1722,23 +1722,26 @@ void CSGCGALDomain3D::inside_out()
   impl->p.inside_out();
 }
 //-----------------------------------------------------------------------------
-void CSGCGALDomain3D::close_holes(std::size_t max)
+void CSGCGALDomain3D::close_holes(std::size_t max, std::size_t offset)
 {
   impl->p.normalize_border();
 
-  dolfin_assert(impl->p.is_valid(false, 1));
+  dolfin_assert(impl->p.is_valid(false, 0));
+
+  const std::vector<Exact_Polyhedron_3::Halfedge_handle> holes = PolyhedronUtils::get_holes(impl->p);
+  std::cout << "Num holes: " << holes.size() << std::endl;
   
   std::size_t counter = 0;
-  while (!impl->p.is_closed() && (max == 0 || counter < max))
+  while (!impl->p.is_closed() && (max == 0 || counter < max) && offset+counter < holes.size())
   {
     save_off("not_intersecting.off");
     PolyhedronUtils::close_hole(impl->p,
-                                impl->p.border_halfedges_begin()->opposite());
+                                holes[offset+counter]);
     impl->p.normalize_border();
     
     counter++;
 
-    dolfin_assert(impl->p.is_valid(false, 1));
+    dolfin_assert(impl->p.is_valid(false, 0));
     dolfin_assert(impl->p.is_pure_triangle());
     save_off("closed_hole_intersecting.off");
     dolfin_assert(!is_selfintersecting());
