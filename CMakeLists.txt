@@ -27,12 +27,32 @@ endif()
 # Borrow some cmake modules from cgal
 set(CMAKE_MODULE_PATH "${CMAKE_SOURCE_DIR}/3rdparty/CGAL-4.6/cmake/modules")
 
+# Helper macro for testing if particular value is contained in list
+# Taken from http://www.cmake.org/Wiki/CMakeMacroListOperations#LIST_CONTAINS
+MACRO(LIST_CONTAINS var value)
+  SET(${var})
+  FOREACH (value2 ${ARGN})
+    IF (${value} STREQUAL ${value2})
+      SET(${var} TRUE)
+    ENDIF (${value} STREQUAL ${value2})
+  ENDFOREACH (value2)
+ENDMACRO(LIST_CONTAINS)
 
 # Use C++11
 SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++0x -Wall")
 
 # Boost
+# This is workaround to avoid that find_package(Boost)
+# picks up th ewrong boost when a hint is given
+set(BOOST_ROOT $ENV{BOOST_DIR} $ENV{BOOST_HOME})
+if (BOOST_ROOT)
+  set(Boost_NO_SYSTEM_PATHS on)
+endif()
+
+# Prevent FindBoost.cmake from looking for system Boost{foo}.cmake files
+set(Boost_NO_BOOST_CMAKE true)
 find_package( Boost REQUIRED system filesystem program_options )
+
 include_directories("${Boost_INCLUDE_DIRS}")
 
 # Temporary: attempt to find linking problem
@@ -62,14 +82,17 @@ find_package(DOLFIN REQUIRED)
 include_directories(${DOLFIN_PYTHON_INCLUDE_DIRS})
 include(${DOLFIN_USE_FILE})
 
-message(STATUS "Dolfin libs:      ${DOLFIN_LIBRARIES}")
-message(STATUS "Dolfin 3rd party: ${DOLFIN_3RD_PARTY_LIBRARIES}")
-
-# TODO: This should be inherited from Dolfin
-find_package(VTK)
-if (VTK_FOUND)
-  add_definitions( -DMSHR_HAS_VTK )
-  include(${VTK_USE_FILE})
+# If MSHR_ENABLE_VTK is defined (ie. on the command line), it will
+# take precedence. Otherwise, mshr, will check if Dolfin is configured
+# with VTK and do the same.
+LIST_CONTAINS(DOLFIN_HAS_VTK "-DHAS_VTK" ${DOLFIN_CXX_DEFINITIONS})
+if ( MSHR_ENABLE_VTK OR
+    (NOT DEFINED MSHR_ENABLE_VTK AND DOLFIN_HAS_VTK) )
+  find_package(VTK)
+  if (VTK_FOUND)
+    add_definitions( -DMSHR_HAS_VTK )
+    include(${VTK_USE_FILE})
+  endif()
 endif()
 
 # Set installation directories
@@ -149,7 +172,6 @@ target_link_libraries( mshrable mshr
                                 ${Boost_LIBRARIES}
                      )
 
-
 # install library and app
 install(TARGETS mshr mshrable
   RUNTIME DESTINATION ${INSTALL_BIN_DIR}
@@ -160,14 +182,7 @@ install(TARGETS mshr mshrable
 # install header files
 install(DIRECTORY include/ DESTINATION ${INSTALL_INCLUDE_DIR})
 
-message(STATUS "INSTALL DIR: ${INSTALL_CMAKE_DIR}")
-message(STATUS "INCLUDE DIR: ${INSTALL_INCLUDE_DIR}")
-message(STATUS "PROJECT SOURCE: ${PROJECT_SOURCE_DIR}")
-message(STATUS "INSTALL CMAKE: ${INSTALL_CMAKE_DIR}")
-message(STATUS "INSTALL INCLUDE: ${INSTALL_INCLUDE_DIR}")
-
 file(RELATIVE_PATH REL_INCLUDE_DIR "${INSTALL_CMAKE_DIR}" "${INSTALL_INCLUDE_DIR}")
-message(STATUS "REL INCLUDE: ${REL_INCLUDE_DIR}")
 
 ### add cmake configuration file ###
 
