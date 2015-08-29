@@ -107,6 +107,7 @@ typedef CDT::Face_handle Face_handle;
 typedef CDT::All_faces_iterator All_faces_iterator;
 
 typedef Inexact_Kernel::Point_2 Point_2;
+typedef Inexact_Kernel::Segment_2 Segment_2;
 
 namespace mshr
 {
@@ -207,61 +208,6 @@ void explore_subdomains(CDT& cdt,
   }
 }
 //-----------------------------------------------------------------------------
-void add_subdomain(PSLG& pslg, 
-                   const CSGCGALDomain2D& cgal_geometry,
-                   double threshold)
-{
-
-  // // Insert the outer boundaries of the domain
-  // {
-  //   std::list<std::vector<dolfin::Point> > v;
-  //   cgal_geometry.get_vertices(v, threshold);
-
-  //   for (std::list<std::vector<dolfin::Point> >::const_iterator pit = v.begin();
-  //        pit != v.end(); ++pit)
-  //   {
-  //     std::vector<dolfin::Point>::const_iterator it = pit->begin();
-  //     Vertex_handle first = cdt.insert(Point_2(it->x(), it->y()));
-  //     Vertex_handle prev = first;
-  //     ++it;
-
-  //     for(; it != pit->end(); ++it)
-  //     {
-  //       Vertex_handle current = cdt.insert(Point_2(it->x(), it->y()));
-  //       cdt.insert_constraint(prev, current);
-  //       prev = current;
-  //     }
-
-  //     cdt.insert_constraint(first, prev);
-  //   }
-  // }
-
-  // // Insert holes
-  // {
-  //   std::list<std::vector<dolfin::Point> > holes;
-  //   cgal_geometry.get_holes(holes, threshold);
-
-  //   for (std::list<std::vector<dolfin::Point> >::const_iterator hit = holes.begin();
-  //        hit != holes.end(); ++hit)
-  //   {
-
-  //     std::vector<dolfin::Point>::const_iterator pit = hit->begin();
-  //     Vertex_handle first = cdt.insert(Point_2(pit->x(), pit->y()));
-  //     Vertex_handle prev = first;
-  //     ++pit;
-
-  //     for(; pit != hit->end(); ++pit)
-  //     {
-  //       Vertex_handle current = cdt.insert(Point_2(pit->x(), pit->y()));
-  //       cdt.insert_constraint(prev, current);
-  //       prev = current;
-  //     }
-
-  //     cdt.insert_constraint(first, prev);
-  //   }
-  // }
-}
-//-----------------------------------------------------------------------------
 double shortest_constrained_edge(const CDT &cdt)
 {
   double min_length = std::numeric_limits<double>::max();
@@ -286,9 +232,6 @@ double shortest_constrained_edge(const CDT &cdt)
 
   return min_length;
 }
-//-----------------------------------------------------------------------------
-
-
 //-----------------------------------------------------------------------------
 void CSGCGALMeshGenerator2D::generate(const CSGGeometry& geometry, dolfin::Mesh& mesh)
 {
@@ -317,15 +260,21 @@ void CSGCGALMeshGenerator2D::generate(const CSGGeometry& geometry, dolfin::Mesh&
          ++it)
     {
       const std::size_t current_index = it->first;
+      std::cout << "Handling subdomain: " << current_index << std::endl;
       std::shared_ptr<const CSGGeometry> current_subdomain = it->second;
 
       CSGCGALDomain2D cgal_geometry(current_subdomain.get());
+      std::cout << "Current subdomain: " << cgal_geometry.str(true) << std::endl;
 
       // Only the part inside the total domain
       cgal_geometry.intersect_inplace(total_domain);
 
+      std::cout << "Subdomain intersecting total: " << cgal_geometry.str(true) << std::endl;
+
       // Only the part outside overlaying subdomains
       cgal_geometry.difference_inplace(overlaying);
+
+      std::cout << "Subdomain minus overlays: " << cgal_geometry.str(true) << std::endl;
 
       subdomain_geometries.push_back(std::make_pair(current_index,
                                                     cgal_geometry));
@@ -335,9 +284,12 @@ void CSGCGALMeshGenerator2D::generate(const CSGGeometry& geometry, dolfin::Mesh&
 
     CSGCGALDomain2D remaining(total_domain);
     remaining.difference_inplace(overlaying);
+
+    std::cout << "Remaining part of total domain: " << remaining.str(true) << std::endl;
+
     subdomain_geometries.push_back(std::make_pair(0, remaining));
 
-    const double pixel_size = parameters["pixel_size"];
+    // const double pixel_size = parameters["pixel_size"];
 
     // Compute cell size
     double cell_size;
@@ -353,9 +305,14 @@ void CSGCGALMeshGenerator2D::generate(const CSGGeometry& geometry, dolfin::Mesh&
     }
 
     log(dolfin::TRACE, "Request cell size: %f", cell_size);
-    const double truncate_tolerance = parameters["edge_truncate_tolerance"];
+    //const double truncate_tolerance = parameters["edge_truncate_tolerance"];
 
-    PSLG pslg(subdomain_geometries, pixel_size, truncate_tolerance < 0 ? cell_size/200 : truncate_tolerance);
+    std::pair<std::vector<dolfin::Point>,
+              std::vector<std::pair<std::size_t, std::size_t>>> pslg =
+      CSGCGALDomain2D::compute_pslg(subdomain_geometries);
+    // PSLG pslg(subdomain_geometries,
+    //           pixel_size,
+    //           truncate_tolerance < 0 ? cell_size/200 : truncate_tolerance);
 
     // Create empty CGAL triangulation and copy data from the PSLG
     CDT cdt;
@@ -364,17 +321,19 @@ void CSGCGALMeshGenerator2D::generate(const CSGGeometry& geometry, dolfin::Mesh&
       std::vector<CDT::Vertex_handle> vertices;
       {
         // Insert the vertices into the triangulation
-        std::vector<dolfin::Point>& v = pslg.vertices;
-        vertices.reserve(v.size());
-        for (auto vit = v.begin(); vit != v.end(); vit++)
-          vertices.push_back(cdt.insert(Point_2(vit->x(), vit->y())));
+        vertices.reserve(pslg.first.size());
+        for (const dolfin::Point& vertex : pslg.first)
+        {
+          std::cout << "Inserting vertex: " << vertex.str() << std::endl;
+          vertices.push_back(cdt.insert(Point_2(vertex.x(), vertex.y())));
+        }
       }
 
       // Insert the edges as constraints
-      std::vector<std::pair<std::size_t, std::size_t> > edges = pslg.edges;
-      for (auto eit = edges.begin(); eit != edges.end(); eit++)
+      for (const std::pair<std::size_t, size_t>& edge : pslg.second)
       {
-        cdt.insert_constraint(vertices[eit->first], vertices[eit->second]);
+        std::cout << "Inserting edge: (" << edge.first << ", " << edge.second << ")" << std::endl;
+        cdt.insert_constraint(vertices[edge.first], vertices[edge.second]);
       }
     }
   

@@ -71,26 +71,15 @@ class CSGCGALDomain2D : public dolfin::Variable
   /// @param verbose Verbosity level
   std::string str(bool verbose) const;
 
+  static
+    std::pair<std::vector<dolfin::Point>,
+              std::vector<std::pair<std::size_t, std::size_t>>>
+    compute_pslg(const std::vector<std::pair<std::size_t, CSGCGALDomain2D>>& domains);
+
  private:
   std::unique_ptr<CSGCGALDomain2DImpl> impl;
-  friend class PSLG;
 };
 
-// Forward declaration
-struct PSLGImpl;
-
-// TODO: Merge this class with CSGCGALDomain2D
-class PSLG
-{
- public:
-  PSLG(const std::vector<std::pair<std::size_t, CSGCGALDomain2D> > &domains, 
-       double pixel_size, 
-       double truncate_tolerance);
-  ~PSLG();
-
-  std::vector<dolfin::Point> vertices;
-  std::vector<std::pair<std::size_t, std::size_t> > edges;
-};
 }
 
 #endif

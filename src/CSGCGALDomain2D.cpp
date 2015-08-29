@@ -39,9 +39,6 @@
 #include <CGAL/Min_circle_2.h>
 #include <CGAL/Min_circle_2_traits_2.h>
 
-#include <CGAL/Snap_rounding_traits_2.h>
-#include <CGAL/Snap_rounding_2.h>
-
 // Polygon typedefs
 //typedef CGAL::Exact_predicates_exact_constructions_kernel Exact_Kernel;
 typedef CGAL::Quotient<CGAL::MP_Float>                    Quotient;
@@ -55,10 +52,6 @@ typedef Polygon_2::Vertex_const_iterator                  Vertex_const_iterator;
 typedef CGAL::Polygon_with_holes_2<Exact_Kernel>          Polygon_with_holes_2;
 typedef Polygon_with_holes_2::Hole_const_iterator         Hole_const_iterator;
 typedef CGAL::Polygon_set_2<Exact_Kernel>                 Polygon_set_2;
-
-typedef CGAL::Snap_rounding_traits_2<Exact_Kernel>        snap_rounding_traits;
-typedef std::list<Point_2>                                Polyline_2;
-typedef std::list<Polyline_2>                             Polyline_list_2;
 
 // Min enclosing circle typedefs
 typedef CGAL::Min_circle_2_traits_2<Exact_Kernel>  Min_Circle_Traits;
@@ -372,254 +365,109 @@ bool CSGCGALDomain2D::point_in_domain(dolfin::Point p) const
 std::string CSGCGALDomain2D::str(bool verbose) const
 {
   std::stringstream ss;
-  ss << "<Polygonal domain with" << std::endl;
+  const std::size_t num_polygons = impl->polygon_set.number_of_polygons_with_holes();
+  ss << "<Polygonal domain with " << num_polygons
+     << " outer polygon" << (num_polygons != 1 ? "s" : "") << std::endl;
 
+  if (verbose)
   {
     std::list<Polygon_with_holes_2> polygon_list;
     impl->polygon_set.polygons_with_holes(std::back_inserter(polygon_list));
-    ss << "  " << polygon_list.size() << " polygons" << std::endl;
+    for (const Polygon_with_holes_2& p : polygon_list)
+    {
+      ss << "  Polygon " << std::endl;
+      const Polygon_2& bdr = p.outer_boundary();
+      for (Polygon_2::Vertex_const_iterator vit = bdr.vertices_begin();
+           vit != bdr.vertices_end(); vit++)
+      {
+        ss << "(" << *vit << ") ";
+      }
+      ss << std::endl;
+    }
   }
 
-  // std::list<std::vector<dolfin::Point> > vertices;
-  // get_vertices(vertices, 0);
-
-  // if (verbose)
-  // {
-  //   for (std::list<std::vector<dolfin::Point> >::const_iterator lit = vertices.begin();
-  //        lit != vertices.end(); lit++)
-  //   {
-  //     ss << "  Polygon" << std::endl;
-  //     for (std::vector<dolfin::Point>::const_iterator vit = lit->begin();
-  //          vit != lit->end(); vit++)
-  //     {
-  //       ss << "    " << vit->str(false) << std::endl;
-  //     }
-  //   }
-  // }
+  ss << ">";
   return ss.str();
 }
 //-----------------------------------------------------------------------------
-struct PSLGImpl
+static inline void add_simple_polygon(std::map<Point_2, std::size_t>& vertices,
+                                      std::set<std::pair<std::size_t, std::size_t>>& segments,
+                                      const Polygon_2& p)
 {
- public:
-  std::vector<Point_2> vertices;
-  std::vector<std::pair<std::size_t, std::size_t> > edges;
-};
-//-----------------------------------------------------------------------------
-static inline void add_simple_polygon(std::vector<Segment_2>& segments, 
-                                      const Polygon_2& p, 
-                                      const Quotient & truncate_tolerance_squared)
-{
-  Polygon_2::Vertex_const_iterator first = p.vertices_begin(); 
-  Polygon_2::Vertex_const_iterator prev = first;
-  Polygon_2::Vertex_const_iterator current = prev;
-  current++;
+  // NOTE: For now this function assumes that segment do not intersect except
+  // exactly in the endpoints.
+  // TODO: Make it more flexible and search for endpoints with a tolerance
 
-  while (current != p.vertices_end())
+  typedef std::map<Point_2, std::size_t>::iterator Iterator;
+
+  std::cout << "Adding simple polygon" << std::endl;
+
+  for (std::size_t i = 0; i < p.size(); i++)
   {
-    Segment_2 s(*prev, *current);
+    Segment_2 s = p.edge(i);
+    std::cout << "  Segment: " << s << std::endl;
 
-    // Don't add segment if shorter than tolerance
-    if (s.squared_length() < truncate_tolerance_squared)
+    Iterator sit = vertices.find(s.source());
+    if (sit == vertices.end())
     {
-      current++;
-      continue;
+      const std::size_t vertex_number = vertices.size();
+
+      std::pair<Iterator, bool> i = vertices.insert(std::make_pair(s.source(), vertex_number));
+      dolfin_assert(!i.second);
+      sit = i.first;
     }
+    std::cout << "Point " << sit->first << " is " << sit->second << std::endl;
 
-    segments.push_back(s);
-    prev = current;
-    current++;
+    Iterator tit = vertices.find(s.target());
+    if (tit == vertices.end())
+    {
+      const std::size_t vertex_number = vertices.size();
+      std::pair<Iterator, bool> i = vertices.insert(std::make_pair(s.target(), vertex_number));
+      dolfin_assert(i.second);
+      tit = i.first;
+    }
+    std::cout << "Point " << tit->first << " is " << tit->second << std::endl;
 
+    if (segments.count(std::make_pair(tit->second, sit->second)) == 0)
+      segments.insert(std::make_pair(sit->second, tit->second));
   }
-  segments.push_back(Segment_2(*prev, *first));
 }
 //-----------------------------------------------------------------------------
-static inline std::size_t get_vertex_index(std::map<Point_2, std::size_t>& m,
-                                           std::vector<dolfin::Point>& v,
-                                           Point_2 p)
+std::pair<std::vector<dolfin::Point>, std::vector<std::pair<std::size_t, std::size_t>>>
+   CSGCGALDomain2D::compute_pslg(const std::vector<std::pair<std::size_t, CSGCGALDomain2D>>& domains)
 {
-  std::size_t i;
-  std::map<Point_2, std::size_t>::const_iterator it = m.find(p);
-  if (it == m.end())
+  std::map<Point_2, std::size_t> vertices;
+  std::set<std::pair<std::size_t, std::size_t>> segments;
+
+  for (const std::pair<std::size_t, CSGCGALDomain2D>& domain : domains)
   {
-    v.push_back(dolfin::Point(CGAL::to_double(p.x()), CGAL::to_double(p.y())));
-    m[p] = v.size()-1;
-    i = v.size()-1;
-  }
-  else
-  {
-    i = it->second;
-  }
-
-  return i;
-}
-//-----------------------------------------------------------------------------
-PSLG::PSLG(const std::vector<std::pair<std::size_t, CSGCGALDomain2D> >& domains, 
-           double pixel_size, 
-           double edge_truncate_tolerance)
-{
-  const Quotient truncate_tolerance(edge_truncate_tolerance);
-  const Quotient truncate_tolerance_squared(truncate_tolerance*truncate_tolerance);
-
-
-  if (domains.size() > 1 && pixel_size > 0)
-  {
-    // Collect all segments from all domains to send to snap rounding
-    std::vector<Segment_2> segments;
-
-    for (auto it = domains.begin(); it != domains.end(); it++)
-    {
-      const Polygon_set_2& p = it->second.impl->polygon_set;
-
-      std::list<Polygon_with_holes_2> polygon_list;
-      p.polygons_with_holes(std::back_inserter(polygon_list));
-
-      for (std::list<Polygon_with_holes_2>::const_iterator pit = polygon_list.begin();
-           pit != polygon_list.end(); ++pit)
-      {
-        add_simple_polygon(segments, pit->outer_boundary(), truncate_tolerance_squared);
-
-        // Add holes
-        Hole_const_iterator hit;
-        for (hit = pit->holes_begin(); hit != pit->holes_end(); ++hit)
-        {
-          add_simple_polygon(segments, *hit, truncate_tolerance_squared);
-        }
-      }
-    }
-
-    log(dolfin::TRACE, "Snap rounding PSLG");
-    Polyline_list_2 snapped_polylines;
-
-    CGAL::snap_rounding_2<snap_rounding_traits,
-                          std::vector<Segment_2>::const_iterator,
-                          Polyline_list_2>
-      (segments.begin(), segments.end(),  // input
-       snapped_polylines,                 // output
-       pixel_size,                        // pixel size
-       false,                             // do iterated snap rounding
-       false,                             // output as integers
-       1);                                // number of kd-trees
-
-    std::map<Point_2, std::size_t> point_to_index;
-
-    for (Polyline_list_2::const_iterator iter1 = snapped_polylines.begin();
-         iter1 != snapped_polylines.end(); ++iter1)
-    {
-      Polyline_2::const_iterator iter2 = iter1->begin();
-      const std::size_t first = get_vertex_index(point_to_index,
-                                                 vertices,
-                                                 *iter2);
-      std::size_t prev = first;
-      iter2++;
-
-      while(iter2 != iter1->end())
-      {
-        std::size_t current = get_vertex_index(point_to_index,
-                                               vertices,
-                                               *iter2);
-
-        edges.push_back(std::make_pair(prev, current));
-        prev = current;
-        ++iter2;
-      }
-    }
-  }
-  else
-  {
-    log(dolfin::TRACE, "Skipping snap rounding");
-
-    // There is only one domain, so the segment list is just a set of disjoint
-    // simple polygons possibly with holes
-
-    const Polygon_set_2& p = domains.front().second.impl->polygon_set;
+    std::cout << "PSLG: Adding domain: " << domain.first << std::endl;
+    const Polygon_set_2& p = domain.second.impl->polygon_set;
 
     std::list<Polygon_with_holes_2> polygon_list;
     p.polygons_with_holes(std::back_inserter(polygon_list));
 
-    for (std::list<Polygon_with_holes_2>::const_iterator pit = polygon_list.begin();
-         pit != polygon_list.end(); ++pit)
+    for (const Polygon_with_holes_2& pwh : polygon_list)
     {
-      {
-        // Add the outer boundary
-        const Polygon_2& p = pit->outer_boundary();
-        Polygon_2::Vertex_const_iterator current = p.vertices_begin();
-        Polygon_2::Vertex_const_iterator prev = current;
-
-        const std::size_t vertex_index_start = vertices.size();
-        vertices.push_back(dolfin::Point(CGAL::to_double(current->x()),
-                                         CGAL::to_double(current->y())));
-
-        std::size_t vertex_index = vertex_index_start;
-
-        current++;
-
-        while (current != p.vertices_end())
-        {
-          Segment_2 s(*prev, *current);
-
-          // Don't add segment if shorter than tolerance
-          if (s.squared_length() < truncate_tolerance_squared)
-          {
-            current++;
-            continue;
-          }
-
-          vertices.push_back(dolfin::Point(CGAL::to_double(current->x()),
-                                           CGAL::to_double(current->y())));
-
-          edges.push_back(std::make_pair(vertex_index, vertex_index+1));
-
-          prev = current;
-          current++;
-          vertex_index++;
-        }
-
-        edges.push_back(std::make_pair(vertex_index, vertex_index_start));
-      }
+      std::cout << "  Adding polygon" << std::endl;
+      add_simple_polygon(vertices, segments, pwh.outer_boundary());
 
       // Add holes
       Hole_const_iterator hit;
-      for (hit = pit->holes_begin(); hit != pit->holes_end(); ++hit)
+      for (hit = pwh.holes_begin(); hit != pwh.holes_end(); ++hit)
       {
-        const Polygon_2& p = *hit;
-        Polygon_2::Vertex_const_iterator current = p.vertices_begin();
-        Polygon_2::Vertex_const_iterator prev = current;
-
-        const std::size_t vertex_index_start = vertices.size();
-        vertices.push_back(dolfin::Point(CGAL::to_double(current->x()),
-                                         CGAL::to_double(current->y())));
-        std::size_t vertex_index = vertex_index_start;
-
-        current++;
-
-        while (current != p.vertices_end())
-        {
-          Segment_2 s(*prev, *current);
-
-          // Don't add segment if shorter than tolerance
-          if (s.squared_length() < truncate_tolerance_squared)
-          {
-            current++;
-            continue;
-          }
-
-          vertices.push_back(dolfin::Point(CGAL::to_double(current->x()),
-                                           CGAL::to_double(current->y())));
-
-          edges.push_back(std::make_pair(vertex_index, vertex_index+1));
-
-          prev = current;
-          current++;
-          vertex_index++;
-        }
-
-        edges.push_back(std::make_pair(vertex_index, vertex_index_start));
+        add_simple_polygon(vertices, segments, *hit);
       }
     }
   }
+
+  std::vector<dolfin::Point> v(vertices.size());
+  for (const std::pair<Point_2, std::size_t>& vertex : vertices)
+    v[vertex.second] = dolfin::Point(CGAL::to_double(vertex.first.x()), CGAL::to_double(vertex.first.y()));
+
+  std::vector<std::pair<std::size_t, std::size_t>> s(segments.begin(), segments.end());
+
+  return std::make_pair(std::move(v), std::move(s));
 }
-//-----------------------------------------------------------------------------
-PSLG::~PSLG(){}
 //-----------------------------------------------------------------------------
 }
