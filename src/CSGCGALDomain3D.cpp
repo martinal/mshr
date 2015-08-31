@@ -578,6 +578,13 @@ void make_surface3D(const Surface3D* s, Exact_Polyhedron_3& P)
   }
 }
 //-----------------------------------------------------------------------------
+void make_extrude2D(const Extrude2D* e, Exact_Polyhedron_3& P)
+{
+  dolfin_assert(s);
+
+
+}
+//-----------------------------------------------------------------------------
 Aff_transformation_3 get_scaling(const CSGScaling& s)
 {
   Aff_transformation_3 transformation(CGAL::IDENTITY);
@@ -804,6 +811,13 @@ void convertSubTree(const CSGGeometry* geometry, Exact_Polyhedron_3& P)
       const Surface3D* b = dynamic_cast<const Surface3D*>(geometry);
       dolfin_assert(b);
       make_surface3D(b, P);
+      break;
+    }
+    case CSGGeometry::Extrude2D :
+    {
+      const Extrude2D* e = dynamic_cast<const Extrude2D*>(geometry);
+      dolfin_assert(e);
+      make_extrude2D(e, P);
       break;
     }
     default:

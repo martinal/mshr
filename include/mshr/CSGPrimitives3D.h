@@ -20,9 +20,13 @@
 #ifndef __MSHR_PRIMITIVES_3D_H
 #define __MSHR_PRIMITIVES_3D_H
 
-#include <cstddef>
-#include <dolfin/geometry/Point.h>
 #include "CSGPrimitive.h"
+#include "CSGPrimitives2D.h"
+#include <dolfin/geometry/Point.h>
+
+#include <cstddef>
+
+
 
 namespace mshr
 {
@@ -206,6 +210,23 @@ namespace mshr
     const dolfin::Point center;
     const double a, b, c;
     const std::size_t _segments;
+  };
+
+  /// @brief A 2D polygon extruded alogn the z axis to 3D
+  class Extrude2D : public CSGPrimitive3D
+  {
+   public :
+    Extrude2D(std::shared_ptr<CSGPrimitive2D>, double z);
+
+    /// @brief Informal string representation
+    /// @return The description string
+    std::string str(bool verbose) const;
+
+    Type getType() const
+    { return CSGGeometry::Extrude2D; }
+
+    std::shared_ptr<CSGPrimitive2D> primitive_2d;
+    const double z;
   };
 }
 

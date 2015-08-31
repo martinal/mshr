@@ -212,4 +212,19 @@ std::string Ellipsoid::str(bool verbose) const
   return ss.str();
 }
 //-----------------------------------------------------------------------------
+Extrude2D::Extrude2D(std::shared_ptr<CSGPrimitive2D> primitive_2d, double z)
+  : primitive_2d(primitive_2d), z(z)
+{}
+//-----------------------------------------------------------------------------
+std::string Extrude2D::str(bool verbose) const
+{
+  std::stringstream ss;
+  ss << "Extruded 2D polygon, z = " << z;
+  if (verbose)
+  {
+    ss << primitive_2d->str(true);
+  }
+
+  return ss.str();
+}
 }

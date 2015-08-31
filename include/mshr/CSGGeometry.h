@@ -66,7 +66,23 @@ namespace mshr
     /// @brief Return const list of subdomain geometries
     const std::list<std::pair<std::size_t, std::shared_ptr<const CSGGeometry> > >& get_subdomains() const { return subdomains; }
 
-    enum Type { Box, Sphere, Cylinder, Tetrahedron, Ellipsoid, Surface3D, Circle, Ellipse, Rectangle, Polygon, Union, Intersection, Difference, Translation, Scaling, Rotation };
+    enum Type { Box,
+                Sphere,
+                Cylinder,
+                Tetrahedron,
+                Ellipsoid,
+                Surface3D,
+                Extrude2D,
+                Circle,
+                Ellipse,
+                Rectangle,
+                Polygon,
+                Union,
+                Intersection,
+                Difference,
+                Translation,
+                Scaling,
+                Rotation };
 
     virtual Type getType() const = 0;
     virtual bool is_operator() const = 0;
