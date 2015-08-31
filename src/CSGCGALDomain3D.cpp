@@ -22,6 +22,7 @@
 #include <mshr/STLFileReader.h>
 #include <mshr/VTPFileReader.h>
 #include <mshr/SurfaceConsistency.h>
+#include <mshr/CSGCGALDomain2D.h>
 
 #include "meshclean.h"
 #include "triangulate_polyhedron.h"
@@ -582,7 +583,7 @@ void make_extrude2D(const Extrude2D* e, Exact_Polyhedron_3& P)
 {
   dolfin_assert(s);
 
-
+  CSGCGALDomain2D polygon(e->geometry_2d.get());
 }
 //-----------------------------------------------------------------------------
 Aff_transformation_3 get_scaling(const CSGScaling& s)

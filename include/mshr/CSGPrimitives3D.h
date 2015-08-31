@@ -225,7 +225,7 @@ namespace mshr
     Type getType() const
     { return CSGGeometry::Extrude2D; }
 
-    std::shared_ptr<CSGPrimitive2D> primitive_2d;
+    std::shared_ptr<CSGGeometry> geometry_2d;
     const double z;
   };
 }
