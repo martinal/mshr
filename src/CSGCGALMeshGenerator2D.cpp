@@ -260,21 +260,21 @@ void CSGCGALMeshGenerator2D::generate(const CSGGeometry& geometry, dolfin::Mesh&
          ++it)
     {
       const std::size_t current_index = it->first;
-      std::cout << "Handling subdomain: " << current_index << std::endl;
+      // std::cout << "Handling subdomain: " << current_index << std::endl;
       std::shared_ptr<const CSGGeometry> current_subdomain = it->second;
 
       CSGCGALDomain2D cgal_geometry(current_subdomain.get());
-      std::cout << "Current subdomain: " << cgal_geometry.str(true) << std::endl;
+      // std::cout << "Current subdomain: " << cgal_geometry.str(true) << std::endl;
 
       // Only the part inside the total domain
       cgal_geometry.intersect_inplace(total_domain);
 
-      std::cout << "Subdomain intersecting total: " << cgal_geometry.str(true) << std::endl;
+      // std::cout << "Subdomain intersecting total: " << cgal_geometry.str(true) << std::endl;
 
       // Only the part outside overlaying subdomains
       cgal_geometry.difference_inplace(overlaying);
 
-      std::cout << "Subdomain minus overlays: " << cgal_geometry.str(true) << std::endl;
+      // std::cout << "Subdomain minus overlays: " << cgal_geometry.str(true) << std::endl;
 
       subdomain_geometries.push_back(std::make_pair(current_index,
                                                     cgal_geometry));
@@ -285,7 +285,7 @@ void CSGCGALMeshGenerator2D::generate(const CSGGeometry& geometry, dolfin::Mesh&
     CSGCGALDomain2D remaining(total_domain);
     remaining.difference_inplace(overlaying);
 
-    std::cout << "Remaining part of total domain: " << remaining.str(true) << std::endl;
+    // std::cout << "Remaining part of total domain: " << remaining.str(true) << std::endl;
 
     subdomain_geometries.push_back(std::make_pair(0, remaining));
 
@@ -325,7 +325,7 @@ void CSGCGALMeshGenerator2D::generate(const CSGGeometry& geometry, dolfin::Mesh&
         vertices.reserve(pslg.first.size());
         for (const dolfin::Point& vertex : pslg.first)
         {
-          std::cout << "Inserting vertex: " << vertex.str() << std::endl;
+          // std::cout << "Inserting vertex: " << vertex.str() << std::endl;
           vertices.push_back(cdt.insert(Point_2(vertex.x(), vertex.y())));
         }
       }
@@ -333,7 +333,7 @@ void CSGCGALMeshGenerator2D::generate(const CSGGeometry& geometry, dolfin::Mesh&
       // Insert the edges as constraints
       for (const std::pair<std::size_t, size_t>& edge : pslg.second)
       {
-        std::cout << "Inserting edge: (" << edge.first << ", " << edge.second << ")" << std::endl;
+        // std::cout << "Inserting edge: (" << edge.first << ", " << edge.second << ")" << std::endl;
         cdt.insert_constraint(vertices[edge.first], vertices[edge.second]);
       }
     }

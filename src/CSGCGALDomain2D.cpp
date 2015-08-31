@@ -403,7 +403,7 @@ static inline void add_simple_polygon(std::map<Point_2, std::size_t>& vertices,
 
   typedef std::map<Point_2, std::size_t>::iterator Iterator;
 
-  std::cout << "Adding simple polygon" << std::endl;
+  // std::cout << "Adding simple polygon" << std::endl;
 
   std::size_t offset = 0;
   while (p.edge(offset).squared_length() < truncate_tolerance)
@@ -419,7 +419,7 @@ static inline void add_simple_polygon(std::map<Point_2, std::size_t>& vertices,
 
     if (s.squared_length() < truncate_tolerance)
     {
-      const std::size_t vertex_number = vertices.size();
+      // std::cout << "Short edge (" << s << ") skipped" << std::endl;
 
       // Insert both points into the vertex map, pointing to the same vertex
 
@@ -456,7 +456,7 @@ static inline void add_simple_polygon(std::map<Point_2, std::size_t>& vertices,
     }
     else
     {
-      std::cout << "  Segment: " << s << " (" << sqrt(CGAL::to_double(s.squared_length())) << ")" << std::endl;
+      // std::cout << "  Segment: " << s << " (" << sqrt(CGAL::to_double(s.squared_length())) << ")" << std::endl;
 
       Iterator sit = vertices.find(s.source());
       if (sit == vertices.end())
@@ -466,7 +466,7 @@ static inline void add_simple_polygon(std::map<Point_2, std::size_t>& vertices,
         sit = i.first;
         num_vertices++;
       }
-      std::cout << "Point " << sit->first << " is " << sit->second << std::endl;
+      // std::cout << "Point " << sit->first << " is " << sit->second << std::endl;
 
       Iterator tit = vertices.find(s.target());
       if (tit == vertices.end())
@@ -477,7 +477,7 @@ static inline void add_simple_polygon(std::map<Point_2, std::size_t>& vertices,
         tit = i.first;
         num_vertices++;
       }
-      std::cout << "Point " << tit->first << " is " << tit->second << std::endl;
+      // std::cout << "Point " << tit->first << " is " << tit->second << std::endl;
 
       if (segments.count(std::make_pair(tit->second, sit->second)) == 0)
         segments.insert(std::make_pair(sit->second, tit->second));
@@ -491,7 +491,7 @@ std::pair<std::vector<dolfin::Point>, std::vector<std::pair<std::size_t, std::si
   CSGCGALDomain2D::compute_pslg(const std::vector<std::pair<std::size_t, CSGCGALDomain2D>>& domains,
                    double truncate_tolerance)
 {
-  std::cout << "compute_pslg(), truncate_tolerance " << truncate_tolerance << std::endl;
+  // std::cout << "compute_pslg(), truncate_tolerance " << truncate_tolerance << std::endl;
 
   std::size_t num_vertices = 0;
   std::map<Point_2, std::size_t> vertices;
@@ -499,7 +499,7 @@ std::pair<std::vector<dolfin::Point>, std::vector<std::pair<std::size_t, std::si
 
   for (const std::pair<std::size_t, CSGCGALDomain2D>& domain : domains)
   {
-    std::cout << "PSLG: Adding domain: " << domain.first << std::endl;
+    // std::cout << "PSLG: Adding domain: " << domain.first << std::endl;
     const Polygon_set_2& p = domain.second.impl->polygon_set;
 
     std::list<Polygon_with_holes_2> polygon_list;
@@ -507,7 +507,7 @@ std::pair<std::vector<dolfin::Point>, std::vector<std::pair<std::size_t, std::si
 
     for (const Polygon_with_holes_2& pwh : polygon_list)
     {
-      std::cout << "  Adding polygon" << std::endl;
+      // std::cout << "  Adding polygon" << std::endl;
       add_simple_polygon(vertices,
                          segments,
                          num_vertices,
