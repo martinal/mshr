@@ -74,7 +74,8 @@ class CSGCGALDomain2D : public dolfin::Variable
   static
     std::pair<std::vector<dolfin::Point>,
               std::vector<std::pair<std::size_t, std::size_t>>>
-    compute_pslg(const std::vector<std::pair<std::size_t, CSGCGALDomain2D>>& domains);
+    compute_pslg(const std::vector<std::pair<std::size_t, CSGCGALDomain2D>>& domains,
+                 double truncate_tolerance);
 
  private:
   std::unique_ptr<CSGCGALDomain2DImpl> impl;

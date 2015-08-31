@@ -305,11 +305,12 @@ void CSGCGALMeshGenerator2D::generate(const CSGGeometry& geometry, dolfin::Mesh&
     }
 
     log(dolfin::TRACE, "Request cell size: %f", cell_size);
-    //const double truncate_tolerance = parameters["edge_truncate_tolerance"];
+    const double truncate_tolerance = parameters["edge_truncate_tolerance"];
 
     std::pair<std::vector<dolfin::Point>,
               std::vector<std::pair<std::size_t, std::size_t>>> pslg =
-      CSGCGALDomain2D::compute_pslg(subdomain_geometries);
+      CSGCGALDomain2D::compute_pslg(subdomain_geometries,
+                                    truncate_tolerance < 0 ? cell_size/200 : truncate_tolerance);
     // PSLG pslg(subdomain_geometries,
     //           pixel_size,
     //           truncate_tolerance < 0 ? cell_size/200 : truncate_tolerance);

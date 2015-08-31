@@ -377,10 +377,11 @@ std::string CSGCGALDomain2D::str(bool verbose) const
     {
       ss << "  Polygon " << std::endl;
       const Polygon_2& bdr = p.outer_boundary();
+      ss << "[" << bdr.size() << "] ";
       for (Polygon_2::Vertex_const_iterator vit = bdr.vertices_begin();
            vit != bdr.vertices_end(); vit++)
       {
-        ss << "(" << *vit << ") ";
+        ss << "(" << CGAL::to_double(vit->x()) << ", " << CGAL::to_double(vit->y()) << ") ";
       }
       ss << std::endl;
     }
@@ -392,7 +393,9 @@ std::string CSGCGALDomain2D::str(bool verbose) const
 //-----------------------------------------------------------------------------
 static inline void add_simple_polygon(std::map<Point_2, std::size_t>& vertices,
                                       std::set<std::pair<std::size_t, std::size_t>>& segments,
-                                      const Polygon_2& p)
+                                      std::size_t& num_vertices,
+                                      const Polygon_2& p,
+                                      double truncate_tolerance)
 {
   // NOTE: For now this function assumes that segment do not intersect except
   // exactly in the endpoints.
@@ -402,40 +405,95 @@ static inline void add_simple_polygon(std::map<Point_2, std::size_t>& vertices,
 
   std::cout << "Adding simple polygon" << std::endl;
 
+  std::size_t offset = 0;
+  while (p.edge(offset).squared_length() < truncate_tolerance)
+    offset++;
+
+  Point_2 prev = p.vertex(offset);
+  offset++;
+
   for (std::size_t i = 0; i < p.size(); i++)
   {
-    Segment_2 s = p.edge(i);
-    std::cout << "  Segment: " << s << std::endl;
+    Point_2 current = p.vertex((i+offset)%p.size());
+    Segment_2 s(prev, current);
 
-    Iterator sit = vertices.find(s.source());
-    if (sit == vertices.end())
+    if (s.squared_length() < truncate_tolerance)
     {
       const std::size_t vertex_number = vertices.size();
 
-      std::pair<Iterator, bool> i = vertices.insert(std::make_pair(s.source(), vertex_number));
-      dolfin_assert(!i.second);
-      sit = i.first;
-    }
-    std::cout << "Point " << sit->first << " is " << sit->second << std::endl;
+      // Insert both points into the vertex map, pointing to the same vertex
 
-    Iterator tit = vertices.find(s.target());
-    if (tit == vertices.end())
+      // Check if vertex exists
+      Iterator sit = vertices.find(s.source());
+      if (sit != vertices.end())
+      {
+        // source point exists in vertex_map. Insert the target point with the same vertex number
+        const std::size_t vertex_number = sit->second;;
+
+        std::pair<Iterator, bool> i = vertices.insert(std::make_pair(s.target(), vertex_number));
+        dolfin_assert(!i.second);
+      }
+      else
+      {
+        Iterator tit = vertices.find(s.target());
+        if (tit != vertices.end())
+        {
+          // target points exists in vertex_map. Insert the source point with the same vertex number
+          const std::size_t vertex_number = tit->second;
+          std::pair<Iterator, bool> i = vertices.insert(std::make_pair(s.source(), vertex_number));
+          dolfin_assert(i.second);
+        }
+        else
+        {
+          // No points exists in the vertex_map.
+          // Insert both
+          const std::size_t vertex_number = num_vertices;
+          std::pair<Iterator, bool> i = vertices.insert(std::make_pair(s.source(), vertex_number));
+          std::pair<Iterator, bool> j = vertices.insert(std::make_pair(s.target(), vertex_number));
+          num_vertices++;
+        }
+      }
+    }
+    else
     {
-      const std::size_t vertex_number = vertices.size();
-      std::pair<Iterator, bool> i = vertices.insert(std::make_pair(s.target(), vertex_number));
-      dolfin_assert(i.second);
-      tit = i.first;
-    }
-    std::cout << "Point " << tit->first << " is " << tit->second << std::endl;
+      std::cout << "  Segment: " << s << " (" << sqrt(CGAL::to_double(s.squared_length())) << ")" << std::endl;
 
-    if (segments.count(std::make_pair(tit->second, sit->second)) == 0)
-      segments.insert(std::make_pair(sit->second, tit->second));
+      Iterator sit = vertices.find(s.source());
+      if (sit == vertices.end())
+      {
+        std::pair<Iterator, bool> i = vertices.insert(std::make_pair(s.source(), num_vertices));
+        dolfin_assert(!i.second);
+        sit = i.first;
+        num_vertices++;
+      }
+      std::cout << "Point " << sit->first << " is " << sit->second << std::endl;
+
+      Iterator tit = vertices.find(s.target());
+      if (tit == vertices.end())
+      {
+        const std::size_t vertex_number = vertices.size();
+        std::pair<Iterator, bool> i = vertices.insert(std::make_pair(s.target(), num_vertices));
+        dolfin_assert(i.second);
+        tit = i.first;
+        num_vertices++;
+      }
+      std::cout << "Point " << tit->first << " is " << tit->second << std::endl;
+
+      if (segments.count(std::make_pair(tit->second, sit->second)) == 0)
+        segments.insert(std::make_pair(sit->second, tit->second));
+
+      prev = current;
+    }
   }
 }
 //-----------------------------------------------------------------------------
 std::pair<std::vector<dolfin::Point>, std::vector<std::pair<std::size_t, std::size_t>>>
-   CSGCGALDomain2D::compute_pslg(const std::vector<std::pair<std::size_t, CSGCGALDomain2D>>& domains)
+  CSGCGALDomain2D::compute_pslg(const std::vector<std::pair<std::size_t, CSGCGALDomain2D>>& domains,
+                   double truncate_tolerance)
 {
+  std::cout << "compute_pslg(), truncate_tolerance " << truncate_tolerance << std::endl;
+
+  std::size_t num_vertices = 0;
   std::map<Point_2, std::size_t> vertices;
   std::set<std::pair<std::size_t, std::size_t>> segments;
 
@@ -450,20 +508,31 @@ std::pair<std::vector<dolfin::Point>, std::vector<std::pair<std::size_t, std::si
     for (const Polygon_with_holes_2& pwh : polygon_list)
     {
       std::cout << "  Adding polygon" << std::endl;
-      add_simple_polygon(vertices, segments, pwh.outer_boundary());
+      add_simple_polygon(vertices,
+                         segments,
+                         num_vertices,
+                         pwh.outer_boundary(),
+                         truncate_tolerance);
 
       // Add holes
       Hole_const_iterator hit;
       for (hit = pwh.holes_begin(); hit != pwh.holes_end(); ++hit)
       {
-        add_simple_polygon(vertices, segments, *hit);
+        add_simple_polygon(vertices,
+                           segments,
+                           num_vertices,
+                           *hit,
+                           truncate_tolerance);
       }
     }
   }
 
-  std::vector<dolfin::Point> v(vertices.size());
+  std::vector<dolfin::Point> v(num_vertices);
+  // std::set<std::size_t> v_inserted;
   for (const std::pair<Point_2, std::size_t>& vertex : vertices)
+  {
     v[vertex.second] = dolfin::Point(CGAL::to_double(vertex.first.x()), CGAL::to_double(vertex.first.y()));
+  }
 
   std::vector<std::pair<std::size_t, std::size_t>> s(segments.begin(), segments.end());
 
