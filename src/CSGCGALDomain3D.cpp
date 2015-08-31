@@ -579,11 +579,60 @@ void make_surface3D(const Surface3D* s, Exact_Polyhedron_3& P)
   }
 }
 //-----------------------------------------------------------------------------
+template <class HDS>
+class BuildExtrude2D : public CGAL::Modifier_base<HDS>
+{
+public:
+  BuildExtrude2D(const CSGCGALDomain2D& polygon, double z)
+    : polygon(polygon), z(z){}
+  void operator()(HDS& hds)
+  {
+    CGAL::Polyhedron_incremental_builder_3<HDS> builder(hds, true);
+
+    builder.begin_surface(0, 0);
+
+    std::size_t offset = 0;
+    for (std::size_t i = 0; i < polygon.num_polygons(); i++)
+    {
+      // TODO: Handle polygonal domains with holes
+      std::vector<dolfin::Point> p = polygon.get_outer_polygon(i);
+      for (const dolfin::Point& vertex : p)
+      {
+        builder.add_vertex(Exact_Point_3(vertex.x(), vertex.y(), 0));
+        builder.add_vertex(Exact_Point_3(vertex.x(), vertex.y(), z));
+      }
+
+      for (std::size_t j = 0; j < p.size(); j++)
+      {
+        builder.begin_facet();
+        builder.add_vertex_to_facet(offset + (2*j)%p.size());
+        builder.add_vertex_to_facet(offset + (2*j+1)%p.size());
+        builder.add_vertex_to_facet(offset + (2*j+2)%p.size());
+
+        builder.end_facet();
+
+        builder.begin_facet();
+        builder.add_vertex_to_facet(offset + (2*j+2)%p.size());
+        builder.add_vertex_to_facet(offset + (2*j+1)%p.size());
+        builder.add_vertex_to_facet(offset + (2*j+3)%p.size());
+        builder.end_facet();
+      }
+      offset += p.size();
+    }
+    builder.end_surface();
+  }
+
+    const CSGCGALDomain2D& polygon;
+    const double z;
+};
+// ----
 void make_extrude2D(const Extrude2D* e, Exact_Polyhedron_3& P)
 {
   dolfin_assert(s);
 
   CSGCGALDomain2D polygon(e->geometry_2d.get());
+  BuildExtrude2D<Exact_HalfedgeDS> builder(polygon, e->z);;
+  P.delegate(builder);
 }
 //-----------------------------------------------------------------------------
 Aff_transformation_3 get_scaling(const CSGScaling& s)

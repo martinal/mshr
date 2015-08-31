@@ -65,7 +65,11 @@ class CSGCGALDomain2D : public dolfin::Variable
   bool point_in_domain(dolfin::Point p) const;
 
   /// @brief Compute the radius of the minimum bounding circle.
-  double compute_boundingcircle_radius() const ;
+  double compute_boundingcircle_radius() const;
+
+  std::size_t num_polygons() const;
+
+  std::vector<dolfin::Point> get_outer_polygon(std::size_t i) const;
 
   /// @brief Informal string representation
   /// @param verbose Verbosity level
