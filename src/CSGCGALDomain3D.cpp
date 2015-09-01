@@ -23,6 +23,7 @@
 #include <mshr/VTPFileReader.h>
 #include <mshr/SurfaceConsistency.h>
 #include <mshr/CSGCGALDomain2D.h>
+#include <mshr/CSGCGALMeshGenerator2D.h>
 
 #include "meshclean.h"
 #include "triangulate_polyhedron.h"
@@ -33,6 +34,8 @@
 #include <dolfin/math/basic.h>
 #include <dolfin/log/log.h>
 #include <dolfin/log/LogStream.h>
+#include <dolfin/mesh/Cell.h>
+#include <dolfin/mesh/BoundaryMesh.h>
 
 #include <CGAL/basic.h>
 #include <CGAL/Exact_predicates_exact_constructions_kernel.h>
@@ -71,10 +74,12 @@ namespace
 // Exact polyhedron
 typedef CGAL::Exact_predicates_exact_constructions_kernel Exact_Kernel;
 typedef Exact_Kernel::Triangle_3                          Exact_Triangle_3;
+typedef Exact_Kernel::Triangle_2                          Exact_Triangle_2;
 typedef Exact_Kernel::Vector_3                            Exact_Vector_3;
 typedef CGAL::Polyhedron_3<Exact_Kernel>                  Exact_Polyhedron_3;
 typedef Exact_Polyhedron_3::HalfedgeDS                    Exact_HalfedgeDS;
 typedef Exact_Kernel::Point_3                             Exact_Point_3;
+typedef Exact_Kernel::Point_2                             Exact_Point_2;
 typedef Exact_Kernel::Vector_3                            Vector_3;
 typedef Exact_Kernel::Ray_3                               Ray_3;
 typedef Exact_Kernel::Aff_transformation_3                Aff_transformation_3;
@@ -583,46 +588,92 @@ template <class HDS>
 class BuildExtrude2D : public CGAL::Modifier_base<HDS>
 {
 public:
-  BuildExtrude2D(const CSGCGALDomain2D& polygon, double z)
+  BuildExtrude2D(const CSGGeometry& polygon, double z)
     : polygon(polygon), z(z){}
   void operator()(HDS& hds)
   {
+    // Let the 2d mesh generator triangulate the polygon
+    dolfin::Mesh mesh2d;
+    {
+      CSGCGALMeshGenerator2D generator;
+      generator.parameters["mesh_resolution"] = 2.0;
+
+      generator.generate(polygon, mesh2d);
+    }
+
     CGAL::Polyhedron_incremental_builder_3<HDS> builder(hds, true);
 
     builder.begin_surface(0, 0);
 
-    std::size_t offset = 0;
-    for (std::size_t i = 0; i < polygon.num_polygons(); i++)
+    // Copy vertices to the new 3d polyhedron
+    const std::vector<double>& vertices = mesh2d.coordinates();
+    for (std::size_t i = 0; i < vertices.size()/2; i++)
     {
-      // TODO: Handle polygonal domains with holes
-      std::vector<dolfin::Point> p = polygon.get_outer_polygon(i);
-      for (const dolfin::Point& vertex : p)
-      {
-        builder.add_vertex(Exact_Point_3(vertex.x(), vertex.y(), 0));
-        builder.add_vertex(Exact_Point_3(vertex.x(), vertex.y(), z));
-      }
-
-      const std::size_t num_vertices = p.size()*2;
-      for (std::size_t j = 0; j < p.size(); j++)
-      {
-        builder.begin_facet();
-        builder.add_vertex_to_facet(offset + (2*j)%num_vertices);
-        builder.add_vertex_to_facet(offset + (2*j+2)%num_vertices);
-        builder.add_vertex_to_facet(offset + (2*j+1)%num_vertices);
-        builder.end_facet();
-
-        builder.begin_facet();
-        builder.add_vertex_to_facet(offset + (2*j+1)%num_vertices);
-        builder.add_vertex_to_facet(offset + (2*j+2)%num_vertices);
-        builder.add_vertex_to_facet(offset + (2*j+3)%num_vertices);
-        builder.end_facet();
-      }
-      offset += num_vertices;
+      builder.add_vertex(Exact_Point_3(vertices[2*i], vertices[2*i+1], 0));
+      builder.add_vertex(Exact_Point_3(vertices[2*i], vertices[2*i+1], z));
     }
+
+    // Add the triangles from the 2d mesh at z=0 and z=z
+    for (dolfin::CellIterator c(mesh2d); !c.end(); ++c)
+    {
+      const unsigned int* v_indices = c->entities(0);
+      const bool flip = Exact_Triangle_2(Exact_Point_2(vertices[2*v_indices[0]], vertices[2*v_indices[0]+1]),
+                                         Exact_Point_2(vertices[2*v_indices[1]], vertices[2*v_indices[1]+1]),
+                                         Exact_Point_2(vertices[2*v_indices[2]], vertices[2*v_indices[2]+1])).orientation() == CGAL::POSITIVE;
+      builder.begin_facet();
+      builder.add_vertex_to_facet(2*v_indices[0]);
+      if (flip)
+      {
+        builder.add_vertex_to_facet(2*v_indices[2]);
+        builder.add_vertex_to_facet(2*v_indices[1]);
+      }
+      else
+      {
+        builder.add_vertex_to_facet(2*v_indices[1]);
+        builder.add_vertex_to_facet(2*v_indices[2]);
+      }
+
+      builder.end_facet();
+
+      builder.begin_facet();
+      builder.add_vertex_to_facet(2*v_indices[0]+1);
+      if (!flip)
+      {
+        builder.add_vertex_to_facet(2*v_indices[2]+1);
+        builder.add_vertex_to_facet(2*v_indices[1]+1);
+      }
+      else
+      {
+        builder.add_vertex_to_facet(2*v_indices[1]+1);
+        builder.add_vertex_to_facet(2*v_indices[2]+1);
+      }
+      builder.end_facet();
+    }
+
+    // Connect the two polygons
+    dolfin::BoundaryMesh bdr(mesh2d, "exterior", false);
+    const dolfin::MeshFunction<std::size_t>& vertex_map = bdr.entity_map(0);
+    for (dolfin::CellIterator cell(bdr); !cell.end(); ++cell)
+    {
+      const unsigned int* v_indices = cell->entities(0);
+      builder.begin_facet();
+      builder.add_vertex_to_facet(2*vertex_map[v_indices[0]]);
+      builder.add_vertex_to_facet(2*vertex_map[v_indices[1]]);
+      builder.add_vertex_to_facet(2*vertex_map[v_indices[0]]+1);
+      builder.end_facet();
+
+      builder.begin_facet();
+      builder.add_vertex_to_facet(2*vertex_map[v_indices[1]]);
+      builder.add_vertex_to_facet(2*vertex_map[v_indices[1]]+1);
+      builder.add_vertex_to_facet(2*vertex_map[v_indices[0]]+1);
+      builder.end_facet();
+
+    }
+
     builder.end_surface();
   }
 
-    const CSGCGALDomain2D& polygon;
+    const CSGGeometry& polygon;
     const double z;
 };
 // ----
@@ -630,8 +681,8 @@ void make_extrude2D(const Extrude2D* e, Exact_Polyhedron_3& P)
 {
   dolfin_assert(s);
 
-  CSGCGALDomain2D polygon(e->geometry_2d.get());
-  BuildExtrude2D<Exact_HalfedgeDS> builder(polygon, e->z);;
+  //CSGCGALDomain2D polygon(e->geometry_2d.get());
+  BuildExtrude2D<Exact_HalfedgeDS> builder(*e->geometry_2d, e->z);
   P.delegate(builder);
 }
 //-----------------------------------------------------------------------------
