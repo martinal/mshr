@@ -602,22 +602,22 @@ public:
         builder.add_vertex(Exact_Point_3(vertex.x(), vertex.y(), z));
       }
 
+      const std::size_t num_vertices = p.size()*2;
       for (std::size_t j = 0; j < p.size(); j++)
       {
         builder.begin_facet();
-        builder.add_vertex_to_facet(offset + (2*j)%p.size());
-        builder.add_vertex_to_facet(offset + (2*j+1)%p.size());
-        builder.add_vertex_to_facet(offset + (2*j+2)%p.size());
-
+        builder.add_vertex_to_facet(offset + (2*j)%num_vertices);
+        builder.add_vertex_to_facet(offset + (2*j+2)%num_vertices);
+        builder.add_vertex_to_facet(offset + (2*j+1)%num_vertices);
         builder.end_facet();
 
         builder.begin_facet();
-        builder.add_vertex_to_facet(offset + (2*j+2)%p.size());
-        builder.add_vertex_to_facet(offset + (2*j+1)%p.size());
-        builder.add_vertex_to_facet(offset + (2*j+3)%p.size());
+        builder.add_vertex_to_facet(offset + (2*j+1)%num_vertices);
+        builder.add_vertex_to_facet(offset + (2*j+2)%num_vertices);
+        builder.add_vertex_to_facet(offset + (2*j+3)%num_vertices);
         builder.end_facet();
       }
-      offset += p.size();
+      offset += num_vertices;
     }
     builder.end_surface();
   }
@@ -998,6 +998,14 @@ convertSubTree(const CSGGeometry *geometry)
       return std::shared_ptr<Nef_polyhedron_3>(new Nef_polyhedron_3(P));
       break;
     }
+    case CSGGeometry::Extrude2D :
+    {
+      const Extrude2D* e = dynamic_cast<const Extrude2D*>(geometry);
+      dolfin_assert(e);
+      make_extrude2D(e, P);
+      break;
+    }
+
     default:
       dolfin::dolfin_error("CSGCGALDomain.cpp",
                            "converting geometry to cgal polyhedron",
@@ -1062,6 +1070,14 @@ void convert(const CSGGeometry& geometry,
       make_surface3D(b, P);
       break;
     }
+    case CSGGeometry::Extrude2D :
+    {
+      const Extrude2D* e = dynamic_cast<const Extrude2D*>(&geometry);
+      dolfin_assert(e);
+      make_extrude2D(e, P);
+      break;
+    }
+
     default:
       dolfin::dolfin_error("CSGCGALDomain3D.cpp",
                    "converting geometry to cgal polyhedron",

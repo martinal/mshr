@@ -103,6 +103,7 @@
 %shared_ptr(mshr::Tetrahedron)
 %shared_ptr(mshr::Ellipsoid)
 %shared_ptr(mshr::Surface3D)
+%shared_ptr(mshr::Extrude2D)
 %shared_ptr(mshr::CSGCGALMeshGenerator2D)
 %shared_ptr(mshr::CSGCGALMeshGenerator3D)
 %shared_ptr(mshr::CSGCGALDomain2D)
