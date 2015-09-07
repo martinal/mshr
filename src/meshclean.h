@@ -357,7 +357,6 @@ template <typename Polyhedron>
 inline void collapse_edge(Polyhedron& p,
                           typename Polyhedron::Halfedge_handle edge)
 {
-  std::cout << "    Collapsing edge" << std::endl;
   ASSERT_GOOD_STATE(p);
 
   if (edge->vertex()->is_trivalent())
@@ -416,7 +415,6 @@ inline void collapse_edge(Polyhedron& p,
     p.join_vertex(edge);
     ASSERT_GOOD_STATE(p);
   }
-  std::cout << "    Done" << std::endl;
 }
 //-----------------------------------------------------------------------------
 // FIXME: Return the number of edges collapsed
