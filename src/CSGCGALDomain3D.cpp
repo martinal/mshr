@@ -1728,9 +1728,9 @@ std::size_t CSGCGALDomain3D::num_holes() const
 //-----------------------------------------------------------------------------
 void CSGCGALDomain3D::close_holes(std::size_t max, std::size_t offset)
 {
-  impl->p.normalize_border();
-
+  dolfin::warning("Hole closing is an experimental feature");
   dolfin_assert(impl->p.is_valid(false, 0));
+  impl->p.normalize_border();
 
   const std::vector<Exact_Polyhedron_3::Halfedge_handle> holes = PolyhedronUtils::get_holes(impl->p);
   // std::cout << "Num holes: " << holes.size() << std::endl;
