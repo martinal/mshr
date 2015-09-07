@@ -143,10 +143,14 @@ class CSGCGALDomain3D : public CSGPrimitive3D
                      std::shared_ptr<CSGCGALDomain3DQueryStructure> q);
 
   void inside_out();
+
+  /// A hole is a connected sequence of boundary edges
   std::size_t num_holes() const;
+
+  /// @brief Close and triangulate holes. Experimental.
   void close_holes(std::size_t max=0, std::size_t offset=0);
 
-  /// @brief
+  /// @brief Return convex hull of vertices as CSGCGALDomain3D object. Experimental
   static std::shared_ptr<CSGCGALDomain3D>
     convex_hull(const CSGCGALDomain3D& c);
 
