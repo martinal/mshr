@@ -129,15 +129,15 @@ void SurfaceConsistency::filterFacets(const std::vector<std::array<std::size_t, 
     skip.insert(i);
   }
 
-  const std::size_t global_max = skip.size();
+  // const std::size_t global_max = skip.size();
 
   std::set<std::size_t> visited;
   //std::vector<std::size_t> included;
   std::deque<std::size_t> queue;
   if (skip.count(start) > 0)
     queue.push_front(start);
-  else
-    std::cout << "  Already added" << std::endl;
+  // else
+  //   std::cout << "  Already added" << std::endl;
 
   std::size_t global_count = 0;
   while (!queue.empty())
@@ -216,7 +216,7 @@ SurfaceConsistency::merge_close_vertices(const std::vector<std::array<std::size_
     if (point_map.count(v) > 0)
     {
       vertex_mapping.push_back(point_map[v]);
-      std::cout << "Close vertices: (" << v[0] << ", " << v[1] << ", " << v[2] << ") (" << vertices[point_map[v]][0] << ", " << vertices[point_map[v]][1] << ", " << vertices[point_map[v]][2] << ")" << std::endl;
+      // std::cout << "Close vertices: (" << v[0] << ", " << v[1] << ", " << v[2] << ") (" << vertices[point_map[v]][0] << ", " << vertices[point_map[v]][1] << ", " << vertices[point_map[v]][2] << ")" << std::endl;
     }
     else
     {
@@ -225,7 +225,7 @@ SurfaceConsistency::merge_close_vertices(const std::vector<std::array<std::size_
     }
   }
 
-  std::cout << "Distinct vertices: " << point_map.size() << std::endl;
+  // std::cout << "Distinct vertices: " << point_map.size() << std::endl;
 
   std::unique_ptr<std::vector<std::array<double, 3> > > new_vertices(new std::vector<std::array<double, 3> >);
   std::unique_ptr<std::vector<std::array<std::size_t, 3> > > new_facets(new std::vector<std::array<std::size_t, 3> >);
