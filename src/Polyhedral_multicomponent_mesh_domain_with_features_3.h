@@ -109,7 +109,7 @@ Construct_initial_points::operator()(OutputIterator pts, const int n) const
 
   const Polyhedron& P  = r_domain_.polyhedron();
   std::list<Vertex_const_handle> components;
-  get_disconnected_components(P, std::back_inserter(components));
+  mshr::PolyhedronUtils::get_disconnected_components(P, std::back_inserter(components));
 
   // Collect inserted points in a set with a fuzzy comparison operator
   // to ensure no points closer than the tolerance are inserted.

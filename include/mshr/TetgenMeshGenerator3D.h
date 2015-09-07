@@ -38,7 +38,6 @@ namespace mshr
     ~TetgenMeshGenerator3D();
 
     void generate(std::shared_ptr<const CSGCGALDomain3D> domain, dolfin::Mesh& mesh) const;
-    void generate(const CSGGeometry& geometry, dolfin::Mesh& mesh) const;
 
     /// Default parameter values
     static dolfin::Parameters default_parameters()

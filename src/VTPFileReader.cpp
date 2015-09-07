@@ -30,7 +30,7 @@ namespace mshr
 {
 void VTPFileReader::read(const std::string filename, 
                          std::vector<std::array<double, 3> >& vertices,
-                         std::vector<std::vector<std::size_t> >& facets)
+                         std::vector<std::array<std::size_t, 3> >& facets)
 {
 
 #ifdef MSHR_HAS_VTK
@@ -61,7 +61,6 @@ void VTPFileReader::read(const std::string filename,
   while(TriangleCells->GetNextCell(npts, pts))
   {
     dolfin_assert(npts == 3);
-    facets[facet_counter].resize(3);
     for (int i = 0; i < 3; i++)
       (facets[facet_counter])[i] = pts[i];
 

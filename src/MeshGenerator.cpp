@@ -42,17 +42,19 @@ void generate(dolfin::Mesh& mesh,
   }
   else if (geometry.dim() == 3)
   {
+    std::shared_ptr<CSGCGALDomain3D> domain(new CSGCGALDomain3D(geometry));
+
     if (backend == "cgal")
     {
       CSGCGALMeshGenerator3D generator;
       generator.parameters["mesh_resolution"] = resolution;
-      generator.generate(geometry, mesh);
+      generator.generate(std::move(domain), mesh);
     }
     else if (backend == "tetgen")
     {
       TetgenMeshGenerator3D generator;
       generator.parameters["mesh_resolution"] = resolution;
-      generator.generate(geometry, mesh);
+      generator.generate(std::move(domain), mesh);
 
     }
     else

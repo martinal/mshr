@@ -11,6 +11,7 @@
     #include <mshr/CSGPrimitives3D.h>
     #include <mshr/CSGCGALDomain2D.h>
     #include <mshr/CSGCGALDomain3D.h>
+    #include <mshr/TetgenMeshGenerator3D.h>
 
     #include <mshr/CSGGeometry.h>
     #include <mshr/CSGGeometries3D.h>
@@ -80,6 +81,7 @@
 %ignore mshr::PSLG;
 %ignore mshr::CSGCGALDomain3DQueryStructure::CSGCGALDomain3DQueryStructure;
 %ignore mshr::CSGCGALDomain3DQueryStructure::impl;
+%ignore mshr::CSGCGALDomain3D::impl;
 
 %shared_ptr(mshr::CSGGeometry)
 %shared_ptr(mshr::CSGPrimitive)
@@ -105,6 +107,7 @@
 %shared_ptr(mshr::Surface3D)
 %shared_ptr(mshr::CSGCGALMeshGenerator2D)
 %shared_ptr(mshr::CSGCGALMeshGenerator3D)
+%shared_ptr(mshr::TetgenMeshGenerator3D)
 %shared_ptr(mshr::CSGCGALDomain2D)
 %shared_ptr(mshr::CSGCGALDomain3D)
 %shared_ptr(mshr::UnitSphereMesh)
@@ -123,6 +126,7 @@
 %include <mshr/MeshGenerator.h>
 %include <mshr/CSGCGALMeshGenerator2D.h>
 %include <mshr/CSGCGALMeshGenerator3D.h>
+%include <mshr/TetgenMeshGenerator3D.h>
 %include <mshr/CSGGeometries3D.h>
 %include <mshr/DolfinMeshUtils.h>
 %include <mshr/Meshes.h>

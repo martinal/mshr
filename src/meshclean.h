@@ -24,6 +24,7 @@
 #include <CGAL/Triangle_3.h>
 
 //-----------------------------------------------------------------------------
+// Get squared edge length
 template<typename Polyhedron>
 inline double
 get_edge_length(typename Polyhedron::Halfedge_const_handle halfedge)
@@ -199,12 +200,12 @@ void print_facet(const Polyhedron& p, typename Polyhedron::Halfedge_const_handle
 //-----------------------------------------------------------------------------
 template<typename Polyhedron>
 inline bool facet_is_degenerate(typename Polyhedron::Facet_const_handle facet,
-                         const double tolerance)
+                                typename Polyhedron::Traits::FT tol_sq)
 {
   dolfin_assert(facet->is_triangle());
 
-  return get_min_edge_length<Polyhedron>(facet) < tolerance 
-    || triangle_projection<Polyhedron>(facet) < tolerance;
+  return get_min_edge_length<Polyhedron>(facet) < tol_sq
+    || triangle_projection<Polyhedron>(facet) < tol_sq;
 }
 //-----------------------------------------------------------------------------
 template <typename Polyhedron>
@@ -241,7 +242,25 @@ inline bool has_slivers(const Polyhedron& p)
   for (typename Polyhedron::Vertex_const_iterator vit = p.vertices_begin(); vit != p.vertices_end(); vit++)
   {
     if (vit->vertex_degree() < 3)
-      return true;
+    {
+      // Check that this is not on a border (we can have borders eg. when
+      // reading files that must be repaired
+      const typename Polyhedron::Halfedge_around_vertex_const_circulator first = vit->vertex_begin();
+      typename Polyhedron::Halfedge_around_vertex_const_circulator current = first;
+      
+      bool is_border = false;
+
+      do
+      {
+        if ( !current->is_border() )
+          is_border = true;
+
+        current++;
+      } while (current != first);
+
+      if (!is_border)
+        return true;
+    }
   }
 
   /* for (typename Polyhedron::Halfedge_const_iterator it = p.halfedges_begin(); */
@@ -269,11 +288,26 @@ inline bool has_degree3_neighbors(const Polyhedron& p)
   return false;
 }
 //-----------------------------------------------------------------------------
+template<typename Polyhedron>
+inline std::size_t min_vertex_degree(const Polyhedron& p)
+{
+  typename Polyhedron::Vertex_const_iterator vit = p.vertices_begin();
+  std::size_t min_degree = vit->vertex_degree();
+  vit++;
+
+  for (; vit != p.vertices_end(); vit++)
+    min_degree = std::min(min_degree, vit->vertex_degree());
+
+  return min_degree;
+}
+//-----------------------------------------------------------------------------
 #define ASSERT_GOOD_STATE(p) do             \
 {                                           \
   dolfin_assert(p.is_valid());              \
   dolfin_assert(p.is_pure_triangle());      \
   dolfin_assert(!has_slivers(p));           \
+  dolfin_assert(p.is_closed());             \
+  dolfin_assert(min_vertex_degree(p) > 2);  \
   dolfin_assert(p.size_of_vertices() < 5 || !has_degree3_neighbors(p)); \
 } while(false);
 //-----------------------------------------------------------------------------
@@ -289,7 +323,8 @@ inline void remove_degree3_center_vertex(Polyhedron& p,
 }
 //-----------------------------------------------------------------------------
 template<typename Polyhedron>
-inline bool remove_degree3_with_short_edges(Polyhedron& p, double tolerance)
+inline bool remove_degree3_with_short_edges(Polyhedron& p,
+                                            typename Polyhedron::Traits::FT tol_sq)
 {
   bool removed = false;
 
@@ -298,12 +333,14 @@ inline bool remove_degree3_with_short_edges(Polyhedron& p, double tolerance)
   {
     if (it->vertex_degree() < 4)
     {
+      if (!it->is_trivalent())
+        std::cout << "Strange! Degree: " << it->vertex_degree() << std::endl;
       dolfin_assert(it->is_trivalent());
 
       typename Polyhedron::Halfedge_handle h = it->halfedge();
-      if (get_edge_length<Polyhedron>(h) < tolerance ||
-          get_edge_length<Polyhedron>(h->next()) < tolerance ||
-          get_edge_length<Polyhedron>(h->prev()) < tolerance)
+      if (get_edge_length<Polyhedron>(h) < tol_sq ||
+          get_edge_length<Polyhedron>(h->next()) < tol_sq ||
+          get_edge_length<Polyhedron>(h->prev()) < tol_sq)
       {
 
         // std::cout << "Removing degree 3 with short edges" << std::endl;
@@ -360,6 +397,7 @@ inline void collapse_edge(Polyhedron& p,
     }
 
     ASSERT_GOOD_STATE(p);
+    dolfin_assert(edge->vertex()->vertex_degree() > 3);
     
     edge = p.join_facet(edge->next());
     dolfin_assert(p.is_valid());
@@ -381,14 +419,15 @@ inline void collapse_edge(Polyhedron& p,
 //-----------------------------------------------------------------------------
 // FIXME: Return the number of edges collapsed
 template <typename Polyhedron>
-bool collapse_short_edges(Polyhedron& p, const double tolerance)
+bool collapse_short_edges(Polyhedron& p,
+                          typename Polyhedron::Traits::FT tol_sq)
 {
   // Degree 3 vertices with short incident edges causes problems when collapsing
   // short edges. The very ad hoc solution that has shown to work is to remove
   // these center vertices (and by that the short edges)  before collapsing short
   // edges.
 
-  bool edges_removed = remove_degree3_with_short_edges(p, tolerance);
+  bool edges_removed = remove_degree3_with_short_edges(p, tol_sq);
 
   bool removed;
 
@@ -399,10 +438,11 @@ bool collapse_short_edges(Polyhedron& p, const double tolerance)
     for (typename Polyhedron::Halfedge_iterator halfedge = p.halfedges_begin();
 	 halfedge != p.halfedges_end(); halfedge++)
     {
-      if (get_edge_length<Polyhedron>(halfedge) < tolerance)
+      if (get_edge_length<Polyhedron>(halfedge) < tol_sq)
       {
 	collapse_edge<Polyhedron>(p, halfedge);
-        remove_degree3_with_short_edges(p, tolerance);
+        ASSERT_GOOD_STATE(p);
+        remove_degree3_with_short_edges(p, tol_sq);
         removed = true;
         edges_removed = true;
 	break;
@@ -415,7 +455,7 @@ bool collapse_short_edges(Polyhedron& p, const double tolerance)
 //-----------------------------------------------------------------------------
 template<typename Polyhedron>
 bool flip_edges(Polyhedron& p,
-                double tolerance)
+                typename Polyhedron::Traits::FT tol_sq)
 {
   typedef typename Polyhedron::Traits::Line_3 Line_3;
   typedef typename Polyhedron::Traits::Point_3 Point_3;
@@ -432,22 +472,35 @@ bool flip_edges(Polyhedron& p,
          facet != p.facets_end(); facet++)
     {
       dolfin_assert(facet->is_triangle());
-      if (triangle_projection<Polyhedron>(facet) < tolerance)
+      if (triangle_projection<Polyhedron>(facet) < tol_sq)
       {
+        dolfin_assert(p.is_pure_triangle());
+        dolfin_assert(p.is_closed());
+
         typename Polyhedron::Halfedge_handle longest 
           = get_longest_edge<Polyhedron>(facet);
 
-        Line_3 l(longest->vertex()->point(),
-                 longest->opposite()->vertex()->point());
-        Point_3 newpoint = l.projection(longest->next()->vertex()->point());
-        Halfedge_handle flipped = p.flip_edge(longest);
-        flipped->vertex()->point() = newpoint;
+        if (longest->vertex()->is_trivalent())
+          remove_degree3_center_vertex(p, longest);
+        else if (longest->opposite()->vertex()->is_trivalent())
+          remove_degree3_center_vertex(p, longest->opposite());
+        else
+        {
         
-        // TODO: Check length of newly created edge and
-        // collapse if necessary.
-        collapse_short_edges(p, tolerance);
-        done = false;
-        edge_flipped = true;
+          Line_3 l(longest->vertex()->point(),
+                   longest->opposite()->vertex()->point());
+          Point_3 newpoint = l.projection(longest->next()->vertex()->point());
+          Halfedge_handle flipped = p.flip_edge(longest);
+          flipped->vertex()->point() = newpoint;
+
+          ASSERT_GOOD_STATE(p);
+
+          // TODO: Check length of newly created edge and
+          // collapse if necessary.
+          collapse_short_edges(p, tol_sq);
+          done = false;
+          edge_flipped = true;
+        }
       }
     }
   } while (!done);
@@ -457,13 +510,13 @@ bool flip_edges(Polyhedron& p,
 //-----------------------------------------------------------------------------
 template<typename Polyhedron>
 bool has_degenerate_facets(const Polyhedron& p,
-                           double tolerance)
+                           typename Polyhedron::Traits::FT tol_sq)
 {
   for (typename Polyhedron::Facet_const_iterator facet = p.facets_begin();
        facet != p.facets_end(); facet++)
   {
     dolfin_assert(facet->is_triangle());
-    if (facet_is_degenerate<Polyhedron>(facet, tolerance))
+    if (facet_is_degenerate<Polyhedron>(facet, tol_sq))
       return true;
   }
   return false;
@@ -477,20 +530,30 @@ bool has_degenerate_facets(const Polyhedron& p,
 template<typename Polyhedron>
 bool remove_degenerate(Polyhedron &p, double tolerance)
 {
-  dolfin_assert(p.is_pure_triangle());
-  ASSERT_GOOD_STATE(p);
   log(dolfin::TRACE, "Cleaning degenerate facets");
+  dolfin_assert(p.is_pure_triangle());
+
+  // Compute squared tolerance
+  typename Polyhedron::Traits::FT tol_sq(tolerance);
+  tol_sq *= tol_sq;
+
+  const bool edges_removed = remove_degree3_with_short_edges(p, tol_sq);
+  if (edges_removed)
+    std::cout << "Remove degree 3 vertices" << std::endl;
+
+  ASSERT_GOOD_STATE(p);
+
 
   log(dolfin::TRACE, "  Collapsing short edges");
-  const bool collapsed = collapse_short_edges(p, tolerance);
+  const bool collapsed = collapse_short_edges(p, tol_sq);
   ASSERT_GOOD_STATE(p);
 
   // log(dolfin::TRACE, "Shortest edge: %f", shortest_edge());
   log(dolfin::TRACE, "  Removing colinear facets by edge flipping");
-  const bool flipped = flip_edges(p, tolerance);
+  const bool flipped = flip_edges(p, tol_sq);
   ASSERT_GOOD_STATE(p);
 
-  dolfin_assert(!has_degenerate_facets(p, tolerance));
+  dolfin_assert(!has_degenerate_facets(p, tol_sq));
 
   return collapsed || flipped;
 }

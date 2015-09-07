@@ -20,9 +20,10 @@
 #ifndef __MSHR_PRIMITIVES_3D_H
 #define __MSHR_PRIMITIVES_3D_H
 
-#include <cstddef>
-#include <dolfin/geometry/Point.h>
 #include "CSGPrimitive.h"
+#include <dolfin/mesh/Mesh.h>
+#include <dolfin/geometry/Point.h>
+#include <cstddef>
 
 namespace mshr
 {
@@ -170,7 +171,10 @@ namespace mshr
   class Surface3D : public CSGPrimitive3D
   {
   public:
-    Surface3D(std::string filename, double degenerate_tolerance=1e-12);
+    Surface3D(std::string filename);
+
+    // Create triangulated polyhedron from surface of mesh
+    Surface3D(std::shared_ptr<const dolfin::Mesh> mesh);
 
     /// @brief Informal string representation
     /// @return The description string
@@ -180,7 +184,24 @@ namespace mshr
     { return CSGGeometry::Surface3D; }
 
     const std::string _filename;
-    const double degenerate_tolerance;
+    std::shared_ptr<const dolfin::Mesh> mesh;
+
+    /// @brief Tolerance when merging close vertices
+    double vertex_tolerance;
+
+    /// @brief Tolerance when removing degenerate facets
+    double degenerate_tolerance;
+
+    /// @brief Attempt to repair if surface is not topologically valid
+    bool repair;
+    
+    // @brief Read only one connected_component. Only relevant if repair==true
+    bool single_connected_component;
+
+    int sharp_features_filter;
+    
+    /// @brief First facet, when reading only one connect component.
+    std::size_t first_facet;
   };
 
   /// @brief An axis-aligned ellipsoid

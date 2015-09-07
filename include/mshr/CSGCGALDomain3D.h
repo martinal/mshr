@@ -18,7 +18,7 @@
 #ifndef __MSHR_CSGCGAL_DOMAIN3D_H
 #define __MSHR_CSGCGAL_DOMAIN3D_H
 
-#include <mshr/CSGGeometry.h>
+#include <mshr/CSGPrimitives3D.h>
 #include <dolfin/geometry/Point.h>
 
 #include <memory>
@@ -45,7 +45,7 @@ class CSGCGALDomain3DQueryStructure
 /// This class represents a polyhedral meshing domain which implements boolean
 /// operations. It uses CGAL Polyhedron_3 as backend and utilizes CGAL
 //  Nef_polyhedron for boolean operations.
-class CSGCGALDomain3D : public dolfin::Variable
+class CSGCGALDomain3D : public CSGPrimitive3D
 {
  public:
   /// @brief Create empty polyhedron
@@ -56,6 +56,13 @@ class CSGCGALDomain3D : public dolfin::Variable
 
   /// @brief Destructor
   ~CSGCGALDomain3D();
+
+  Type getType() const
+  { return CSGGeometry::TriPolyhedron; }
+
+  /// @brief Insert polyhedron into this object
+  /// Inserted polyhedron should not intersect
+  void insert(const CSGCGALDomain3D& p);
 
   /// @brief Number of vertices in polyhedron
   std::size_t num_vertices() const;
@@ -78,8 +85,11 @@ class CSGCGALDomain3D : public dolfin::Variable
   /// @brief get length of shortest edge
   double shortest_edge() const;
 
+  /// @brief count edges with squared length shorter than tolerance
+  std::size_t num_short_edges(double tolerance) const;
+
   /// @brief Test if any facets intersects
-  bool is_selfintersecting() const;
+  bool is_selfintersecting(bool verbose=false) const;
 
   /// @brief Save polyhedron to off file
   /// @param filename Filename to write to
@@ -117,7 +127,7 @@ class CSGCGALDomain3D : public dolfin::Variable
   {
     dolfin::Parameters p("csg_cgal_domain_3d");
     p.add("remove_degenerate", true);
-    p.add("degenerate_tolerance", 1e-12);
+    p.add("degenerate_tolerance", 1e-10);
 
     return p;
   }
@@ -126,7 +136,25 @@ class CSGCGALDomain3D : public dolfin::Variable
   /// @param verbose The verbosity level
   std::string str(bool verbose) const;
 
- private :
+  /// @brief Remove facets, starting from the facets closest to to the given
+  /// point
+  void filter_facets(dolfin::Point start,
+                     double threshold,
+                     std::shared_ptr<CSGCGALDomain3DQueryStructure> q);
+
+  void inside_out();
+
+  /// A hole is a connected sequence of boundary edges
+  std::size_t num_holes() const;
+
+  /// @brief Close and triangulate holes. Experimental.
+  void close_holes(std::size_t max=0, std::size_t offset=0);
+
+  /// @brief Return convex hull of vertices as CSGCGALDomain3D object. Experimental
+  static std::shared_ptr<CSGCGALDomain3D>
+    convex_hull(const CSGCGALDomain3D& c);
+
+  // private :
   std::unique_ptr<CSGCGALDomain3DImpl> impl;
 };
 
