@@ -142,14 +142,13 @@ void SurfaceConsistency::filterFacets(const std::vector<std::array<std::size_t, 
   std::size_t global_count = 0;
   while (!queue.empty())
   {
-    dolfin_assert(global_count <= global_max);
+    // dolfin_assert(global_count <= global_max);
 
     std::size_t current = queue.front();
     queue.pop_front();
 
     const std::array<size_t, 3>& current_facet = facets[current];
     // std::cout << "-- Processing " << current << ", vertices: " << current_facet[0] << ", " << current_facet[1] << ", " << current_facet[2] << std::endl;
-
 
     visited.insert(current);
 
