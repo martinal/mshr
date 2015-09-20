@@ -341,6 +341,29 @@ double CSGCGALDomain2D::compute_boundingcircle_radius() const
   return sqrt(CGAL::to_double(min_circle.circle().squared_radius()));
 }
 //-----------------------------------------------------------------------------
+std::size_t CSGCGALDomain2D::num_polygons() const
+{
+  return impl->polygon_set.number_of_polygons_with_holes();
+}
+//-----------------------------------------------------------------------------
+std::vector<dolfin::Point> CSGCGALDomain2D::get_outer_polygon(std::size_t i) const
+{
+  std::vector<Polygon_with_holes_2> polygon_list;
+  impl->polygon_set.polygons_with_holes(std::back_inserter(polygon_list));
+
+  const Polygon_2& polygon = polygon_list[i].outer_boundary();
+
+  std::vector<dolfin::Point> res;
+  res.reserve(polygon.size());
+  for (std::size_t j = 0; j < polygon.size(); j++)
+  {
+    const Point_2& p = polygon.vertex(j);
+    res.push_back(dolfin::Point(CGAL::to_double(p.x()), CGAL::to_double(p.y())));
+  }
+
+  return std::move(res);
+}
+//-----------------------------------------------------------------------------
 void CSGCGALDomain2D::join_inplace(const CSGCGALDomain2D& other)
 {
   impl->polygon_set.join(other.impl->polygon_set);

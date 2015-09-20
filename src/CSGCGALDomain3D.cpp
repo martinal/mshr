@@ -22,6 +22,8 @@
 #include <mshr/STLFileReader.h>
 #include <mshr/VTPFileReader.h>
 #include <mshr/SurfaceConsistency.h>
+#include <mshr/CSGCGALDomain2D.h>
+#include <mshr/CSGCGALMeshGenerator2D.h>
 
 #include "meshclean.h"
 #include "triangulation_refinement.h"
@@ -72,10 +74,12 @@ namespace
 // Exact polyhedron
 typedef CGAL::Exact_predicates_exact_constructions_kernel Exact_Kernel;
 typedef Exact_Kernel::Triangle_3                          Exact_Triangle_3;
+typedef Exact_Kernel::Triangle_2                          Exact_Triangle_2;
 typedef Exact_Kernel::Vector_3                            Exact_Vector_3;
 typedef CGAL::Polyhedron_3<Exact_Kernel>                  Exact_Polyhedron_3;
 typedef Exact_Polyhedron_3::HalfedgeDS                    Exact_HalfedgeDS;
 typedef Exact_Kernel::Point_3                             Exact_Point_3;
+typedef Exact_Kernel::Point_2                             Exact_Point_2;
 typedef Exact_Kernel::Vector_3                            Vector_3;
 typedef Exact_Kernel::Ray_3                               Ray_3;
 typedef Exact_Kernel::Aff_transformation_3                Aff_transformation_3;
@@ -811,6 +815,108 @@ private:
   const Polyhedron& _in_poly;
 }; // end Copy_polyhedron_to<>
 //-----------------------------------------------------------------------------
+template <class HDS>
+class BuildExtrude2D : public CGAL::Modifier_base<HDS>
+{
+public:
+  BuildExtrude2D(const mshr::CSGGeometry& polygon, double z)
+    : polygon(polygon), z(z){}
+  void operator()(HDS& hds)
+  {
+    // Let the 2d mesh generator triangulate the polygon
+    dolfin::Mesh mesh2d;
+    {
+      mshr::CSGCGALMeshGenerator2D generator;
+      generator.parameters["mesh_resolution"] = 2.0;
+
+      generator.generate(polygon, mesh2d);
+    }
+
+    CGAL::Polyhedron_incremental_builder_3<HDS> builder(hds, true);
+
+    builder.begin_surface(0, 0);
+
+    // Copy vertices to the new 3d polyhedron
+    const std::vector<double>& vertices = mesh2d.coordinates();
+    for (std::size_t i = 0; i < vertices.size()/2; i++)
+    {
+      builder.add_vertex(Exact_Point_3(vertices[2*i], vertices[2*i+1], 0));
+      builder.add_vertex(Exact_Point_3(vertices[2*i], vertices[2*i+1], z));
+    }
+
+    // Add the triangles from the 2d mesh at z=0 and z=z
+    for (dolfin::CellIterator c(mesh2d); !c.end(); ++c)
+    {
+      const unsigned int* v_indices = c->entities(0);
+      const bool flip = Exact_Triangle_2(Exact_Point_2(vertices[2*v_indices[0]], vertices[2*v_indices[0]+1]),
+                                         Exact_Point_2(vertices[2*v_indices[1]], vertices[2*v_indices[1]+1]),
+                                         Exact_Point_2(vertices[2*v_indices[2]], vertices[2*v_indices[2]+1])).orientation() == CGAL::POSITIVE;
+      builder.begin_facet();
+      builder.add_vertex_to_facet(2*v_indices[0]);
+      if (flip)
+      {
+        builder.add_vertex_to_facet(2*v_indices[2]);
+        builder.add_vertex_to_facet(2*v_indices[1]);
+      }
+      else
+      {
+        builder.add_vertex_to_facet(2*v_indices[1]);
+        builder.add_vertex_to_facet(2*v_indices[2]);
+      }
+
+      builder.end_facet();
+
+      builder.begin_facet();
+      builder.add_vertex_to_facet(2*v_indices[0]+1);
+      if (!flip)
+      {
+        builder.add_vertex_to_facet(2*v_indices[2]+1);
+        builder.add_vertex_to_facet(2*v_indices[1]+1);
+      }
+      else
+      {
+        builder.add_vertex_to_facet(2*v_indices[1]+1);
+        builder.add_vertex_to_facet(2*v_indices[2]+1);
+      }
+      builder.end_facet();
+    }
+
+    // Connect the two polygons
+    dolfin::BoundaryMesh bdr(mesh2d, "exterior", false);
+    const dolfin::MeshFunction<std::size_t>& vertex_map = bdr.entity_map(0);
+    for (dolfin::CellIterator cell(bdr); !cell.end(); ++cell)
+    {
+      const unsigned int* v_indices = cell->entities(0);
+      builder.begin_facet();
+      builder.add_vertex_to_facet(2*vertex_map[v_indices[0]]);
+      builder.add_vertex_to_facet(2*vertex_map[v_indices[1]]);
+      builder.add_vertex_to_facet(2*vertex_map[v_indices[0]]+1);
+      builder.end_facet();
+
+      builder.begin_facet();
+      builder.add_vertex_to_facet(2*vertex_map[v_indices[1]]);
+      builder.add_vertex_to_facet(2*vertex_map[v_indices[1]]+1);
+      builder.add_vertex_to_facet(2*vertex_map[v_indices[0]]+1);
+      builder.end_facet();
+
+    }
+
+    builder.end_surface();
+  }
+
+  const mshr::CSGGeometry& polygon;
+  const double z;
+};
+// ----
+void make_extrude2D(const mshr::Extrude2D* e, Exact_Polyhedron_3& P)
+{
+  dolfin_assert(s);
+
+  //CSGCGALDomain2D polygon(e->geometry_2d.get());
+  BuildExtrude2D<Exact_HalfedgeDS> builder(*e->geometry_2d, e->z);
+  P.delegate(builder);
+}
+//-----------------------------------------------------------------------------
 Aff_transformation_3 get_scaling(const mshr::CSGScaling& s)
 {
   Aff_transformation_3 transformation(CGAL::IDENTITY);
@@ -1046,8 +1152,13 @@ void convertSubTree(const mshr::CSGGeometry* geometry, Exact_Polyhedron_3& P)
       dolfin_assert(b);
       Insert_polyhedron_to<Exact_Polyhedron_3> inserter(b->impl->p);
       P.delegate(inserter);
-      CGAL_assertion(P.is_valid());
-
+      dolfin_asert(P.is_valid());
+      break;
+    case CSGGeometry::Extrude2D :
+    {
+      const Extrude2D* e = dynamic_cast<const Extrude2D*>(geometry);
+      dolfin_assert(e);
+      make_extrude2D(e, P);
       break;
     }
     default:
@@ -1185,6 +1296,15 @@ convertSubTree(const mshr::CSGGeometry *geometry)
       return std::shared_ptr<Nef_polyhedron_3>(new Nef_polyhedron_3(b->impl->p));
       break;
     }
+    case mshr::CSGGeometry::Extrude2D :
+    {
+      const mshr::Extrude2D* e = dynamic_cast<const mshr::Extrude2D*>(geometry);
+      dolfin_assert(e);
+      Exact_Polyhedron_3 P;
+      make_extrude2D(e, P);
+      return std::shared_ptr<Nef_polyhedron_3>(new Nef_polyhedron_3(P));
+      break;
+    }
     default:
       dolfin::dolfin_error("CSGCGALDomain.cpp",
                            "converting geometry to cgal polyhedron",
@@ -1248,6 +1368,14 @@ void convert(const mshr::CSGGeometry& geometry,
       make_surface3D(b, P);
       break;
     }
+    case mshr::CSGGeometry::Extrude2D :
+    {
+      const mshr::Extrude2D* e = dynamic_cast<const mshr::Extrude2D*>(&geometry);
+      dolfin_assert(e);
+      make_extrude2D(e, P);
+      break;
+    }
+
     default:
       dolfin::dolfin_error("CSGCGALDomain3D.cpp",
                            "converting geometry to cgal polyhedron",

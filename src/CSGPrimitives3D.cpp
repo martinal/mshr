@@ -230,4 +230,29 @@ std::string Ellipsoid::str(bool verbose) const
   return ss.str();
 }
 //-----------------------------------------------------------------------------
+Extrude2D::Extrude2D(std::shared_ptr<CSGPrimitive2D> geometry_2d, double z)
+  : geometry_2d(geometry_2d), z(z)
+{
+  if (geometry_2d->dim() != 2)
+  {
+    std::stringstream ss;
+    ss << "Expected geometry of dimension 2, got ";
+    ss << geometry_2d->dim();
+    dolfin::dolfin_error("CSGPrimitives3D.cpp",
+                         "Extrude 2D geometry",
+                         ss.str());
+}
+}
+//-----------------------------------------------------------------------------
+std::string Extrude2D::str(bool verbose) const
+{
+  std::stringstream ss;
+  ss << "Extruded 2D polygon, z = " << z;
+  if (verbose)
+  {
+    ss << geometry_2d->str(true);
+  }
+
+  return ss.str();
+}
 }
