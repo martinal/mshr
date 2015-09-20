@@ -430,7 +430,7 @@ static inline void add_simple_polygon(std::map<Point_2, std::size_t>& vertices,
         // source point exists in vertex_map. Insert the target point with the same vertex number
         const std::size_t vertex_number = sit->second;;
 
-        std::pair<Iterator, bool> i = vertices.insert(std::make_pair(s.target(), vertex_number));
+        /* std::pair<Iterator, bool> i = */ vertices.insert(std::make_pair(s.target(), vertex_number));
         dolfin_assert(!i.second);
       }
       else
@@ -440,7 +440,7 @@ static inline void add_simple_polygon(std::map<Point_2, std::size_t>& vertices,
         {
           // target points exists in vertex_map. Insert the source point with the same vertex number
           const std::size_t vertex_number = tit->second;
-          std::pair<Iterator, bool> i = vertices.insert(std::make_pair(s.source(), vertex_number));
+          /* std::pair<Iterator, bool> i = */ vertices.insert(std::make_pair(s.source(), vertex_number));
           dolfin_assert(i.second);
         }
         else
@@ -448,8 +448,8 @@ static inline void add_simple_polygon(std::map<Point_2, std::size_t>& vertices,
           // No points exists in the vertex_map.
           // Insert both
           const std::size_t vertex_number = num_vertices;
-          std::pair<Iterator, bool> i = vertices.insert(std::make_pair(s.source(), vertex_number));
-          std::pair<Iterator, bool> j = vertices.insert(std::make_pair(s.target(), vertex_number));
+          /* std::pair<Iterator, bool> i = */ vertices.insert(std::make_pair(s.source(), vertex_number));
+          /* std::pair<Iterator, bool> j = */ vertices.insert(std::make_pair(s.target(), vertex_number));
           num_vertices++;
         }
       }
@@ -471,7 +471,7 @@ static inline void add_simple_polygon(std::map<Point_2, std::size_t>& vertices,
       Iterator tit = vertices.find(s.target());
       if (tit == vertices.end())
       {
-        const std::size_t vertex_number = vertices.size();
+        /* const std::size_t vertex_number = vertices.size(); */
         std::pair<Iterator, bool> i = vertices.insert(std::make_pair(s.target(), num_vertices));
         dolfin_assert(i.second);
         tit = i.first;
