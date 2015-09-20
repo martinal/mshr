@@ -38,9 +38,9 @@ generator.parameters["edge_size"] = 0.025
 generator.parameters["facet_angle"] = 25.0
 generator.parameters["facet_size"] = 0.05
 
-m = dolfin.Mesh()
-generator.generate(domain, m)
+# Invoke the mesh generator
+mesh = generator.generate(CSGCGALDomain3D(domain))
 
-dolfin.plot(m, "3D mesh")
+dolfin.plot(mesh, "3D mesh")
 
 dolfin.interactive()
