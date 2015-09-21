@@ -674,17 +674,12 @@ void make_surface3D(const mshr::Surface3D* s, Exact_Polyhedron_3& P)
       // }
     }
 
-
     // std::cout << "Duplicating: " << duplicating.size() << std::endl;
     // for (auto it = duplicating.begin(); it != duplicating.end(); it++)
     //   std::cout << *it << " ";
     // std::cout << std::endl;
 
-    // Create the polyhedron
-    BuildFromFacetList<Exact_HalfedgeDS> builder(vertices, facets, skip);
-    P.delegate(builder);
-    log(dolfin::TRACE, "Done creating polyhedron");
-  }
+  } // end read from file
     
   // Create the polyhedron
   BuildFromFacetList<Exact_HalfedgeDS> builder(vertices, facets, skip);
