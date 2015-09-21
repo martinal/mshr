@@ -176,7 +176,8 @@ Surface3D::Surface3D(std::string filename)
    repair(false),
    single_connected_component(false),
    sharp_features_filter(-1),
-   first_facet(0)
+   first_facet(0),
+   flip_facets(false)
 {
   // Do nothing
 }

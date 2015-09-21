@@ -203,6 +203,9 @@ namespace mshr
     
     /// @brief First facet, when reading only one connect component.
     std::size_t first_facet;
+
+    /// @brief Flip all facets
+    bool flip_facets;
   };
 
   /// @brief An axis-aligned ellipsoid

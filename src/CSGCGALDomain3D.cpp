@@ -519,7 +519,7 @@ public:
       }
     }
 
-    std::cout << "Isolated vertices: " << isolated_vertices.size() << std::endl;
+    // std::cout << "Isolated vertices: " << isolated_vertices.size() << std::endl;
 
     CGAL::Polyhedron_incremental_builder_3<HDS> builder(hds, true);
 
@@ -637,11 +637,22 @@ void make_surface3D(const mshr::Surface3D* s, Exact_Polyhedron_3& P)
       log(dolfin::TRACE, "Done reading file");
     }
 
+    if (s->flip_facets)
+    {
+      log(dolfin::TRACE, "Flipping facets");
+      for (std::vector<std::array<std::size_t, 3> >::iterator it = facets.begin();
+           it != facets.end(); it++)
+      {
+        std::array<std::size_t, 3>& t = *it;
+        std::swap(t[1], t[2]);
+      }
+    }
+
     // std::pair<std::unique_ptr<std::vector<std::array<double, 3> > >,
     //           std::unique_ptr<std::vector<std::array<std::size_t, 3> > > > filtered =
     //   SurfaceConsistency::merge_close_vertices(facets, vertices);
 
-    log(dolfin::TRACE, "Checking connectivity");
+    // log(dolfin::TRACE, "Checking connectivity");
 
     //mshr::closest_vertices(vertices);
 
