@@ -230,7 +230,7 @@ std::string Ellipsoid::str(bool verbose) const
   return ss.str();
 }
 //-----------------------------------------------------------------------------
-Extrude2D::Extrude2D(std::shared_ptr<CSGPrimitive2D> geometry_2d, double z)
+Extrude2D::Extrude2D(std::shared_ptr<CSGGeometry> geometry_2d, double z)
   : geometry_2d(geometry_2d), z(z)
 {
   if (geometry_2d->dim() != 2)

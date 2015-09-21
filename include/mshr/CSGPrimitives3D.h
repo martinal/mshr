@@ -234,7 +234,7 @@ namespace mshr
   class Extrude2D : public CSGPrimitive3D
   {
    public :
-    Extrude2D(std::shared_ptr<CSGPrimitive2D>, double z);
+    Extrude2D(std::shared_ptr<CSGGeometry>, double z);
 
     /// @brief Informal string representation
     /// @return The description string
