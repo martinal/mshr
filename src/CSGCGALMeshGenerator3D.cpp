@@ -348,4 +348,12 @@ void CSGCGALMeshGenerator3D::generate(std::shared_ptr<const CSGCGALDomain3D> csg
   // Distribute the mesh (if in parallel)
   dolfin::MeshPartitioning::build_distributed_mesh(mesh);
 }
+//-----------------------------------------------------------------------------
+std::shared_ptr<dolfin::Mesh>
+CSGCGALMeshGenerator3D::generate(std::shared_ptr<const CSGCGALDomain3D> csgdomain) const
+{
+  std::shared_ptr<dolfin::Mesh> mesh(new dolfin::Mesh());
+  generate(csgdomain, *mesh);
+  return mesh;
+}
 }

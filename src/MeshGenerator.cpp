@@ -29,16 +29,25 @@ namespace mshr
 {
 
 //-----------------------------------------------------------------------------
-void generate(dolfin::Mesh& mesh,
-              const CSGGeometry& geometry,
-              double resolution,
-              std::string backend)
+std::shared_ptr<dolfin::Mesh> generate_mesh(const CSGGeometry& geometry,
+                                            double resolution,
+                                            std::string backend)
 {
   if (geometry.dim() == 2)
   {
+    if (backend != "cgal")
+    {
+      const std::string e = "Unknown mesh generator backend: " + backend + ". The only supported 2D backend is cgal.";
+      dolfin::dolfin_error("MeshGenerator.cpp",
+                           "generate mesh of 2D geometry",
+                           e);
+}
+
+    std::shared_ptr<dolfin::Mesh> mesh(new dolfin::Mesh());
     CSGCGALMeshGenerator2D generator;
     generator.parameters["mesh_resolution"] = resolution;
-    generator.generate(geometry, mesh);
+    generator.generate(geometry, *mesh);
+    return mesh;
   }
   else if (geometry.dim() == 3)
   {
@@ -48,13 +57,15 @@ void generate(dolfin::Mesh& mesh,
     {
       CSGCGALMeshGenerator3D generator;
       generator.parameters["mesh_resolution"] = resolution;
-      generator.generate(std::move(domain), mesh);
+      return generator.generate(std::move(domain));
     }
     else if (backend == "tetgen")
     {
+      std::shared_ptr<dolfin::Mesh> mesh(new dolfin::Mesh());
       TetgenMeshGenerator3D generator;
       generator.parameters["mesh_resolution"] = resolution;
-      generator.generate(std::move(domain), mesh);
+      generator.generate(std::move(domain), *mesh);
+      return mesh;
 
     }
     else
@@ -63,6 +74,7 @@ void generate(dolfin::Mesh& mesh,
       dolfin::dolfin_error("MeshGenerator.cpp",
                            "Generator mesh of 3D geometry",
                            e);
+      return std::shared_ptr<dolfin::Mesh>();
     }
   }
   else
@@ -70,6 +82,7 @@ void generate(dolfin::Mesh& mesh,
     dolfin::dolfin_error("MeshGenerator.cpp",
                          "create mesh from CSG geometry",
                          "Unhandled geometry dimension %d", geometry.dim());
+    return std::shared_ptr<dolfin::Mesh>();
   }
 }
 

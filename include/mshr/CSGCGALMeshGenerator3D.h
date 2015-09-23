@@ -48,8 +48,7 @@ namespace mshr
 
     /// @brief Generate Dolfin mesh
     /// @param domain The polyhedral domain to be meshed
-    /// @param mesh The mesh object to be filled. Will be cleared.
-    void generate(std::shared_ptr<const CSGCGALDomain3D> domain, dolfin::Mesh& mesh) const;
+    std::shared_ptr<dolfin::Mesh> generate(std::shared_ptr<const CSGCGALDomain3D> domain) const;
 
     /// @brief Default parameter values
     static dolfin::Parameters default_parameters()
@@ -70,6 +69,8 @@ namespace mshr
 
       return p;
     }
+  private:
+    void generate(std::shared_ptr<const CSGCGALDomain3D> domain, dolfin::Mesh& mesh) const;
   };
 
 }

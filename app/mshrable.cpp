@@ -153,26 +153,23 @@ int main(int argc, char** argv)
   }
 
   // Generate the mesh
-  dolfin::Mesh m;
-
-  mshr::generate(m,
-                 surf,
-                 vm["resolution"].as<double>(),
-                 vm["backend"].as<std::string>());
+  std::shared_ptr<dolfin::Mesh> m = mshr::generate_mesh(surf,
+                                                        vm["resolution"].as<double>(),
+                                                        vm["backend"].as<std::string>());
 
   // Output mesh if requested
   if (vm.count("outfile"))
   {
     dolfin::File f(vm["outfile"].as<std::string>());
-    f << m;
+    f << *m;
   }
     
   if (vm.count("stats"))
-    print_mesh_statistics(m);
+    print_mesh_statistics(*m);
 
   if (vm.count("check-mesh"))
   {
-    if (!mshr::DolfinMeshUtils::check_mesh(m))
+    if (!mshr::DolfinMeshUtils::check_mesh(*m))
     {
       std::cout << "  Error: Mesh check failed" << std::endl;
       return EXIT_FAILURE;

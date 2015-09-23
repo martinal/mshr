@@ -114,7 +114,6 @@
 %shared_ptr(mshr::UnitSphereMesh)
 %shared_ptr(mshr::CSGCGALDomain3DQueryStructure)
 
-%rename(_generate) mshr::generate;
 %ignore mshr::get_boundary_mesh;
 
 %include <mshr/CSGGeometry.h>
@@ -153,11 +152,3 @@
   %}
  }
 
-// Declare the generate function here. The signature must
-// be in sync with mshr/MeshGenerator.h:generate()
-%pythoncode %{
-def generate_mesh(geometry, resolution, backend="cgal") :
-    m = dolfin.Mesh()
-    _generate(m, geometry, resolution, backend)
-    return m
-%}

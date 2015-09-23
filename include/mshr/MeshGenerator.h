@@ -26,17 +26,16 @@ namespace dolfin
 {
   // Forward declarations
   class Mesh;
-  class BoundaryMesh;
 }
 
 namespace mshr
 {
 
   /// Generate mesh from CSG geometry
-  void generate(dolfin::Mesh& mesh,
-                const CSGGeometry& geometry,
-                double resolution,
-                std::string backend="cgal");
+  std::shared_ptr<dolfin::Mesh>
+    generate_mesh(const CSGGeometry& geometry,
+                  double resolution,
+                  std::string backend="cgal");
 }
 
 #endif
