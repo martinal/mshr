@@ -454,7 +454,7 @@ static inline void add_simple_polygon(std::map<Point_2, std::size_t>& vertices,
         const std::size_t vertex_number = sit->second;;
 
         /* std::pair<Iterator, bool> i = */ vertices.insert(std::make_pair(s.target(), vertex_number));
-        dolfin_assert(!i.second);
+        //dolfin_assert(!i.second);
       }
       else
       {
@@ -464,7 +464,7 @@ static inline void add_simple_polygon(std::map<Point_2, std::size_t>& vertices,
           // target points exists in vertex_map. Insert the source point with the same vertex number
           const std::size_t vertex_number = tit->second;
           /* std::pair<Iterator, bool> i = */ vertices.insert(std::make_pair(s.source(), vertex_number));
-          dolfin_assert(i.second);
+          //dolfin_assert(i.second);
         }
         else
         {

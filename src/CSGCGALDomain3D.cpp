@@ -916,7 +916,7 @@ public:
 // ----
 void make_extrude2D(const mshr::Extrude2D* e, Exact_Polyhedron_3& P)
 {
-  dolfin_assert(s);
+  dolfin_assert(e);
 
   //CSGCGALDomain2D polygon(e->geometry_2d.get());
   BuildExtrude2D<Exact_HalfedgeDS> builder(*e->geometry_2d, e->z);
