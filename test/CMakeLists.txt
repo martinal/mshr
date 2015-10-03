@@ -47,12 +47,13 @@ set_property(TEST "Python-CSGOperators" PROPERTY
 
 ############# Try meshing some surface files found in the cgal source ########################
 # TODO: Print mesh quality measure from program and check the value
-set(CGAL_DATA_DIR "${CMAKE_SOURCE_DIR}/3rdparty/CGAL-4.6/demo/Polyhedron/data")
+set(CGAL_DATA_DIR "${CMAKE_SOURCE_DIR}/3rdparty/CGAL-4.6.3/demo/Polyhedron/data")
 
 # Files that should pass
-set(TESTFILES_VALID "anchor.off;couplingdown.off;cross.off;cube.off;dragknob.off;elephant.off;ellipsoid.off;handle.off;icosahedron.off;joint.off;knot1.off;knot2.off;pinion.off;pipe.off;pyramid.off;rotor.off;sphere.off;spool.off;star.off;translated-cube.off;tripod.off")
+set(TESTFILES_VALID "anchor.off;couplingdown.off;cross.off;cube.off;dragknob.off;elephant.off;ellipsoid.off;handle.off;icosahedron.off;joint.off;knot1.off;knot2.off;pinion.off;pipe.off;rotor.off;sphere.off;spool.off;star.off;translated-cube.off;tripod.off")
 set(TESTFILES_SELFINTERSECTING "bones.off;cow.off;man.off;oblong.ogg")
 set(TESTFILES_NOTCLOSED "cube-ouvert.off;mushroom.off")
+set(TESTFILES_NOTTRIANGULAR "pyramid.off")
 
 foreach(CURRENT_DATA_FILE IN LISTS TESTFILES_VALID)
   message(STATUS "Adding test: ${CURRENT_DATA_FILE}")
