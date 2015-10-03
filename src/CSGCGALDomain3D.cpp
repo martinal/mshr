@@ -1367,6 +1367,15 @@ void convert(const mshr::CSGGeometry& geometry,
       make_ellipsoid(b, P);
       break;
     }
+    case mshr::CSGGeometry::TriPolyhedron :
+    {
+      const mshr::CSGCGALDomain3D* p = dynamic_cast<const mshr::CSGCGALDomain3D*>(&geometry);
+      dolfin_assert(p);
+      Insert_polyhedron_to<Exact_Polyhedron_3> inserter(p->impl->p);
+      P.delegate(inserter);
+      dolfin_assert(P.is_valid());
+      break;
+    }
     case mshr::CSGGeometry::Surface3D :
     {
       const mshr::Surface3D* b = dynamic_cast<const mshr::Surface3D*>(&geometry);
