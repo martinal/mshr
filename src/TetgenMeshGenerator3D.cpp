@@ -111,42 +111,45 @@ TetgenMeshGenerator3D::~TetgenMeshGenerator3D()
 {
 }
 //-----------------------------------------------------------------------------
-void TetgenMeshGenerator3D::generate(std::shared_ptr<const CSGCGALDomain3D> domain, dolfin::Mesh& mesh) const
+std::shared_ptr<dolfin::Mesh>
+TetgenMeshGenerator3D::generate(std::shared_ptr<const CSGCGALDomain3D> domain) const
 {
-  std::vector<dolfin::Point> vertices;
-  std::vector<std::array<std::size_t, 3> > facets;
-
-  domain->get_vertices(vertices);
-  domain->get_facets(facets);
-
   tetgenio in;
 
-  // Copy the vertices to the tetgen structure
+  double r;
   {
+    // Copy the vertices to the tetgen structure
+    dolfin::log(dolfin::TRACE, "Copying vertices");
+    std::vector<dolfin::Point> vertices;
+    domain->get_vertices(vertices);
+    r = bounding_sphere_radius(vertices);
+
     in.numberofpoints = vertices.size();
     in.pointlist = new REAL[in.numberofpoints * 3];
 
     std::size_t i = 0;
-    for (std::vector<dolfin::Point>::const_iterator it = vertices.begin();
-         it != vertices.end(); it++)
+    for (const dolfin::Point& p : vertices)
     {
-      in.pointlist[i*3 + 0] = it->x();
-      in.pointlist[i*3 + 1] = it->y();
-      in.pointlist[i*3 + 2] = it->z();
+      in.pointlist[i*3 + 0] = p.x();
+      in.pointlist[i*3 + 1] = p.y();
+      in.pointlist[i*3 + 2] = p.z();
 
       i++;
     }
   }
-  
+
   // Copy the facets to the tetgen structure
   {
+    dolfin::log(dolfin::TRACE, "Copying facets");
+    std::vector<std::array<std::size_t, 3> > facets;
+    domain->get_facets(facets);
+
     in.numberoffacets = facets.size();
     in.facetlist = new tetgenio::facet[in.numberoffacets];
     //in.facetmarkerlist = new int[in.numberoffacets];
 
     std::size_t i = 0;
-    for (std::vector<std::array<std::size_t, 3> >::const_iterator it = facets.begin();
-         it != facets.end(); it++)
+    for (const std::array<std::size_t, 3>& facet : facets)
     {
       tetgenio::facet *f = &in.facetlist[i];
       f->numberofpolygons = 1;
@@ -156,9 +159,9 @@ void TetgenMeshGenerator3D::generate(std::shared_ptr<const CSGCGALDomain3D> doma
       tetgenio::polygon *p = &f->polygonlist[0];
       p->numberofvertices = 3;
       p->vertexlist = new int[p->numberofvertices];
-      p->vertexlist[0] = (*it)[0];
-      p->vertexlist[1] = (*it)[1];
-      p->vertexlist[2] = (*it)[2];
+      p->vertexlist[0] = facet[0];
+      p->vertexlist[1] = facet[1];
+      p->vertexlist[2] = facet[2];
 
       i++;
     }
@@ -168,10 +171,10 @@ void TetgenMeshGenerator3D::generate(std::shared_ptr<const CSGCGALDomain3D> doma
   // TODO: Check if there are more than one disconnected part
   // before creating the query structure.
   {
+    dolfin::log(dolfin::TRACE, "Marking holes");
     std::vector<dolfin::Point> holes;
     std::shared_ptr<CSGCGALDomain3DQueryStructure> qs = domain->get_query_structure();
-    domain->get_points_in_holes(holes,
-                                qs);
+    domain->get_points_in_holes(holes, qs);
 
     in.numberofholes = holes.size();
     in.holelist = new REAL[in.numberofholes*3];
@@ -215,7 +218,7 @@ void TetgenMeshGenerator3D::generate(std::shared_ptr<const CSGCGALDomain3D> doma
       const double resolution = parameters["mesh_resolution"];
 
       // try to compute reasonable parameters
-      const double r = bounding_sphere_radius(vertices);
+      //const double r = bounding_sphere_radius(vertices);
       const double cell_size = r/static_cast<double>(resolution)*2.0;
       tetgenparams << cell_size;
     }
@@ -244,7 +247,9 @@ void TetgenMeshGenerator3D::generate(std::shared_ptr<const CSGCGALDomain3D> doma
   tetgenio out;
   tetrahedralize(writable.get(), &in, &out);
 
-  build_dolfin_mesh(out, mesh);
+  std::shared_ptr<dolfin::Mesh> mesh(new dolfin::Mesh());
+  build_dolfin_mesh(out, *mesh);
+  return mesh;
 }
 //-----------------------------------------------------------------------------
 } // end namespace mshr

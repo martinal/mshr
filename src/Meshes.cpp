@@ -44,7 +44,10 @@ namespace mshr
     generator.parameters["max_tet_volume"] = max_cell_volume;
     generator.parameters["preserve_surface"] = true;
 
-    generator.generate(polyhedral_domain, *this);
+    std::shared_ptr<dolfin::Mesh> mesh = generator.generate(polyhedral_domain);
+    // dolfin::Mesh* m = static_cast<dolfin::Mesh>(this);
+    // *m = *mesh
+    dolfin::Mesh::operator=(*mesh);
 
     // Broadcast mesh according to parallel policy
     if (dolfin::MPI::is_broadcaster(this->mpi_comm()))

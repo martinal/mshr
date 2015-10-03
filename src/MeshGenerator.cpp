@@ -62,12 +62,9 @@ std::shared_ptr<dolfin::Mesh> generate_mesh(const CSGGeometry& geometry,
     }
     else if (backend == "tetgen")
     {
-      std::shared_ptr<dolfin::Mesh> mesh(new dolfin::Mesh());
       TetgenMeshGenerator3D generator;
       generator.parameters["mesh_resolution"] = resolution;
-      generator.generate(std::move(domain), *mesh);
-      return mesh;
-
+      return generator.generate(std::move(domain));
     }
     else
     {

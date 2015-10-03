@@ -1543,65 +1543,68 @@ void CSGCGALDomain3D::get_points_in_holes(std::vector<dolfin::Point>& holes,
   std::vector<typename Exact_Polyhedron_3::Vertex_const_handle> parts;
   mshr::PolyhedronUtils::get_disconnected_components(impl->p,std::back_inserter(parts));
 
-  for (std::vector<typename Exact_Polyhedron_3::Vertex_const_handle>::const_iterator it = parts.begin();
-       it != parts.end(); it++)
+  if (parts.size() > 1)
   {
-    typename Exact_Polyhedron_3::Halfedge_const_handle h = (*it)->halfedge();
-    const Exact_Point_3 x1 = h->vertex()->point();
-    const Exact_Point_3 x2 = h->next()->vertex()->point();
-    const Exact_Point_3 x3 = h->next()->next()->vertex()->point();
-    const Exact_Point_3 origin( (x1.x()+x2.x()+x3.x())/3,
-                                (x1.y()+x2.y()+x3.y())/3,
-                                (x1.z()+x2.z()+x3.z())/3);
-
-    Vector_3 n = CGAL::cross_product(x3-x1, x2-x1);
-
-    // shoot a ray from the facet and count the number of hits
-    Ray_3 ray(origin, n);
-
-    std::list<AABB_Tree::Object_and_primitive_id> intersections;
-    q->impl->aabb_tree.all_intersections(ray, std::back_inserter(intersections));
-    // std::cout << "Number of intersections: " << intersections.size() << std::endl;
-
-    // Collect unique intersection points not including the origin point
-    std::set<Exact_Point_3> intersection_points;
-    for (std::list<AABB_Tree::Object_and_primitive_id>::const_iterator
-           iit = intersections.begin();
-         iit != intersections.end(); iit++)
+    for (std::vector<typename Exact_Polyhedron_3::Vertex_const_handle>::const_iterator it = parts.begin();
+         it != parts.end(); it++)
     {
-      if (const Exact_Point_3* p = CGAL::object_cast<Exact_Point_3>(&(iit->first)))
+      typename Exact_Polyhedron_3::Halfedge_const_handle h = (*it)->halfedge();
+      const Exact_Point_3 x1 = h->vertex()->point();
+      const Exact_Point_3 x2 = h->next()->vertex()->point();
+      const Exact_Point_3 x3 = h->next()->next()->vertex()->point();
+      const Exact_Point_3 origin( (x1.x()+x2.x()+x3.x())/3,
+                                  (x1.y()+x2.y()+x3.y())/3,
+                                  (x1.z()+x2.z()+x3.z())/3);
+
+      Vector_3 n = CGAL::cross_product(x3-x1, x2-x1);
+
+      // shoot a ray from the facet and count the number of hits
+      Ray_3 ray(origin, n);
+
+      std::list<AABB_Tree::Object_and_primitive_id> intersections;
+      q->impl->aabb_tree.all_intersections(ray, std::back_inserter(intersections));
+      // std::cout << "Number of intersections: " << intersections.size() << std::endl;
+
+      // Collect unique intersection points not including the origin point
+      std::set<Exact_Point_3> intersection_points;
+      for (std::list<AABB_Tree::Object_and_primitive_id>::const_iterator
+             iit = intersections.begin();
+           iit != intersections.end(); iit++)
       {
-        if (*p != origin)
-          intersection_points.insert(*p);
-      }
-    }
-
-    // std::cout << "Number of unique point intersections: " << intersection_points.size() << std::endl;
-    if (intersection_points.size() % 2 == 0)
-    {
-      // This is a hole
-      // Find a point strictly inside it
-
-      std::set<Exact_Point_3>::const_iterator pit = intersection_points.begin();
-      Exact_Point_3 closest_point = *pit;
-      Exact_Kernel::FT distance_to_closest = (closest_point-origin).squared_length();
-      pit++;
-
-      for (;pit != intersection_points.end(); pit++)
-      {
-        Exact_Kernel::FT d = (*pit-origin).squared_length();
-        if (d < distance_to_closest)
+        if (const Exact_Point_3* p = CGAL::object_cast<Exact_Point_3>(&(iit->first)))
         {
-          distance_to_closest = d;
-          closest_point = *pit;
+          if (*p != origin)
+            intersection_points.insert(*p);
         }
       }
 
-      const dolfin::Point h_point( (CGAL::to_double(origin.x())+CGAL::to_double(closest_point.x()))/2,
-                                   (CGAL::to_double(origin.y())+CGAL::to_double(closest_point.y()))/2,
-                                   (CGAL::to_double(origin.z())+CGAL::to_double(closest_point.z()))/2 );
-      // std::cout << "Point in hole: " << h_point << std::endl;
-      holes.push_back(h_point);
+      // std::cout << "Number of unique point intersections: " << intersection_points.size() << std::endl;
+      if (intersection_points.size() % 2 == 0)
+      {
+        // This is a hole
+        // Find a point strictly inside it
+
+        std::set<Exact_Point_3>::const_iterator pit = intersection_points.begin();
+        Exact_Point_3 closest_point = *pit;
+        Exact_Kernel::FT distance_to_closest = (closest_point-origin).squared_length();
+        pit++;
+
+        for (;pit != intersection_points.end(); pit++)
+        {
+          Exact_Kernel::FT d = (*pit-origin).squared_length();
+          if (d < distance_to_closest)
+          {
+            distance_to_closest = d;
+            closest_point = *pit;
+          }
+        }
+
+        const dolfin::Point h_point( (CGAL::to_double(origin.x())+CGAL::to_double(closest_point.x()))/2,
+                                     (CGAL::to_double(origin.y())+CGAL::to_double(closest_point.y()))/2,
+                                     (CGAL::to_double(origin.z())+CGAL::to_double(closest_point.z()))/2 );
+        // std::cout << "Point in hole: " << h_point << std::endl;
+        holes.push_back(h_point);
+      }
     }
   }
 }
