@@ -52,6 +52,7 @@ std::shared_ptr<dolfin::Mesh> generate_mesh(const CSGGeometry& geometry,
   else if (geometry.dim() == 3)
   {
     std::shared_ptr<CSGCGALDomain3D> domain(new CSGCGALDomain3D(geometry));
+    domain->ensure_meshing_preconditions();
 
     if (backend == "cgal")
     {
