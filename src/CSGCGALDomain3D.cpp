@@ -24,6 +24,7 @@
 #include <mshr/SurfaceConsistency.h>
 #include <mshr/CSGCGALDomain2D.h>
 #include <mshr/CSGCGALMeshGenerator2D.h>
+#include <mshr/DolfinMeshUtils.h>
 
 #include "meshclean.h"
 #include "triangulation_refinement.h"
@@ -582,17 +583,26 @@ void make_surface3D(const mshr::Surface3D* s, Exact_Polyhedron_3& P)
   {
     dolfin_assert(s->mesh);
 
-    // Extract global boundary of mesh, order with outward pointing normals
-    dolfin::BoundaryMesh b(*(s->mesh), "exterior", false);
+    std::unique_ptr<dolfin::BoundaryMesh> b;
 
+    if (s->use_cell_domain)
+    {
+      std::shared_ptr<dolfin::Mesh> m = mshr::DolfinMeshUtils::extract_subdomain(s->mesh, s->cell_domain);
+      b.reset(new dolfin::BoundaryMesh(*m, "exterior", false));
+    }
+    else
+    {
+      // Extract global boundary of mesh, order with outward pointing normals
+      b.reset(new dolfin::BoundaryMesh(*(s->mesh), "exterior", false));
+    }
 
-    for (dolfin::VertexIterator v(b); !v.end(); ++v)
+    for (dolfin::VertexIterator v(*b); !v.end(); ++v)
     {
       const dolfin::Point& p = v->point();
       vertices.push_back({p[0], p[1], p[2]});
     }
 
-    for (dolfin::CellIterator c(b); !c.end(); ++c)
+    for (dolfin::CellIterator c(*b); !c.end(); ++c)
     {
       const unsigned int* vertices = c->entities(0);
       facets.push_back({vertices[0], vertices[1], vertices[2]});

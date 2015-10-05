@@ -38,6 +38,10 @@ class DolfinMeshUtils
   /// Run all implemented checks mesh consistency
   /// @param m The mesh
   static bool check_mesh(const dolfin::Mesh& m);
+
+  static std::shared_ptr<dolfin::Mesh>
+    extract_subdomain(std::shared_ptr<const dolfin::Mesh>,
+                      std::size_t cell_domain);
 };
 
 }

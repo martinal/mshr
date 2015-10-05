@@ -177,6 +177,9 @@ namespace mshr
     // Create triangulated polyhedron from surface of mesh
     Surface3D(std::shared_ptr<const dolfin::Mesh> mesh);
 
+    // Create triangulate polyhedron on surface of subdomain of mesh
+    Surface3D(std::shared_ptr<const dolfin::Mesh> mesh, std::size_t cell_domain);
+
     /// @brief Informal string representation
     /// @return The description string
     std::string str(bool verbose) const;
@@ -206,6 +209,9 @@ namespace mshr
 
     /// @brief Flip all facets
     bool flip_facets;
+
+    std::size_t cell_domain;
+    bool use_cell_domain;
   };
 
   /// @brief An axis-aligned ellipsoid

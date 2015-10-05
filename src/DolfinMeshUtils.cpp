@@ -1,4 +1,4 @@
-// Copyright (C) 2014 Benjamin Kehlet
+// Copyright (C) 2014-2015 Benjamin Kehlet
 //
 // This file is part of mshr.
 //
@@ -19,6 +19,8 @@
 #include <mshr/DolfinMeshUtils.h>
 
 #include <dolfin/mesh/Cell.h>
+#include <dolfin/mesh/Vertex.h>
+#include <dolfin/mesh/MeshEditor.h>
 
 #include <limits>
 
@@ -67,5 +69,61 @@ bool DolfinMeshUtils::has_isolated_vertices(const dolfin::Mesh& m)
 bool DolfinMeshUtils::check_mesh(const dolfin::Mesh& m)
 {
   return !has_isolated_vertices(m);
+}
+//-----------------------------------------------------------------------------
+std::shared_ptr<dolfin::Mesh>
+   DolfinMeshUtils::extract_subdomain(std::shared_ptr<const dolfin::Mesh> mesh,
+                                      std::size_t cell_domain)
+{
+  dolfin_assert(mesh->gdim() == 3);
+  dolfin_assert(mesh->tdim() == 3);
+
+  // Collect all vertices incident to all marked cells
+  std::map<std::size_t, std::size_t> collected_vertices;
+  std::size_t num_cells = 0;
+  for (const std::pair<std::size_t, std::size_t>& marker : mesh->domains().markers(3))
+  {
+    if (marker.second == cell_domain)
+    {
+      num_cells++;
+      dolfin::Cell c(*mesh, marker.second);
+      for (std::size_t i = 0; i < 4; i++)
+      {
+        const std::size_t s = collected_vertices.size();
+        collected_vertices.insert(std::make_pair(c.entities(0)[i], s));
+      }
+    }
+  }
+
+  std::shared_ptr<dolfin::Mesh> outmesh(new dolfin::Mesh);
+  dolfin::MeshEditor editor;
+  editor.open(*outmesh, 3,3);
+
+  editor.init_vertices(collected_vertices.size());
+  for (std::pair<std::size_t, std::size_t> v : collected_vertices)
+  {
+    dolfin::Vertex existing_vertex(*mesh, v.first);
+    editor.add_vertex(v.second, existing_vertex.point());
+  }
+
+  editor.init_cells(num_cells);
+  std::size_t cell_counter = 0;
+  for (const std::pair<std::size_t, std::size_t>& marker : mesh->domains().markers(3))
+  {
+    if (marker.second == cell_domain)
+    {
+      const dolfin::Cell c(*mesh, marker.second);
+      const unsigned int* vertices = c.entities(0);
+      editor.add_cell(cell_counter,
+                      collected_vertices[vertices[0]],
+                      collected_vertices[vertices[1]],
+                      collected_vertices[vertices[2]],
+                      collected_vertices[vertices[3]]);
+
+    }
+  }
+
+  editor.close();
+  return outmesh;
 }
 }
