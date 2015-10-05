@@ -233,7 +233,7 @@ namespace mshr
     const std::size_t _segments;
   };
 
-  /// @brief A 2D polygon extruded alogn the z axis to 3D
+  /// @brief A 2D polygon extruded along the z axis to 3D
   class Extrude2D : public CSGPrimitive3D
   {
    public :
