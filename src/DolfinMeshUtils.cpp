@@ -75,8 +75,8 @@ std::shared_ptr<dolfin::Mesh>
    DolfinMeshUtils::extract_subdomain(std::shared_ptr<const dolfin::Mesh> mesh,
                                       std::size_t cell_domain)
 {
-  dolfin_assert(mesh->gdim() == 3);
-  dolfin_assert(mesh->tdim() == 3);
+  dolfin_assert(mesh->geometry().dim() == 3);
+  dolfin_assert(mesh->topology().dim() == 3);
 
   // Collect all vertices incident to all marked cells
   std::map<std::size_t, std::size_t> collected_vertices;
