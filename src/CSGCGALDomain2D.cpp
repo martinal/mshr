@@ -485,7 +485,7 @@ static inline void add_simple_polygon(std::map<Point_2, std::size_t>& vertices,
       if (sit == vertices.end())
       {
         std::pair<Iterator, bool> i = vertices.insert(std::make_pair(s.source(), num_vertices));
-        dolfin_assert(!i.second);
+        dolfin_assert(i.second);
         sit = i.first;
         num_vertices++;
       }
