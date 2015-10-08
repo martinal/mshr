@@ -1,3 +1,4 @@
+from __future__ import print_function
 import mshr
 import dolfin
 
@@ -10,7 +11,7 @@ geometry = cone + cyl;
 
 polyhedral_domain = mshr.CSGCGALDomain3D(geometry)
 
-print "Degenerate facets after boolean operation: {0}".format(polyhedral_domain.num_degenerate_facets(TOLERANCE))
+print("Degenerate facets after boolean operation: {0}".format(polyhedral_domain.num_degenerate_facets(TOLERANCE)))
 polyhedral_domain.remove_degenerate_facets(TOLERANCE)
 
 dolfin.info(polyhedral_domain, True)

@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with mshr.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import print_function
 import dolfin
 from mshr import *
 
@@ -33,7 +34,7 @@ dolfin.info(domain, True)
 
 # Generate and plot mesh
 mesh2d = generate_mesh(domain, 45)
-print mesh2d
+print(mesh2d)
 dolfin.plot(mesh2d, "2D mesh")
 
 # Convert subdomains to mesh function for plotting

@@ -15,6 +15,7 @@
 # You should have received a copy of the GNU General Public License
 # along with mshr.  If not, see <http://www.gnu.org/licenses/>.
 
+from __future__ import print_function
 from mshr import *
 from dolfin import *
 
@@ -39,7 +40,7 @@ mesh_outside = generate_mesh(geometry_outside, resolution)
 
 # Rotate blades
 if extra_rotation:
-    print "Rotating blades..."
+    print("Rotating blades...")
     c = mesh_inside.coordinates()
     for i, (x, y, z) in enumerate(c):
 
@@ -70,8 +71,8 @@ if extra_rotation:
         c[i][2] = zz
 
 # Report size of meshes
-print "Mesh of propeller inside:  %d cells" % mesh_inside.num_cells()
-print "Mesh of propeller outside: %d cells" % mesh_outside.num_cells()
+print("Mesh of propeller inside:  %d cells" % mesh_inside.num_cells())
+print("Mesh of propeller outside: %d cells" % mesh_outside.num_cells())
 
 # Save meshes to file
 File("propeller_inside.xml.gz") << mesh_inside
