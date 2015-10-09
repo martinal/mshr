@@ -6,12 +6,12 @@
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
-// 
+//
 // mshr is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
 // along with mshr.  If not, see <http://www.gnu.org/licenses/>.
 //
@@ -57,8 +57,9 @@ inline void get_next_line(std::ifstream& file, std::string& line, std::size_t &l
 }
 
 
-inline double closest_vertices(const std::map<std::array<double, 3>,std::size_t>& vertices)
-{
+/*
+  inline double closest_vertices(const std::map<std::array<double, 3>,std::size_t>& vertices)
+  {
     std::cout << "Computing closest vertices (map)" << std::endl;
     double min_distance = std::numeric_limits<double>::max();
     std::array<double, 3> a;
@@ -74,13 +75,14 @@ inline double closest_vertices(const std::map<std::array<double, 3>,std::size_t>
       std::size_t counter2 = 0;
       for (;v2 != vertices.end(); v2++)
       {
-        const double d = std::pow( v1->first[0] - v2->first[0], 2 ) + std::pow( v1->first[1]- v2->first[1], 2) + std::pow( v1->first[2]- v2->first[2], 2);
+        const double d = std::pow( v1->first[0] - v2->first[0], 2 ) + std::pow( v1->first[1]- v2->first[1], 2)
+          + std::pow( v1->first[2]- v2->first[2], 2);
         if (d < min_distance)
         {
           min_distance = d;
           a = v1->first;
           b = v2->first;
-          
+
         }
         min_distance = std::min(min_distance, d);
 
@@ -97,7 +99,7 @@ inline double closest_vertices(const std::map<std::array<double, 3>,std::size_t>
 
     return min_distance;
 }
-
+*/
 
 
 } // end anonymous namespace
@@ -141,7 +143,7 @@ void STLFileReader::read(const std::string filename,
                          "File does not start with \"solid\" (line %u", lineno);
   }
 
-  // TODO: Read name of solid  
+  // TODO: Read name of solid
 
   do
   {
@@ -175,7 +177,7 @@ void STLFileReader::read(const std::string filename,
         ++tok_iter;
 
         //dolfin::cout << "Read line: " << line << dolfin::endl;
-        
+
         for (std::size_t i = 0; i < 3; ++i)
         {
           normal[i] = strToDouble(*tok_iter);
@@ -184,7 +186,7 @@ void STLFileReader::read(const std::string filename,
 
         if (normal.norm() > DOLFIN_EPS)
           has_normal = true;
-        
+
         if (tok_iter != tokens.end())
           dolfin::dolfin_error("PolyhedronUtils.cpp",
                                "open .stl file to read 3D surface",
@@ -277,7 +279,7 @@ void STLFileReader::read(const std::string filename,
     facets.push_back(v_indices);
 
     // Get orientation right if normal is given
-    if (has_normal) 
+    if (has_normal)
     {
       // Compute normal
       const dolfin::Point v1(3, vertices[v_indices[0]].data());
@@ -295,7 +297,7 @@ void STLFileReader::read(const std::string filename,
       //   dolfin::cout << "Diff: " << (n - normal).norm() << dolfin::endl;
     }
 
-    // Get next line 
+    // Get next line
     // either start of next facet or endsolid
     get_next_line(file, line, lineno);
 

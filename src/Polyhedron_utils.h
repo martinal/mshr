@@ -6,12 +6,12 @@
 // it under the terms of the GNU General Public License as published by
 // the Free Software Foundation, either version 3 of the License, or
 // (at your option) any later version.
-// 
+//
 // mshr is distributed in the hope that it will be useful,
 // but WITHOUT ANY WARRANTY; without even the implied warranty of
 // MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
 // GNU General Public License for more details.
-// 
+//
 // You should have received a copy of the GNU General Public License
 // along with mshr.  If not, see <http://www.gnu.org/licenses/>.
 
@@ -295,7 +295,7 @@ class PolyhedronUtils
   }
   //-----------------------------------------------------------------------------
   template<typename Triangle_3>
-  static double get_triangle_cos_angle(Triangle_3 t1, 
+  static double get_triangle_cos_angle(Triangle_3 t1,
                                        Triangle_3 t2)
   {
     typedef typename CGAL::Kernel_traits<Triangle_3>::Kernel::Vector_3 Vector_3;
@@ -303,7 +303,7 @@ class PolyhedronUtils
     const Vector_3 v1 = t1.supporting_plane().orthogonal_vector();
     const Vector_3 v2 = t2.supporting_plane().orthogonal_vector();
 
-    return CGAL::to_double((v1*v2)/std::sqrt(CGAL::to_double(v1.squared_length()*v2.squared_length())));  
+    return CGAL::to_double((v1*v2)/std::sqrt(CGAL::to_double(v1.squared_length()*v2.squared_length())));
   }
   //-----------------------------------------------------------------------------
   template<typename Polyhedron>
@@ -312,10 +312,10 @@ class PolyhedronUtils
     typedef typename Polyhedron::Traits::Vector_3 Vector_3;
 
     // std::cout << "get edge cos theta" << std::endl;
-    
+
     Vector_3 h1_vec(h->vertex()->point(), h->prev()->vertex()->point());
     h1_vec = h1_vec/std::sqrt(CGAL::to_double(h1_vec.squared_length()));
-    
+
     // std::cout << "h1_vec_normalized: " << h1_vec << std::endl;
     Vector_3 h2_vec(h->vertex()->point(), h->next()->vertex()->point());
     h2_vec = h2_vec/std::sqrt(CGAL::to_double(h2_vec.squared_length()));
@@ -631,7 +631,7 @@ class PolyhedronUtils
           }
 
           // std::cout << "Now creating face" << std::endl;
-          typedef typename Halfedge::Base HBase;
+          //typedef typename Halfedge::Base HBase;
           edges[0]->HBase::set_next(edges[1]);
           decorator.set_prev(edges[1], edges[0]);
           edges[1]->HBase::set_next(edges[2]);
@@ -683,7 +683,7 @@ class PolyhedronUtils
     typedef typename Polyhedron::Facet_handle Facet_handle;
     typedef typename Polyhedron::Traits::Point_3 Point_3;
     typedef typename Polyhedron::Traits::Segment_3 Segment_3;
-    
+
     typedef CGAL::Exact_predicates_inexact_constructions_kernel InexactKernel;
     typedef typename InexactKernel::Plane_3 InexactPlane_3;
     typedef typename InexactKernel::Point_3 InexactPoint_3;
@@ -783,11 +783,11 @@ class PolyhedronUtils
                                                                          CGAL::to_double(p[2])));
         z += rotated[2];
         // std::cout << " " << rotated << ", ";
-      
+
         const InexactPoint_2 p_2d(rotated[0], rotated[1]);
 
         // std::cout << " " << p_2d << ", ";
-      
+
         vertices.push_back(cdt.insert(p_2d));
         vertices.back()->info() = current->vertex();
 
@@ -821,21 +821,22 @@ class PolyhedronUtils
         for (std::size_t j = i+1; j < vertices.size(); j++)
         {
           InexactSegment_2 s2(vertices[j]->point(), vertices[(j+1)%vertices.size()]->point());
-          
+
           const auto intersection = CGAL::intersection(s, s2);
-          
+
           if (intersection)
           {
-            if (const InexactPoint_2* intersection_point = boost::get<InexactPoint_2>(&*intersection))
+            if (boost::get<InexactPoint_2>(&*intersection))
             {
               if (j != i+1 && i != (j+1)%vertices.size())
               {
-                // std::cout << "Non-neighbors (" << i << ", " << j << ")/" << vertices.size() << " intersect in single point" << std::endl;
-                
+                //std::cout << "Non-neighbors (" << i << ", " << j << ")/" << vertices.size()
+                //          << " intersect in single point" << std::endl;
+
                 return false;
               }
             }
-            else if (const InexactSegment_2* intersection_segment = boost::get<InexactSegment_2>(&*intersection))
+            else if (boost::get<InexactSegment_2>(&*intersection))
             {
               // std::cout << "Intersects in segment" << std::endl;
               return false;
@@ -848,7 +849,7 @@ class PolyhedronUtils
           } // end if intersection
         } // end inner loop
       } // end outer loop
-      
+
       // No edges intersect, so we can safely insert then as constraints to the
       // triangulation
     }
@@ -892,7 +893,7 @@ class PolyhedronUtils
     // Check if any of the triangles will intersect when transformed back to
     // the polyhedron.
     /* std::cout << "Checking if triangulation can be inserted without introducing self intersections" << std::endl; */
-      
+
     /* std::vector<Triangle_3> triangle_set; */
 
     /* // Collect neighbor triangles */
@@ -942,7 +943,7 @@ class PolyhedronUtils
     /*                                                               z)); */
     /*     t2 = Point_3(t_[0], t_[1], t_[2]); */
     /*   } */
-      
+
     /*   Triangle_3 t(t0, t1, t2); */
     /*   if (triangle_set_intersect_triangle(t, triangle_set)) */
     /*   { */
@@ -955,7 +956,7 @@ class PolyhedronUtils
     /* } */
 
     /* std::cout << "  Done" << std::endl; */
-      
+
     // Triangles did not intersect any of the surrounding triangles
 
     dolfin_assert(cdt.is_valid());
@@ -976,7 +977,7 @@ class PolyhedronUtils
     // TODO: This works, but is incredibly slow for large holes. Should be
     // possible to insert the new vertices and edges directly to the HDS of the
     // polyhedron using a modifier.
-    
+
     while (faces.size() > 0)
     {
       // std::cout << "---- Face iteration (outer): " << h->facet()->facet_degree() << std::endl;
@@ -990,9 +991,9 @@ class PolyhedronUtils
 
         dolfin_assert(!h->is_border());
 
-        std::array<typename CDT::Vertex_handle, 3> vertices{ (*f)->vertex(0),
+        std::array<typename CDT::Vertex_handle, 3> vertices{{(*f)->vertex(0),
                                                              (*f)->vertex(1),
-                                                             (*f)->vertex(2) };
+                                                             (*f)->vertex(2)}};
 
         if (vertices[0]->info() != Vertex_handle() &&
             vertices[1]->info() != Vertex_handle() &&
@@ -1006,9 +1007,9 @@ class PolyhedronUtils
           if (common_facet->facet_degree() > 3)
           {
             dolfin_assert(common_facet == h->facet());
-            std::array<Halfedge_handle, 3> halfedges { find_edge<Polyhedron>(vertices[0]->info(), h->facet()),
+            std::array<Halfedge_handle, 3> halfedges {{find_edge<Polyhedron>(vertices[0]->info(), h->facet()),
                                                        find_edge<Polyhedron>(vertices[1]->info(), h->facet()),
-                                                       find_edge<Polyhedron>(vertices[2]->info(), h->facet()) };
+                                                       find_edge<Polyhedron>(vertices[2]->info(), h->facet())}};
 
             /* std::cout << "Vertices: " << std::distance(P.halfedges_begin(), halfedges[0]) << ", " */
             /*           << std::distance(P.halfedges_begin(), halfedges[1]) << ", " */
@@ -1116,7 +1117,7 @@ class PolyhedronUtils
                                                       new_point[1],
                                                       new_point[2]);
 
-              Vertex_handle v = new_vertex->vertex();
+              //Vertex_handle v = new_vertex->vertex();
               typename CDT::Vertex_handle v_vdt = vertices[(i+1)%3];
               // std::cout << "Setting new vertex as info" << std::endl;
 
@@ -1140,7 +1141,7 @@ class PolyhedronUtils
         }
       }
     }
-    
+
     //P.normalize_border();
     // dolfin_assert(P.is_valid(false, 1));
 
@@ -1157,7 +1158,7 @@ class PolyhedronUtils
   /*        vit != p.vertices_end(); vit++) */
   /*   { */
   /*     min_degree = std::min(min_degree, vit->vertex_degree); */
-      
+
   /*   } */
 
   /*   std::cout << "Min vertex_degree: " << min_degree << std::endl; */
@@ -1197,8 +1198,8 @@ class PolyhedronUtils
   static void print_triangle(typename Polyhedron::Halfedge_handle h)
   {
     std::cout << "Triangle "
-              << h->prev()->vertex()->point() << ", " 
-              << h->vertex()->point() << ", " 
+              << h->prev()->vertex()->point() << ", "
+              << h->vertex()->point() << ", "
               << h->next()->vertex()->point() << std::endl;
     std::cout << "Area: " << triangle_area<Polyhedron>(h) << std::endl;
   }
@@ -1242,18 +1243,18 @@ class PolyhedronUtils
 
     return Vertex_handle();
   }
-  //----------------------------------------------------------------------------- 
+  //-----------------------------------------------------------------------------
   template <typename Polyhedron>
   static double facet_angle(typename Polyhedron::Halfedge_handle h)
   {
     dolfin_assert(h->is_border());
     dolfin_assert(h->next()->is_border());
-    
+
     typedef typename Polyhedron::Traits::Line_3 Line_3;
     typedef typename Polyhedron::Traits::Vector_3 Vector_3;
     typedef typename Polyhedron::Traits::Point_3 Point_3;
 
-    const Line_3 l(h->prev()->vertex()->point(), 
+    const Line_3 l(h->prev()->vertex()->point(),
                    h->vertex()->point());
 
     const Point_3& p11 = h->next()->vertex()->point();
@@ -1274,7 +1275,7 @@ class PolyhedronUtils
                                           const typename CGAL::Kernel_traits<Segment_3>::Kernel::Triangle_3& t)
   {
     typedef typename CGAL::Kernel_traits<Segment_3>::Kernel::Point_3 Point_3;
-    
+
     auto result = CGAL::intersection(s, t);
     if (!result)
       return false;
@@ -1301,7 +1302,7 @@ class PolyhedronUtils
   //-----------------------------------------------------------------------------
   // Check if two triangles intersect.
   // Neighbor triangles (share a vertice or an edge) do not intersect
-  // if t1 == t2 (geometrically), the triangles do not intersect 
+  // if t1 == t2 (geometrically), the triangles do not intersect
   template<typename Triangle_3>
   static bool triangles_intersect(const Triangle_3& t1, const Triangle_3& t2)
   {
@@ -1312,12 +1313,12 @@ class PolyhedronUtils
          (t1[1] == t2[0] || t1[1] == t2[1] || t1[1] == t2[2]) &&
          (t1[2] == t2[0] || t1[2] == t2[1] || t1[2] == t2[2]))
       return false;
-    
+
     auto result = CGAL::intersection(t1, t2);
 
     if (!result)
       return false;
-    
+
     if (const Point_3* p = boost::get<Point_3>(&*result))
     {
       if (t1[0] == t2[0] || t1[0] == t2[1] || t1[0] == t2[2] ||
@@ -1509,7 +1510,7 @@ class PolyhedronUtils
     dolfin_assert(P.is_valid(false, 0));
     dolfin_assert(halfedge_is_in_polyhedron(P, h));
     dolfin_assert(vertex_is_in_polyhedron(P, h->vertex()));
-    
+
     const std::array<double, 3> plane_fit = get_plane_fit<Polyhedron>(h, h->prev());
     if (plane_fit[0] < .85)
     {
@@ -1531,14 +1532,14 @@ class PolyhedronUtils
         }
         centroid = centroid + (current->vertex()->point()-CGAL::ORIGIN);
         counter++;
-        
+
         current = current->next();
       } while (current != h);
     }
     // std::cout << "Number of triangles: " << triangles.size() << std::endl;
     centroid = CGAL::ORIGIN + (centroid-CGAL::ORIGIN)/counter;
     // std::cout << "Centroid: " << centroid << std::endl;
-    
+
     Halfedge_handle current = h;
     do
     {
@@ -1552,9 +1553,9 @@ class PolyhedronUtils
           return false;
         }
       }
-      
+
       triangles.push_back(current_triangle);
-      
+
       current = current->next();
     } while (current != h);
 
@@ -1651,7 +1652,7 @@ class PolyhedronUtils
 
     // std::cout << "Tringulating quad" << std::endl;
     dolfin_assert(h->next()->next()->next()->next() == h);
-    
+
     //P.fill_hole(h);
 
     if (get_triangle_cos_angle(Triangle_3(h->vertex()->point(),
@@ -1673,7 +1674,7 @@ class PolyhedronUtils
     else
     {
       // the edge should ho from h->next() <--> h->prev()
-      P.split_facet(h->next(), h->prev());      
+      P.split_facet(h->next(), h->prev());
     }
   }
   //-----------------------------------------------------------------------------
@@ -1683,7 +1684,7 @@ class PolyhedronUtils
   {
     typedef typename Polyhedron::Halfedge_handle Halfedge_handle;
     typedef typename Polyhedron::Traits::Triangle_3 Triangle_3;
-    
+
     double best_quality = 1;
     Halfedge_handle best_triangle;
     Halfedge_handle current = h;
@@ -1700,7 +1701,7 @@ class PolyhedronUtils
         best_triangle = current;
         best_quality = candidate_quality;
       }
-      
+
       current = current->next();
     } while (current != h);
 
@@ -1741,10 +1742,10 @@ class PolyhedronUtils
       queue.pop_front();
 
       list_hole<Polyhedron>(current);
-            
+
       dolfin_assert(P.is_valid(false, 0));
       dolfin_assert(halfedge_is_in_polyhedron(P, current));
-      
+
       if (current->facet()->facet_degree() == 3)
       {
         //P.fill_hole(h);
@@ -1802,10 +1803,10 @@ class PolyhedronUtils
         /* /\* Halfedge_handle current = h; *\/ */
         /* /\* do *\/ */
         /* /\* { *\/ */
-          
+
         /* /\*   current = current->next(); *\/ */
         /* /\* } while (current != h); *\/ */
-        
+
         /* CGALCSGOperator op; */
 
         /* std::cout << "Computing union" << std::endl; */
@@ -1869,13 +1870,13 @@ class PolyhedronUtils
         if (current_inner->next() != current_outer &&
             current_inner->prev() != current_outer)
         {
-        
+
           Segment_3 current_segment(current_outer->vertex()->point(),
                                     current_inner->vertex()->point());
 
           /* std::cout << "Checking segment: Segment " << current_segment.source() << ", " << current_segment.target() */
           /*           << " length: " << current_segment.squared_length() << std::endl; */
-        
+
           // Check that this does not introduce an intersection
           if (!segment_intersects_triangle_set(current_segment, border_triangles))
           {
@@ -1895,10 +1896,10 @@ class PolyhedronUtils
             }
           }
         }
-        
+
         current_inner = current_inner->next();
       } while (current_inner != inner_end);
-      
+
       current_outer = current_outer->next();
     } while (current_outer != outer_end);
 
@@ -2018,7 +2019,7 @@ class PolyhedronUtils
     /* Halfedge_handle hole2 = P.split_facet(v2, hole1->opposite()); */
     /* P.make_hole(hole1); */
     /* P.make_hole(hole2); */
-    
+
     /* return true; */
   }
   //-----------------------------------------------------------------------------
@@ -2070,7 +2071,7 @@ class PolyhedronUtils
   /*             << ", ear angle: " << ear_angle_quality << std::endl; */
 
   /*   return planarity_weight*plane_fit_quality + dihedral_weight*cos_dihedral + ear_angle_quality*ear_angle_weight; */
-    
+
   /*   /\* return planarity_weight*plane_fit_quality/plane_fit + *\/ */
   /*   /\*   dihedral_weight*cos_dihedral + *\/ */
   /*   /\*   (1-std::exp(-ear_angle_weight*cos_ear_angle))*cos_dihedral; *\/ */
@@ -2082,7 +2083,7 @@ class PolyhedronUtils
     //typename Polyhedron::Vertex::Halfedge_around_vertex_circulator h_start = v->vertex_begin();
     auto h_start = v->vertex_begin();
     auto h_current = h_start;
-    do 
+    do
     {
       if (h_current->is_border_edge())
         return true;
@@ -2102,7 +2103,7 @@ class PolyhedronUtils
     {
       typename Polyhedron::Halfedge_handle h2 = f2->halfedge();
       typename Polyhedron::Halfedge_handle start2 = h2;
-      do 
+      do
       {
         if (h2->vertex() == h1->vertex())
           return true;
@@ -2112,7 +2113,7 @@ class PolyhedronUtils
 
       h1 = h1->next();
     } while (h1 != start1);
-    
+
     return false;
   }
   //-----------------------------------------------------------------------------
@@ -2126,7 +2127,7 @@ class PolyhedronUtils
         typedef typename Polyhedron::Traits::Point_3 Point_3;
 
     Segment_3 s(v1->point(), v2->point());
-    
+
     Vertex_circulator start = v1->vertex_begin();
     Vertex_circulator current = start;
     do
@@ -2150,7 +2151,7 @@ class PolyhedronUtils
           dolfin_assert(false);
         }
       }
-      
+
       current++;
     } while (start != current);
 
@@ -2313,7 +2314,7 @@ class PolyhedronUtils
       std::size_t counter2 = 0;
       for (;v2 != p.vertices_end(); v2++)
       {
-        min_distance = std::min(min_distance, 
+        min_distance = std::min(min_distance,
                                 CGAL::to_double(CGAL::squared_distance(v1->point(), v2->point())));
 
         if (min_distance == 0)
@@ -2349,7 +2350,7 @@ class PolyhedronUtils
   {
     typedef typename Polyhedron::Halfedge_around_vertex_circulator Vertex_circulator;
     typedef typename Polyhedron::Halfedge_handle Halfedge_handle;
-    
+
     // std::cout << "Removing vertex" << std::endl;
 
     Vertex_circulator h = v->vertex_begin();
@@ -2434,7 +2435,7 @@ class PolyhedronUtils
             }
             current = current->next();
           } while (current != start);
-          
+
           if (done)
             break;
         }
@@ -2462,13 +2463,13 @@ class PolyhedronUtils
             }
             current = current->next();
           } while (current != start);
-          
+
           if (done)
             break;
         }
       }
-      
-      
+
+
       // std::cout << "To be removed 1: " << to_be_removed1.size() << std::endl;
       for (auto it = to_be_removed1.begin(); it != to_be_removed1.end(); it++)
       {
@@ -2487,7 +2488,7 @@ class PolyhedronUtils
 
       /* tree.push_back(std::make_pair(0, f1)); */
       /* tree.push_back(std::make_pair(0, f1->halfedge()->opposite()->facet()); */
-      
+
       /* bool done = false; */
       /* while (!done) */
       /* { */
@@ -2547,7 +2548,7 @@ class PolyhedronUtils
     /*   std::ofstream outfile("before_filtering.off"); */
     /*   outfile << P; */
     /* } */
-    
+
     /* std::cout << "Filter sharp features" << std::endl; */
 
     const double cos_tolerance = std::cos(tolerance);
@@ -2585,7 +2586,7 @@ class PolyhedronUtils
         // std::cout << "Already handled" << std::endl;
         continue;
       }
-      
+
       visited.insert(f);
       to_be_removed.erase(f);
 
@@ -2595,8 +2596,8 @@ class PolyhedronUtils
       {
         // std::cout << "Exploring neighbor" << std::endl;
         if (!current->opposite()->is_border())
-        { 
-          
+        {
+
           Triangle_3 t1 = get_facet_triangle<Polyhedron>(current);
           Triangle_3 t2 = get_facet_triangle<Polyhedron>(current->opposite());
           if (get_triangle_cos_angle(t1, t2) > cos_tolerance)
