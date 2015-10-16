@@ -631,7 +631,7 @@ class PolyhedronUtils
           }
 
           // std::cout << "Now creating face" << std::endl;
-          //typedef typename Halfedge::Base HBase;
+          typedef typename Halfedge::Base HBase;
           edges[0]->HBase::set_next(edges[1]);
           decorator.set_prev(edges[1], edges[0]);
           edges[1]->HBase::set_next(edges[2]);
