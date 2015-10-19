@@ -148,35 +148,31 @@ struct Copy_polyhedron_to
                           _in_poly.num_halfedges());
 
     {
-      std::vector<dolfin::Point> v;
-      _in_poly.get_vertices(v);
+      std::shared_ptr<std::vector<double>> v = _in_poly.get_vertices();
 
-      for(std::vector<dolfin::Point>::iterator it = v.begin();
-          it != v.end(); it++)
+      for (std::size_t i = 0; i < v->size(); i += 3)
       {
-        typename MeshPolyhedron_3::Point_3 p( (*it)[0], (*it)[1], (*it)[2] );
+        typename MeshPolyhedron_3::Point_3 p( (*v)[i], (*v)[i+1], (*v)[i+2] );
         builder.add_vertex(p);
       }
     }
 
     {
-      std::vector<std::array<std::size_t, 3> > f;
-      _in_poly.get_facets(f);
+      std::shared_ptr<const std::vector<std::size_t>> f = _in_poly.get_facets();
 
-      for (std::vector<std::array<std::size_t, 3> >::iterator it = f.begin();
-           it != f.end(); it++)
+      for (std::size_t i = 0; i < f->size(); i += 3)
       {
-        builder.begin_facet ();
-        builder.add_vertex_to_facet( (*it)[0] );
+        builder.begin_facet();
+        builder.add_vertex_to_facet( (*f)[i] );
         if (flip)
         {
-          builder.add_vertex_to_facet( (*it)[2] );
-          builder.add_vertex_to_facet( (*it)[1] );
+          builder.add_vertex_to_facet( (*f)[i+2] );
+          builder.add_vertex_to_facet( (*f)[i+1] );
         }
         else
         {
-          builder.add_vertex_to_facet( (*it)[1] );
-          builder.add_vertex_to_facet( (*it)[2] );
+          builder.add_vertex_to_facet( (*f)[i+1] );
+          builder.add_vertex_to_facet( (*f)[i+2] );
         }
 
         builder.end_facet();

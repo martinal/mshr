@@ -83,6 +83,10 @@
 %ignore mshr::CSGCGALDomain3DQueryStructure::impl;
 %ignore mshr::CSGCGALDomain3D::impl;
 
+// These are reimplemented to return numpy arrays
+%ignore mshr::CSGCGALDomain3D::get_facets;
+%ignore mshr::CSGCGALDomain3D::get_vertices;
+
 %shared_ptr(mshr::CSGGeometry)
 %shared_ptr(mshr::CSGPrimitive)
 %shared_ptr(mshr::CSGOperator)
@@ -151,4 +155,18 @@
 
   %}
  }
+
+%extend mshr::CSGCGALDomain3D {
+  PyObject* get_vertices() {
+    return %make_numpy_array(2, double)(self->num_vertices(),
+					3,
+					(*self->get_vertices()).data(), true);
+  }
+  PyObject* get_facets() {
+    return %make_numpy_array(2, size_t)(self->num_facets(),
+					3,
+					(*self->get_facets()).data(), true);
+  }
+
+  }
 

@@ -1516,23 +1516,27 @@ namespace
       return volume/6.0;
     }
 //-----------------------------------------------------------------------------
-    void CSGCGALDomain3D::get_vertices(std::vector<dolfin::Point> &v) const
+    std::shared_ptr<std::vector<double>> CSGCGALDomain3D::get_vertices() const
     {
       typedef typename Exact_Polyhedron_3::Vertex_const_iterator Vertex_const_iterator;
 
-      v.reserve(impl->p.size_of_vertices());
+      //v.reserve(impl->p.size_of_vertices());
+      std::shared_ptr<std::vector<double>> v(new std::vector<double>(impl->p.size_of_vertices()*3));
 
+      std::size_t i = 0;
       for(Vertex_const_iterator
             vi = impl->p.vertices_begin(), end = impl->p.vertices_end();
           vi != end ; ++vi)
       {
-        v.push_back(dolfin::Point(::CGAL::to_double( vi->point().x()),
-                                  ::CGAL::to_double( vi->point().y()),
-                                  ::CGAL::to_double( vi->point().z())));
+        (*v)[i] = ::CGAL::to_double( vi->point().x() ); i++;
+        (*v)[i] = ::CGAL::to_double( vi->point().y() ); i++;
+        (*v)[i] = ::CGAL::to_double( vi->point().z() ); i++;
       }
+
+      return v;
     }
 //-----------------------------------------------------------------------------
-    void CSGCGALDomain3D::get_facets(std::vector< std::array<std::size_t, 3> > &f) const
+    std::shared_ptr<std::vector<std::size_t>> CSGCGALDomain3D::get_facets() const
     {
       typedef typename Exact_Polyhedron_3::Vertex_const_iterator Vertex_const_iterator;
       typedef typename Exact_Polyhedron_3::Facet_const_iterator  Facet_const_iterator;
@@ -1541,20 +1545,23 @@ namespace
       typedef CGAL::Inverse_index<Vertex_const_iterator> Index;
       Index index(impl->p.vertices_begin(), impl->p.vertices_end());
 
+      std::shared_ptr<std::vector<std::size_t>> v(new std::vector<std::size_t>(impl->p.size_of_facets()*3));
+
+      std::size_t i = 0;
       for(Facet_const_iterator
             fi = impl->p.facets_begin(), end = impl->p.facets_end();
           fi != end; ++fi)
       {
-        f.push_back(std::array<std::size_t, 3>());
-        std::array<std::size_t, 3> &v = f.back();
 
         HFCC hc = fi->facet_begin();
-        v[0] = index[hc->vertex()];
+        (*v)[i] = index[hc->vertex()]; i++;
         hc++;
-        v[1] = index[hc->vertex()];
+        (*v)[i] = index[hc->vertex()]; i++;
         hc++;
-        v[2] = index[hc->vertex()];
+        (*v)[i] = index[hc->vertex()]; i++;
       }
+
+      return v;
     }
 //-----------------------------------------------------------------------------
     void CSGCGALDomain3D::get_points_in_holes(std::vector<dolfin::Point>& holes,

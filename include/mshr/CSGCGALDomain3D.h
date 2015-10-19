@@ -98,10 +98,11 @@ class CSGCGALDomain3D : public CSGPrimitive3D
   // TODO: Define iterators to be more memory friendly
 
   /// @brief Output vertices in double precision
-  void get_vertices(std::vector<dolfin::Point> &v) const;
+  /// This outputs as a flattened array
+  std::shared_ptr<std::vector<double>> get_vertices() const;
 
   /// @brief Output facets as indices to the vertices array
-  void get_facets(std::vector<std::array<std::size_t, 3> > &f) const;
+  std::shared_ptr<std::vector<std::size_t>> get_facets() const;
 
   /// @brief get one point per hole, strictly inside the hole.
   /// @param holes the returned points
