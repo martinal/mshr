@@ -57,7 +57,7 @@ void handle_commandline(int argc, char** argv, po::variables_map &vm)
     ("outfile,o",    po::value<std::string>(), "Filename of generated Dolfin mesh")
     ("resolution,r", po::value<double>()->default_value(15.0), "Resolution of result mesh")
     ("stats,s", "Write some statistics of the mesh to stdout")
-    ("polyout", po::value<std::string>(), "Write the polyhedron to .poly which Tetgen can read (and do not create a mesh)")
+    ("polyout", po::value<std::string>(), "Write the polyhedron to a .off file (and do not create a mesh)")
     ("polystats", "Write statistics of polyhedron (and do not create a mesh")
     ("backend,b", po::value<std::string>()->default_value("cgal"), "Use 3D mesh generation backend [tetgen|cgal]")
     ("degenerate_tolerance", po::value<double>()->default_value(1e-12), "Tolerance for considering a facet as degenerate. Set to 0 to not remove degenerate facets")
@@ -129,21 +129,13 @@ int main(int argc, char** argv)
     {
       std::string extension = boost::filesystem::extension(vm["polyout"].as<std::string>());
 
-      if (extension == ".poly")
-      {
-        // Write the polyhedron to tetgen's file format
-        mshr::TetgenFileWriter::write(domain,
-                                      vm["polyout"].as<std::string>());
-      }
-      else if (extension == ".off")
-      {
-        domain.save_off(vm["polyout"].as<std::string>());
-      }
-      else
+      if (extension != ".off")
       {
         std::cerr << "Unknown file type: " << extension << std::endl;
         exit(1);
       }
+
+      domain.save_off(vm["polyout"].as<std::string>());
     }
 
     if (vm.count("polystats"))
