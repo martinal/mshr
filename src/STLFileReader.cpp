@@ -122,7 +122,7 @@ void STLFileReader::read(const std::string filename,
   std::ifstream file(filename.c_str());
   if (!file.is_open())
   {
-    dolfin::dolfin_error("PolyhedronUtils.cpp",
+    dolfin::dolfin_error("STLFileReader.cpp",
                          "open .stl file to read 3D surface",
                          "Failed to open file");
   }
@@ -188,7 +188,7 @@ void STLFileReader::read(const std::string filename,
           has_normal = true;
 
         if (tok_iter != tokens.end())
-          dolfin::dolfin_error("PolyhedronUtils.cpp",
+          dolfin::dolfin_error("STLFileReader.cpp",
                                "open .stl file to read 3D surface",
                                "Expected end of line (line %u)", lineno);
       }
@@ -204,7 +204,7 @@ void STLFileReader::read(const std::string filename,
     get_next_line(file, line, lineno);
 
     if (line != "outer loop")
-      dolfin::dolfin_error("PolyhedronUtils.cpp",
+      dolfin::dolfin_error("STLFileReader.cpp",
                            "open .stl file to read 3D surface",
                            "Expected keyword 'outer loop' (line %u)", lineno);
 
@@ -217,7 +217,7 @@ void STLFileReader::read(const std::string filename,
 
     if (*tok_iter != "vertex")
     {
-      dolfin::dolfin_error("PolyhedronUtils.cpp",
+      dolfin::dolfin_error("STLFileReader.cpp",
                            "open .stl file to read 3D surface",
                            "Expected keyword vertex (line %u)", lineno);
     }
@@ -311,7 +311,7 @@ void STLFileReader::read(const std::string filename,
 
   if (*tok_iter != "endsolid")
   {
-    dolfin::dolfin_error("PolyhedronUtils.cpp",
+    dolfin::dolfin_error("STLFileReader.cpp",
                          "open .stl file to read 3D surface",
                          "Expected keyword endsolid at line %u", lineno);
   }
