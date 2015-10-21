@@ -1532,7 +1532,7 @@ namespace
         vertices->push_back(::CGAL::to_double( vi->point().z()));
       }
 
-      return vertices;
+      return std::move(vertices);
     }
 //-----------------------------------------------------------------------------
   std::unique_ptr<std::vector<std::size_t>> CSGCGALDomain3D::get_facets() const
@@ -1559,7 +1559,7 @@ namespace
         facets->push_back(index[hc->vertex()]);
       }
 
-      return facets;
+      return std::move(facets);
     }
 //-----------------------------------------------------------------------------
     void CSGCGALDomain3D::get_points_in_holes(std::vector<dolfin::Point>& holes,

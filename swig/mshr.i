@@ -166,7 +166,7 @@
                                                                           NPY_DOUBLE,
                                                                           0));
     double* data = static_cast<double*>(PyArray_DATA(array));
-    const std::unique_ptr<const std::vector<double>> vertices = self->get_vertices();
+    const std::unique_ptr<const std::vector<double>> vertices = std::move(self->get_vertices());
     std::copy_n(vertices->begin(), vertices->size(), data);
 
     return reinterpret_cast<PyObject*>(array);
@@ -180,7 +180,7 @@
                                                                           NPY_UINTP, // number type
                                                                           0));       // Fortran type storage
 
-    const std::unique_ptr<const std::vector<std::size_t>> facets = self->get_facets();
+    const std::unique_ptr<const std::vector<std::size_t>> facets = std::move(self->get_facets());
     std::size_t* array_data = static_cast<std::size_t*>(PyArray_DATA(array));
     std::copy_n(facets->begin(), facets->size(), array_data);
     
