@@ -21,6 +21,7 @@
 #include <mshr/CSGPrimitives3D.h>
 #include <mshr/STLFileReader.h>
 #include <mshr/VTPFileReader.h>
+#include <mshr/OFFFileReader.h>
 #include <mshr/SurfaceConsistency.h>
 #include <mshr/CSGCGALDomain2D.h>
 #include <mshr/CSGCGALMeshGenerator2D.h>
@@ -616,18 +617,7 @@ namespace
       boost::filesystem::path fpath(s->_filename);
       if (fpath.extension() == ".off")
       {
-        std::ifstream infile(s->_filename);
-        infile >> P;
-        infile.close();
-
-        if (infile.bad())
-        {
-          std::stringstream ss;
-          ss << "Could not read polyhedral surface from '" << s->_filename << "'";
-          dolfin::dolfin_error("CSGCGALDomain3D.cpp",
-                               "read surface from off file",
-                               ss.str());
-        }
+        mshr::OFFFileReader::read(s->_filename, vertices, facets);
       }
       else
       {
