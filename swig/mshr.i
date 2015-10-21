@@ -1,6 +1,7 @@
  %module mshr
  %{
     #include <numpy/arrayobject.h>
+    #include <vector>
 
     #include <dolfin/common/types.h>
     #include <dolfin/mesh/MeshFunction.h>
@@ -21,7 +22,6 @@
     #include <mshr/CSGCGALMeshGenerator3D.h>
     #include <mshr/DolfinMeshUtils.h>
     #include <mshr/Meshes.h>
-
  %}
 
 %init
@@ -84,8 +84,8 @@
 %ignore mshr::CSGCGALDomain3D::impl;
 
 // These are reimplemented to return numpy arrays
-%ignore mshr::CSGCGALDomain3D::get_facets;
-%ignore mshr::CSGCGALDomain3D::get_vertices;
+%ignore mshr::CSGCGALDomain3D::get_facets() const;
+%ignore mshr::CSGCGALDomain3D::get_vertices() const;
 
 %shared_ptr(mshr::CSGGeometry)
 %shared_ptr(mshr::CSGPrimitive)
@@ -156,17 +156,35 @@
   %}
  }
 
-%extend mshr::CSGCGALDomain3D {
-  PyObject* get_vertices() {
-    return %make_numpy_array(2, double)(self->num_vertices(),
-					3,
-					(*self->get_vertices()).data(), true);
-  }
-  PyObject* get_facets() {
-    return %make_numpy_array(2, size_t)(self->num_facets(),
-					3,
-					(*self->get_facets()).data(), true);
+%extend mshr::CSGCGALDomain3D
+{
+  PyObject* get_vertices()
+  {
+    npy_intp adims[2] = {static_cast<npy_intp>(self->num_vertices()), 3};
+    PyArrayObject* array = reinterpret_cast<PyArrayObject*>(PyArray_EMPTY(2,
+                                                                          adims,
+                                                                          NPY_DOUBLE,
+                                                                          0));
+    double* data = static_cast<double*>(PyArray_DATA(array));
+    const std::unique_ptr<const std::vector<double>> vertices = self->get_vertices();
+    std::copy_n(vertices->begin(), vertices->size(), data);
+
+    return reinterpret_cast<PyObject*>(array);
   }
 
+  PyObject* get_facets()
+  {
+    npy_intp adims[2] = {static_cast<npy_intp>(self->num_facets()), 3};
+    PyArrayObject* array = reinterpret_cast<PyArrayObject*>(PyArray_EMPTY(2,         // Num dimensions
+                                                                          adims,     // shape
+                                                                          NPY_UINTP, // number type
+                                                                          0));       // Fortran type storage
+
+    const std::unique_ptr<const std::vector<std::size_t>> facets = self->get_facets();
+    std::size_t* array_data = static_cast<std::size_t*>(PyArray_DATA(array));
+    std::copy_n(facets->begin(), facets->size(), array_data);
+    
+    return reinterpret_cast<PyObject*>(array);
   }
+}
 

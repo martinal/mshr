@@ -99,10 +99,10 @@ class CSGCGALDomain3D : public CSGPrimitive3D
 
   /// @brief Output vertices in double precision
   /// This outputs as a flattened array
-  std::shared_ptr<std::vector<double>> get_vertices() const;
+  std::unique_ptr<std::vector<double>> get_vertices() const;
 
   /// @brief Output facets as indices to the vertices array
-  std::shared_ptr<std::vector<std::size_t>> get_facets() const;
+  std::unique_ptr<std::vector<std::size_t>> get_facets() const;
 
   /// @brief get one point per hole, strictly inside the hole.
   /// @param holes the returned points

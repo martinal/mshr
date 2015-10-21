@@ -73,7 +73,7 @@ void build_dolfin_mesh(const tetgenio& tetgenmesh, dolfin::Mesh& dolfinmesh)
   mesh_editor.close();
 }
 //-----------------------------------------------------------------------------
-double bounding_sphere_radius(std::shared_ptr<const std::vector<double>> vertices)
+double bounding_sphere_radius(const std::vector<double>& vertices)
 {
   typedef double FT;
   typedef CGAL::Cartesian<FT> K;
@@ -83,11 +83,11 @@ double bounding_sphere_radius(std::shared_ptr<const std::vector<double>> vertice
 
   std::vector<Sphere> S;
 
-  for (std::size_t i = 0; i < vertices->size(); i += 3)
+  for (std::size_t i = 0; i < vertices.size(); i += 3)
   {
-    S.push_back(Sphere(K::Point_3( (*vertices)[i],
-                                   (*vertices)[i+1],
-                                   (*vertices)[i+2]), 0.0));
+    S.push_back(Sphere(K::Point_3( vertices[i],
+                                   vertices[i+1],
+                                   vertices[i+2]), 0.0));
   }
 
   Min_sphere ms(S.begin(), S.end());
@@ -119,8 +119,8 @@ TetgenMeshGenerator3D::generate(std::shared_ptr<const CSGCGALDomain3D> domain) c
   {
     // Copy the vertices to the tetgen structure
     dolfin::log(dolfin::TRACE, "Copying vertices");
-    std::shared_ptr<const std::vector<double>> vertices = domain->get_vertices();
-    r = bounding_sphere_radius(vertices);
+    std::unique_ptr<const std::vector<double>> vertices = domain->get_vertices();
+    r = bounding_sphere_radius(*vertices);
 
     in.numberofpoints = vertices->size()/3;
     in.pointlist = new REAL[in.numberofpoints * 3];
@@ -134,7 +134,7 @@ TetgenMeshGenerator3D::generate(std::shared_ptr<const CSGCGALDomain3D> domain) c
   // Copy the facets to the tetgen structure
   {
     dolfin::log(dolfin::TRACE, "Copying facets");
-    std::shared_ptr<const std::vector<std::size_t>> facets = domain->get_facets();
+    std::unique_ptr<const std::vector<std::size_t>> facets = domain->get_facets();
 
     in.numberoffacets = facets->size()/3;
     in.facetlist = new tetgenio::facet[in.numberoffacets];

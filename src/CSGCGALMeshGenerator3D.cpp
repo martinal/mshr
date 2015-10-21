@@ -148,7 +148,7 @@ struct Copy_polyhedron_to
                           _in_poly.num_halfedges());
 
     {
-      std::shared_ptr<std::vector<double>> v = _in_poly.get_vertices();
+      std::unique_ptr<std::vector<double>> v = _in_poly.get_vertices();
 
       for (std::size_t i = 0; i < v->size(); i += 3)
       {
@@ -158,7 +158,7 @@ struct Copy_polyhedron_to
     }
 
     {
-      std::shared_ptr<const std::vector<std::size_t>> f = _in_poly.get_facets();
+      std::unique_ptr<const std::vector<std::size_t>> f = _in_poly.get_facets();
 
       for (std::size_t i = 0; i < f->size(); i += 3)
       {
