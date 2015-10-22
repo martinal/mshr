@@ -51,9 +51,12 @@ inline double convert_string(const std::string& s)
 // get next line of file and trim away whitespace
 inline void get_next_line(std::ifstream& file, std::string& line, std::size_t &lineno)
 {
-  std::getline(file, line);
-  boost::algorithm::trim(line);
-  lineno++;
+  do
+  {
+    std::getline(file, line);
+    boost::algorithm::trim(line);
+    lineno++;
+  } while ( !file.eof() && line == "");
 }
 } // end anonymous namespace
 //-----------------------------------------------------------------------------
