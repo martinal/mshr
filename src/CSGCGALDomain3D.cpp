@@ -107,8 +107,7 @@ namespace mshr
 namespace
 {
 
-  /*
-  double get_polyline_squared_length(const std::vector<Exact_Point_3>& polyline)
+  bool polyline_is_degenerate(const std::vector<Exact_Point_3>& polyline, double tol)
   {
     double length = 0;
     std::vector<Exact_Point_3>::const_iterator it = polyline.begin();
@@ -120,9 +119,8 @@ namespace
     }
     length += CGAL::to_double((polyline.back()-polyline.front()).squared_length());
 
-    return length;
+    return length < tol;
   }
-  */
 
   //-----------------------------------------------------------------------------
   // Convenience routine to make debugging easier. Remove before releasing.
@@ -1020,7 +1018,7 @@ namespace
       for (std::list<std::vector<Exact_Point_3> >::iterator it=intersection_polylines.begin();
            it != intersection_polylines.end(); it++)
       {
-	if (get_polyline_squared_length(*it) < DOLFIN_EPS)
+	if (polyline_is_degenerate(*it, DOLFIN_EPS))
 	{
 	  dolfin::dolfin_error("CSGCGALDomain3D.cpp",
 			       "union of csg geometries",
@@ -1045,7 +1043,7 @@ namespace
       for (std::list<std::vector<Exact_Point_3> >::iterator it=intersection_polylines.begin();
            it != intersection_polylines.end(); it++)
       {
-	if (get_polyline_squared_length(*it) < DOLFIN_EPS)
+	if (polyline_is_degenerate(*it, DOLFIN_EPS))
 	{
 	  dolfin::dolfin_error("CSGCGALDomain3D.cpp",
 			       "intersection of csg geometries",
@@ -1073,7 +1071,7 @@ namespace
       for (std::list<std::vector<Exact_Point_3> >::iterator it=intersection_polylines.begin();
            it != intersection_polylines.end(); it++)
       {
-	if (get_polyline_squared_length(*it) < DOLFIN_EPS)
+	if (polyline_is_degenerate(*it, DOLFIN_EPS))
 	{
 	  dolfin::dolfin_error("CSGCGALDomain3D.cpp",
 			       "difference of csg geometries",
@@ -1160,11 +1158,12 @@ namespace
       dolfin_assert(b);
       Insert_polyhedron_to<Exact_Polyhedron_3> inserter(b->impl->p);
       P.delegate(inserter);
-      dolfin_asert(P.is_valid());
+      dolfin_assert(P.is_valid());
       break;
-    case CSGGeometry::Extrude2D :
+    }
+    case mshr::CSGGeometry::Extrude2D :
     {
-      const Extrude2D* e = dynamic_cast<const Extrude2D*>(geometry);
+      const mshr::Extrude2D* e = dynamic_cast<const mshr::Extrude2D*>(geometry);
       dolfin_assert(e);
       make_extrude2D(e, P);
       break;
