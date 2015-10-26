@@ -661,12 +661,11 @@ namespace
 
       if (s->repair)
       {
-        log(dolfin::TRACE, "Keep only connected component");
+        // TODO: Orient all components
         mshr::SurfaceConsistency::orient_component(facets, 0);
-        std::size_t start_facet = s->first_facet;
-        std::cout << "Starting facet: " << start_facet << std::endl;
+        // std::size_t start_facet = s->first_facet;
 
-        std::set<std::size_t> duplicating;
+        // std::set<std::size_t> duplicating;
 
         // FIXME: Commented out for now. Reintroduct before pushing
         // mshr::SurfaceConsistency::checkConnectivity(facets, duplicating, false);
@@ -1887,29 +1886,40 @@ namespace
       return holes.size();
     }
     //-----------------------------------------------------------------------------
-    void CSGCGALDomain3D::close_holes(std::size_t max, std::size_t offset)
+    void CSGCGALDomain3D::close_hole(std::size_t hole)
     {
       dolfin::warning("Hole closing is an experimental feature");
       dolfin_assert(impl->p.is_valid(false, 0));
       impl->p.normalize_border();
 
       const std::vector<Exact_Polyhedron_3::Halfedge_handle> holes = PolyhedronUtils::get_holes(impl->p);
-      // std::cout << "Num holes: " << holes.size() << std::endl;
+
+      PolyhedronUtils::close_hole(impl->p,
+                                  holes[hole]);
+      impl->p.normalize_border();
+
+      dolfin_assert(impl->p.is_valid(false, 0));
+      dolfin_assert(impl->p.is_pure_triangle());
+    }
+    //-----------------------------------------------------------------------------
+    void CSGCGALDomain3D::close_holes()
+    {
+      dolfin::warning("Hole closing is an experimental feature");
+
+      const std::vector<Exact_Polyhedron_3::Halfedge_handle> holes = PolyhedronUtils::get_holes(impl->p);
 
       std::size_t counter = 0;
-      while (!impl->p.is_closed() && (max == 0 || counter < max) && offset+counter < holes.size())
+      for (const Exact_Polyhedron_3::Halfedge_handle h : holes)
       {
         // save_off("not_intersecting.off");
-        PolyhedronUtils::close_hole(impl->p,
-                                    holes[offset+counter]);
-        impl->p.normalize_border();
+        PolyhedronUtils::close_hole(impl->p, h);
 
         counter++;
 
         dolfin_assert(impl->p.is_valid(false, 0));
         dolfin_assert(impl->p.is_pure_triangle());
-        // save_off("closed_hole_intersecting.off");
-        dolfin_assert(!is_selfintersecting());
       }
+
+      dolfin_assert(impl->p.is_close());
     }
   } // end namespace mshr

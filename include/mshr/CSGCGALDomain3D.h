@@ -1,4 +1,4 @@
-// Copyright (C) 2013-2014 Benjamin Kehlet
+// Copyright (C) 2013-2015 Benjamin Kehlet
 //
 // This file is part of mshr.
 //
@@ -148,8 +148,11 @@ class CSGCGALDomain3D : public CSGPrimitive3D
   /// A hole is a connected sequence of boundary edges
   std::size_t num_holes() const;
 
-  /// @brief Close and triangulate holes. Experimental.
-  void close_holes(std::size_t max=0, std::size_t offset=0);
+  /// @brief Close and triangulate all holes. Experimental.
+  void close_holes();
+
+  /// @brief Close and triangulate hole. Experimental.
+  void close_hole(std::size_t hole);
 
   /// @brief Return convex hull of vertices as CSGCGALDomain3D object. Experimental
   static std::shared_ptr<CSGCGALDomain3D>
