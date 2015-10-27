@@ -54,6 +54,9 @@ class CSGCGALDomain3D : public CSGPrimitive3D
   /// @brief Construct polyhedron from CSG geometry
   CSGCGALDomain3D(const mshr::CSGGeometry &csg);
 
+  CSGCGALDomain3D(const std::vector<std::array<double, 3>>& vertices,
+                  const std::vector<std::array<std::size_t, 3>>& facets);
+
   /// @brief Destructor
   ~CSGCGALDomain3D();
 
@@ -154,10 +157,13 @@ class CSGCGALDomain3D : public CSGPrimitive3D
   /// @brief Close and triangulate hole. Experimental.
   void close_hole(std::size_t hole);
 
+  std::shared_ptr<CSGCGALDomain3D> reconstruct_surface() const;
+
   /// @brief Return convex hull of vertices as CSGCGALDomain3D object. Experimental
   static std::shared_ptr<CSGCGALDomain3D>
     convex_hull(const CSGCGALDomain3D& c);
 
+  // FIXME: Make this private again
   // private :
   std::unique_ptr<CSGCGALDomain3DImpl> impl;
 };

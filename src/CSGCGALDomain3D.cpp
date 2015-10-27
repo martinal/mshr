@@ -663,12 +663,10 @@ namespace
         mshr::SurfaceConsistency::orient_component(facets, 0);
         // std::size_t start_facet = s->first_facet;
 
-        // std::set<std::size_t> duplicating;
-
-        // FIXME: Commented out for now. Reintroduct before pushing
-        // mshr::SurfaceConsistency::checkConnectivity(facets, duplicating, false);
-        // log(dolfin::TRACE, "%u facets filtered out", duplicating.size());
-        // skip.insert(duplicating.begin(), duplicating.end());
+        std::set<std::size_t> duplicating;
+        mshr::SurfaceConsistency::checkConnectivity(facets, duplicating, false);
+        log(dolfin::TRACE, "%u facets filtered out", duplicating.size());
+        skip.insert(duplicating.begin(), duplicating.end());
 
 
         // SurfaceConsistency::filterFacets(facets,
@@ -738,7 +736,7 @@ namespace
       // mshr::PolyhedronUtils::close_holes(P);
     }
 
-    mshr::PolyhedronUtils::list_self_intersections(P);
+    // mshr::PolyhedronUtils::list_self_intersections(P);
 
     // if (s->degenerate_tolerance > 0)
     // {
@@ -1469,8 +1467,15 @@ namespace
 
     }
     //-----------------------------------------------------------------------------
+    CSGCGALDomain3D::CSGCGALDomain3D(const std::vector<std::array<double, 3>>& vertices,
+                                     const std::vector<std::array<std::size_t, 3>>& facets)
+     : impl(new CSGCGALDomain3DImpl)
+    {
+      parameters = default_parameters();
+    }
+    //-----------------------------------------------------------------------------
     CSGCGALDomain3D::~CSGCGALDomain3D(){}
-  //-----------------------------------------------------------------------------
+    //-----------------------------------------------------------------------------
     void CSGCGALDomain3D::insert(const CSGCGALDomain3D& p)
     {
       Insert_polyhedron_to<Exact_Polyhedron_3> inserter(p.impl->p);
@@ -1921,4 +1926,10 @@ namespace
 
       dolfin_assert(impl->p.is_close());
     }
+  //-----------------------------------------------------------------------------
+  std::size_t CSGCGALDomain3D::remove_selfintersections()
+  {
+    return PolyhedronUtils::remove_self_intersections(impl->p);
+  }
+
   } // end namespace mshr

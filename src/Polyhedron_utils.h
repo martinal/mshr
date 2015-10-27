@@ -1727,7 +1727,7 @@ class PolyhedronUtils
     P.normalize_border();
 
     // std::cout << "Size of hole: " << h->facet()->facet_degree() << std::endl;
-    list_hole<Polyhedron>(h);
+    // list_hole<Polyhedron>(h);
 
     dolfin_assert(h->facet()->facet_degree() > 2);
 
@@ -2474,12 +2474,14 @@ class PolyhedronUtils
       for (auto it = to_be_removed1.begin(); it != to_be_removed1.end(); it++)
       {
         P.erase_facet((*it)->halfedge());
+        removed++;
       }
 
       // std::cout << "To be removed 2: " << to_be_removed2.size() << std::endl;
       for (auto it = to_be_removed2.begin(); it != to_be_removed2.end(); it++)
       {
         P.erase_facet((*it)->halfedge());
+        removed++;
       }
 
 
