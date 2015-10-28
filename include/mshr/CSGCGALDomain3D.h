@@ -94,6 +94,8 @@ class CSGCGALDomain3D : public CSGPrimitive3D
   /// @brief Test if any facets intersects
   bool is_selfintersecting(bool verbose=false) const;
 
+  std::size_t remove_selfintersections();
+
   /// @brief Save polyhedron to off file
   /// @param filename Filename to write to
   void save_off(std::string filename) const;
