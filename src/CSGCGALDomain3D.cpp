@@ -26,6 +26,7 @@
 #include <mshr/CSGCGALDomain2D.h>
 #include <mshr/CSGCGALMeshGenerator2D.h>
 #include <mshr/DolfinMeshUtils.h>
+#include <mshr/SurfaceReconstruction.h>
 
 #include "meshclean.h"
 #include "triangulation_refinement.h"
@@ -1926,6 +1927,22 @@ namespace
 
       dolfin_assert(impl->p.is_close());
     }
+  //-----------------------------------------------------------------------------
+  std::shared_ptr<CSGCGALDomain3D> CSGCGALDomain3D::reconstruct_surface() const
+  {
+    std::shared_ptr<CSGCGALDomain3D> res(new CSGCGALDomain3D());
+
+    std::unique_ptr<std::vector<double>> vertices = get_vertices();
+    std::unique_ptr<std::vector<std::size_t>> facets = get_facets();
+
+    std::vector<std::array<double, 3>> new_vertices;
+    std::vector<std::array<std::size_t, 3>> new_facets;
+
+    SurfaceReconstruction::reconstruct(*vertices, *facets,
+                                       new_vertices, new_facets);
+
+    return res;
+  }
   //-----------------------------------------------------------------------------
   std::size_t CSGCGALDomain3D::remove_selfintersections()
   {

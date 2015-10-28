@@ -159,6 +159,7 @@ class CSGCGALDomain3D : public CSGPrimitive3D
   /// @brief Close and triangulate hole. Experimental.
   void close_hole(std::size_t hole);
 
+  // @brief Reconstruct surface from point set. Experimental
   std::shared_ptr<CSGCGALDomain3D> reconstruct_surface() const;
 
   /// @brief Return convex hull of vertices as CSGCGALDomain3D object. Experimental
