@@ -67,9 +67,9 @@ void mshr::SurfaceReconstruction::reconstruct(const std::vector<double>& vertice
   PointList points;
   for (std::size_t i = 0; i < facets.size(); i += 3)
   {
-    const Point a(vertices[facets[i]*3], vertices[facets[i]*3+1], vertices[facets[i]*3 +2]);
+    const Point a(vertices[facets[i]*3],   vertices[facets[i]*3+1],   vertices[facets[i]*3+2]);
     const Point b(vertices[facets[i+1]*3], vertices[facets[i+1]*3+1], vertices[facets[i+1]*3+2]);
-    const Point c(vertices[facets[i+3]*3], vertices[facets[i+2]*3+1], vertices[facets[i+2]*3+2]);
+    const Point c(vertices[facets[i+2]*3], vertices[facets[i+2]*3+1], vertices[facets[i+2]*3+2]);
 
     // compute normal
     const Vector_3 normal = CGAL::cross_product(b-a, c-a);
