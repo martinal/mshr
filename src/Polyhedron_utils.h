@@ -2501,7 +2501,6 @@ class PolyhedronUtils
       dolfin_assert(P.is_valid());
 
       intersections.clear();
-      dolfin_assert(intersection.size() == 0);
       CGAL::self_intersect<Polyhedron_traits>(P, std::back_inserter(intersections));
     }
 
