@@ -1925,7 +1925,7 @@ namespace
         dolfin_assert(impl->p.is_pure_triangle());
       }
 
-      dolfin_assert(impl->p.is_close());
+      dolfin_assert(impl->p.is_closed());
     }
   //-----------------------------------------------------------------------------
   std::shared_ptr<CSGCGALDomain3D> CSGCGALDomain3D::reconstruct_surface() const
