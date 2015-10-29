@@ -2392,9 +2392,6 @@ class PolyhedronUtils
 
     while (intersections.size() > 0)
     {
-      // std::cout << "  Removing pair" << std::endl;
-
-
       const typename Polyhedron::Facet_handle f1 = intersections.front().first;
       const typename Polyhedron::Facet_handle f2 = intersections.front().second;
 
@@ -2410,14 +2407,19 @@ class PolyhedronUtils
       std::set<Facet_handle> to_be_removed2;
       to_be_removed2.insert(f2);
 
-      while (!queue1.empty())
+      while (true)
       {
+        bool done = false;
+
+        // Pop from queue 1
+        if (queue1.size() > 0)
         {
           to_be_removed1.insert(queue1.front());
           Halfedge_handle start = queue1.front()->halfedge();
+
           queue1.pop_front();
           Halfedge_handle current = start;
-          bool done = false;
+
           do
           {
             // std::cout << "Spreading out" << std::endl;
@@ -2435,17 +2437,24 @@ class PolyhedronUtils
             }
             current = current->next();
           } while (current != start);
-
-          if (done)
-            break;
+        }
+        else
+        {
+          done = true;
         }
 
+        if (done)
+          break;
+
+
+        // Pop from queue 2
+        if (queue2.size() > 0)
         {
           to_be_removed2.insert(queue2.front());
           Halfedge_handle start = queue2.front()->halfedge();
           queue2.pop_front();
           Halfedge_handle current = start;
-          bool done = false;
+
           do
           {
             // std::cout << "Spreading out" << std::endl;
@@ -2463,77 +2472,38 @@ class PolyhedronUtils
             }
             current = current->next();
           } while (current != start);
-
-          if (done)
-            break;
         }
+        else
+        {
+          done = true;
+        }
+
+        if (done)
+          break;
       }
 
-
       // std::cout << "To be removed 1: " << to_be_removed1.size() << std::endl;
-      for (auto it = to_be_removed1.begin(); it != to_be_removed1.end(); it++)
+      for (typename Polyhedron::Face_handle f : to_be_removed1)
       {
-        P.erase_facet((*it)->halfedge());
+        P.erase_facet(f->halfedge());
+        dolfin_assert(P.is_valid());
         removed++;
       }
 
       // std::cout << "To be removed 2: " << to_be_removed2.size() << std::endl;
-      for (auto it = to_be_removed2.begin(); it != to_be_removed2.end(); it++)
+      for (typename Polyhedron::Face_handle f : to_be_removed2)
       {
-        P.erase_facet((*it)->halfedge());
+        P.erase_facet(f->halfedge());
+        dolfin_assert(P.is_valid());
         removed++;
       }
 
-
-
-      /* std::vector<std::pair<parent, Facet_handle> > tree; */
-
-      /* tree.push_back(std::make_pair(0, f1)); */
-      /* tree.push_back(std::make_pair(0, f1->halfedge()->opposite()->facet()); */
-
-      /* bool done = false; */
-      /* while (!done) */
-      /* { */
-      /*   std::size_t start = tree.size()/2; */
-      /*   std::size_t level_size = tree.size()/2; */
-
-      /*   std::cout << "Start: " << start << std::endl; */
-      /*   std::cout << "Level size: " << level_size << std::endl; */
-
-      /*   for (std::size_t i = 0; i < level_size; i++) */
-      /*   { */
-      /*     Facet_handle current = tree[start+i]; */
-      /*     Facet_handle prev    = tree[(start-1)/2]; */
-
-      /*     std::cout << "Her" << std::endl; */
-
-      /*     Halfedge_handle h1 = current->halfedge(); */
-      /*     if (h1->opposite()->facet() == prev) */
-      /*       h1 = h1->next(); */
-      /*     tree.push_back(h1->opposite()->facet()); */
-
-      /*     h1 = h1->next(); */
-      /*     if (h1->opposite()->facet() == prev) */
-      /*       h1 = h1->next(); */
-
-      /*     tree.push_back(h1->opposite()->facet()); */
-
-      /*     if (tree[tree.size()-1] == f2) */
-      /*     { */
-      /*       done = true; */
-      /*       break; */
-      /*     } */
-      /*   } */
-      /* } */
-
-      // std::cout << "Found route from f1 to f2" << std::endl;
-      // break;
+      dolfin_assert(P.is_valid());
 
       intersections.clear();
+      dolfin_assert(intersection.size() == 0);
       CGAL::self_intersect<Polyhedron_traits>(P, std::back_inserter(intersections));
     }
-
-    // std::cout << "ok (" << facets.size() << " triangle pair(s))" << std::endl;
 
     return removed;
   }
