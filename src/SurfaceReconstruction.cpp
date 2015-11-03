@@ -176,7 +176,6 @@ void export_triangulation(const C2t3& c2t3,
           regular_orientation ? indices[1] : indices[2],
           regular_orientation ? indices[2] : indices[1] });
   }
-  CGAL_assertion(nb_facets == number_of_facets);
 }
 }
 //-----------------------------------------------------------------------------
