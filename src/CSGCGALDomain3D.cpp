@@ -161,14 +161,14 @@ namespace
 
       // Note: Some older compilers (eg. gcc on Ubuntu Precise) require std::array<std::size_t, 3> to be
       // given explicitly in the initializer list.
-      std::vector<std::array<std::size_t, 3> > initial_triangles { std::array<std::size_t, 3>{{0, 2, 1}},
-          std::array<std::size_t, 3>{{0, 3, 2 }},
-            std::array<std::size_t, 3>{{0, 4, 3 }},
-              std::array<std::size_t, 3>{{0, 1, 4,}},
-                std::array<std::size_t, 3>{{5, 4, 1}},
-                  std::array<std::size_t, 3>{{5, 1, 2 }},
-                    std::array<std::size_t, 3>{{5, 2, 3 }},
-                      std::array<std::size_t, 3>{{5, 3, 4 }} };
+      std::vector<std::array<std::size_t, 3> > initial_triangles { std::array<std::size_t, 3>{{0, 2, 1 }},
+                                                                   std::array<std::size_t, 3>{{0, 3, 2 }},
+                                                                   std::array<std::size_t, 3>{{0, 4, 3 }},
+                                                                   std::array<std::size_t, 3>{{0, 1, 4 }},
+                                                                   std::array<std::size_t, 3>{{5, 4, 1 }},
+                                                                   std::array<std::size_t, 3>{{5, 1, 2 }},
+                                                                   std::array<std::size_t, 3>{{5, 2, 3 }},
+                                                                   std::array<std::size_t, 3>{{5, 3, 4 }} };
 
       std::vector<dolfin::Point> vertices;
       std::vector<std::array<std::size_t, 3> > triangles;
@@ -1473,6 +1473,10 @@ namespace
      : impl(new CSGCGALDomain3DImpl)
     {
       parameters = default_parameters();
+
+      // Create the polyhedron
+      BuildFromFacetList<Exact_HalfedgeDS> builder(vertices, facets, {});
+      impl->p.delegate(builder);
     }
     //-----------------------------------------------------------------------------
     CSGCGALDomain3D::~CSGCGALDomain3D(){}
@@ -1878,6 +1882,7 @@ namespace
 //-----------------------------------------------------------------------------
     void CSGCGALDomain3D::inside_out()
     {
+      dolfin_assert(impl->p.is_valid());
       impl->p.inside_out();
     }
 //-----------------------------------------------------------------------------
@@ -1930,18 +1935,19 @@ namespace
   //-----------------------------------------------------------------------------
   std::shared_ptr<CSGCGALDomain3D> CSGCGALDomain3D::reconstruct_surface() const
   {
-    std::shared_ptr<CSGCGALDomain3D> res(new CSGCGALDomain3D());
-
-    std::unique_ptr<std::vector<double>> vertices = get_vertices();
-    std::unique_ptr<std::vector<std::size_t>> facets = get_facets();
-
     std::vector<std::array<double, 3>> new_vertices;
     std::vector<std::array<std::size_t, 3>> new_facets;
 
-    SurfaceReconstruction::reconstruct(*vertices, *facets,
-                                       new_vertices, new_facets);
+    {
+      std::unique_ptr<const std::vector<double>> vertices = get_vertices();
+      std::unique_ptr<const std::vector<std::size_t>> facets = get_facets();
 
-    return res;
+      SurfaceReconstruction::reconstruct(*vertices, *facets,
+                                         new_vertices, new_facets);
+    }
+
+    return std::shared_ptr<CSGCGALDomain3D>(new CSGCGALDomain3D(new_vertices,
+                                                                new_facets));
   }
   //-----------------------------------------------------------------------------
   std::size_t CSGCGALDomain3D::remove_selfintersections()
